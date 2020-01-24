@@ -1,0 +1,12 @@
+{
+    // Formating
+    "python.formatting.provider": "black",
+    // Linting
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": true,
+    "python.linting.mypyEnabled": true,
+    "python.linting.pydocstyleEnabled": true,
+    // Testing
+    "python.testing.pytestEnabled": true
+}
