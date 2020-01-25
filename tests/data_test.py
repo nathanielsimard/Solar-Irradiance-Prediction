@@ -1,45 +1,111 @@
 import unittest
+from typing import Any, Generator
 
-from src.data import MetadataLoader
+from src.data import MetadataLoader, Station, UnableToLoadMetadata
+
+CATALOG_PATH = "tests/data/catalog-test.pkl"
+
+# Don't consider 'nan' or NaN values
+NUM_METADATA = 2066
+NUM_METADATA_BND_DAY_TIME = 1078
+
+A_STATION = Station.BND
 
 
 class MetadataLoaderTest(unittest.TestCase):
-    def test_load_stations_load_image(self):
-        """Should load the right first_image considering the compression."""
-        for (test_name, compression, expected) in [
-            (
-                "8 bits Compression",
-                "8bit",
-                "/project/cq-training-1/project1/data/hdf5v7_8bit/2010.01.01.0800.h5",
-            ),
-            (
-                "16 bits Compression",
-                "16bit",
-                "/project/cq-training-1/project1/data/hdf5v5_16bit/2010.01.01.0800.h5",
-            ),
-        ]:
-            with self.subTest(test_name):
-                loader = MetadataLoader("tests/data/catalog-test.pkl")
+    def test_load_metadata_with_bad_path(self):
+        loader = MetadataLoader("path/that/doesnt/exist")
+        metadata = loader.load(A_STATION)
 
-                metadata = loader.load_stations(compression=compression)
+        self.assertRaises(
+            UnableToLoadMetadata, lambda: next(metadata),
+        )
 
-                first_image = metadata[0].image
-                print(type(first_image))
-                self.assertEqual(expected, first_image)
+    def test_load_metadata_image_path_without_compression(self):
+        loader = MetadataLoader(CATALOG_PATH)
 
-    def test_load_stations_night_time(self):
-        """Should only load the metadata considering the night time."""
-        for (test_name, night_time, num_metadata) in [
-            ("Load all metadata", False, 2068),
-            ("Don't Load night metadata", True, 1080),
-        ]:
-            with self.subTest(test_name):
-                loader = MetadataLoader("tests/data/catalog-test.pkl")
+        metadata = loader.load(A_STATION, compression=None)
 
-                metadata = loader.load_stations(night_time=night_time)
+        first_image_path = next(metadata).image_path
+        self.assertTrue("netcdf" in first_image_path)
 
-                if night_time:
-                    for m in metadata:
-                        self.assertTrue(m.night_time)
+    def test_load_metadata_image_path_with_8bit_compression(self):
+        loader = MetadataLoader(CATALOG_PATH)
 
-                self.assertEqual(num_metadata, len(metadata))
+        metadata = loader.load(A_STATION, compression="8bit")
+
+        first_image_path = next(metadata).image_path
+        self.assertTrue("8bit" in first_image_path)
+
+    def test_load_metadata_image_path_with_16bit_compression(self):
+        loader = MetadataLoader(CATALOG_PATH)
+
+        metadata = loader.load(A_STATION, compression="16bit")
+
+        first_image_path = next(metadata).image_path
+        self.assertTrue("16bit" in first_image_path)
+
+    def test_load_metadata_target(self):
+        loader = MetadataLoader(CATALOG_PATH)
+        station_with_target = Station.BND
+        first_station_target = -3.986666666666666
+
+        metadata = loader.load(station_with_target)
+
+        first_target: Any = next(metadata).target
+        self.assertAlmostEqual(first_station_target, first_target)
+
+    def test_load_metadata_target_1hour(self):
+        loader = MetadataLoader(CATALOG_PATH)
+        station_with_target = Station.BND
+        first_station_target = -3.926666666666665
+
+        metadata = loader.load(station_with_target)
+
+        first_target_1h: Any = next(metadata).target_1h
+        self.assertAlmostEqual(first_station_target, first_target_1h)
+
+    def test_load_metadata_target_3hour(self):
+        loader = MetadataLoader(CATALOG_PATH)
+        station_with_target = Station.BND
+        first_station_target = -3.720000000000001
+
+        metadata = loader.load(station_with_target)
+
+        first_target_3h: Any = next(metadata).target_3h
+        self.assertAlmostEqual(first_station_target, first_target_3h)
+
+    def test_load_metadata_target_6hour(self):
+        loader = MetadataLoader(CATALOG_PATH)
+        station_with_target = Station.BND
+        first_station_target = 29.10666666666667
+
+        metadata = loader.load(station_with_target)
+
+        first_target_6h: Any = next(metadata).target_6h
+        self.assertAlmostEqual(first_station_target, first_target_6h)
+
+    def test_load_metadata_with_night_time(self):
+        loader = MetadataLoader(CATALOG_PATH)
+
+        metadata = loader.load(A_STATION, night_time=True)
+
+        num_metadata = self._num_metadata(metadata)
+        self.assertEqual(NUM_METADATA, num_metadata)
+
+    def test_load_metadata_without_night_time(self):
+        loader = MetadataLoader(CATALOG_PATH)
+
+        metadata = loader.load(Station.BND, night_time=False)
+
+        num_metadata = self._num_metadata(metadata)
+        self.assertEqual(NUM_METADATA_BND_DAY_TIME, num_metadata)
+
+    def _num_metadata(self, metadata: Generator) -> int:
+        num = 0
+        for m in metadata:
+            num += 1
+        return num
+
+    def _next_target(self, metadata: Generator):
+        return next(metadata).target
