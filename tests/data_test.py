@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime
 from typing import Any, Generator
 
 from src.data import MetadataLoader, Station, UnableToLoadMetadata
@@ -45,45 +46,53 @@ class MetadataLoaderTest(unittest.TestCase):
         first_image_path = next(metadata).image_path
         self.assertTrue("16bit" in first_image_path)
 
+    def test_load_metadata_datatime(self):
+        loader = MetadataLoader(CATALOG_PATH)
+
+        metadata = loader.load(A_STATION)
+
+        expected_data = datetime(2010, 1, 1, 8, 0, 0, 0)
+        self.assertEqual(expected_data, next(metadata).datetime)
+
     def test_load_metadata_target(self):
         loader = MetadataLoader(CATALOG_PATH)
         station_with_target = Station.BND
-        first_station_target = -3.986666666666666
+        target = -3.986666666666666
 
         metadata = loader.load(station_with_target)
 
-        first_target: Any = next(metadata).target
-        self.assertAlmostEqual(first_station_target, first_target)
+        actual_target: Any = next(metadata).target
+        self.assertAlmostEqual(target, actual_target)
 
     def test_load_metadata_target_1hour(self):
         loader = MetadataLoader(CATALOG_PATH)
         station_with_target = Station.BND
-        first_station_target = -3.926666666666665
+        target_1h = -3.926666666666665
 
         metadata = loader.load(station_with_target)
 
-        first_target_1h: Any = next(metadata).target_1h
-        self.assertAlmostEqual(first_station_target, first_target_1h)
+        actual_target_1h: Any = next(metadata).target_1h
+        self.assertAlmostEqual(target_1h, actual_target_1h)
 
     def test_load_metadata_target_3hour(self):
         loader = MetadataLoader(CATALOG_PATH)
         station_with_target = Station.BND
-        first_station_target = -3.720000000000001
+        target_3h = -3.720000000000001
 
         metadata = loader.load(station_with_target)
 
-        first_target_3h: Any = next(metadata).target_3h
-        self.assertAlmostEqual(first_station_target, first_target_3h)
+        actual_target_3h: Any = next(metadata).target_3h
+        self.assertAlmostEqual(target_3h, actual_target_3h)
 
     def test_load_metadata_target_6hour(self):
         loader = MetadataLoader(CATALOG_PATH)
         station_with_target = Station.BND
-        first_station_target = 29.10666666666667
+        target_6h = 29.10666666666667
 
         metadata = loader.load(station_with_target)
 
-        first_target_6h: Any = next(metadata).target_6h
-        self.assertAlmostEqual(first_station_target, first_target_6h)
+        actual_target_6h: Any = next(metadata).target_6h
+        self.assertAlmostEqual(target_6h, actual_target_6h)
 
     def test_load_metadata_with_night_time(self):
         loader = MetadataLoader(CATALOG_PATH)
