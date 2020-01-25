@@ -192,7 +192,6 @@ class MetadataLoaderTest(unittest.TestCase):
         actual: Any = next(metadata).image_compression
         self.assertEqual(actual, "16bit")
 
-
     def test_load_metadata_without_night_time(self):
         loader = MetadataLoader(CATALOG_PATH)
 

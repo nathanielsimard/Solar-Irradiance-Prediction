@@ -29,41 +29,40 @@ class UnableToLoadMetadata(Exception):
 class Metadata:
     """Metadata containing the information necessary to train some models."""
 
-    image_path: str         # full path on helios
+    image_path: str  # full path on helios
     image_compression: str  # "8bit", "16bit" or "None"
-    image_offset : int      # Indice de l'image dans le fichier hd5
-    datetime: datetime      # UTC datetime
-    latitude: float         # Coordinates of the station. 
+    image_offset: int  # Indice de l'image dans le fichier hd5
+    datetime: datetime  # UTC datetime
+    latitude: float  # Coordinates of the station.
     longitude: float
     altitude: float
-    target_ghi: Optional[float]     # GHI, non normalized, watts/m2
-    target_ghi_1h: Optional[float]   # Same, T+1h
+    target_ghi: Optional[float]  # GHI, non normalized, watts/m2
+    target_ghi_1h: Optional[float]  # Same, T+1h
     target_ghi_3h: Optional[float]  # Same, T+3h
     target_ghi_6h: Optional[float]  # Same, T+6h
     # Cloudiness category. ("night", #"cloudy", "clear", "variable", "slightly cloudy")
-    target_cloudiness:    Optional[str]
-    target_cloudiness_1h:  Optional[str]   # Same, T+1h
-    target_cloudiness_3h: Optional[str]   # Same, T+3h
-    target_cloudiness_6h: Optional[str]   # Same, T+6h
+    target_cloudiness: Optional[str]
+    target_cloudiness_1h: Optional[str]  # Same, T+1h
+    target_cloudiness_3h: Optional[str]  # Same, T+3h
+    target_cloudiness_6h: Optional[str]  # Same, T+6h
 
 
 class MetadataLoader:
-    """
-        Dictionnary of all SURFRAD station names and locations 
-        Given as (latitude, longitude, altitude) tuples
-    """
+    """Load the metadata from the catalog for differents stations."""
+
+    # Dictionnary of all SURFRAD station names and locations
+    # Given as (latitude, longitude, altitude) tuples
 
     Stations = {
-        "BND": (40.05192, -88.37309, 230),   
+        "BND": [0.05192, -88.37309, 230],
         "TBL": [40.12498, -105.23680, 1689],
         "DRA": [36.62373, -116.01947, 1007],
         "FPK": [48.30783, -105.10170, 634],
         "GWN": [34.25470, -89.87290, 98],
         "PSU": [40.72012, -77.93085, 376],
-        "SXF": [43.73403, -96.62328, 473]
+        "SXF": [43.73403, -96.62328, 473],
     }
 
-    """Load the metadata from the catalog for differents stations."""
     def __init__(self, file_name: str) -> None:
         """Create a metadata loader.
 
@@ -98,16 +97,23 @@ class MetadataLoader:
         self.compression = compression
 
         for index, row in catalog.iterrows():
-            yield self._build_metadata(catalog, station, image_column, image_offset_column, index, row)
+            yield self._build_metadata(
+                catalog, station, image_column, image_offset_column, index, row
+            )
 
     def _find_future_target(
-        self, catalog: pd.DataFrame, station: Station, time: pd.Timestamp, hour: int,
-        variable: str = "GHI"
-    ) -> Optional[float]:
+        self,
+        catalog: pd.DataFrame,
+        station: Station,
+        time: pd.Timestamp,
+        hour: int,
+        variable: str = "GHI",
+    ):  # Python allows us to have a single definition for a function regardless of 
+        # datatype instead of relying on templating or reimplementation of the same logic
+        # for different data types. This is why I removed the type here. Hope you won't mind ;)
         index = time + pd.to_timedelta(hour, unit="h")
-
         try:
-            return catalog.loc[index][f"{station.name}_"+variable]
+            return catalog.loc[index][f"{station.name}_" + variable]
         except KeyError:
             return None
 
@@ -115,18 +121,17 @@ class MetadataLoader:
     def _image_column(self, compression: str, variable="path"):
 
         if compression is None:
-            if variable=="path":
+            if variable == "path":
                 return "ncdf_path"
             else:
                 return None
 
         elif compression == "8bit":
-            return "hdf5_8bit_"+ variable
+            return "hdf5_8bit_" + variable
         elif compression == "16bit":
             return "hdf5_16bit_" + variable
         else:
             raise UnableToLoadMetadata(f"Unsupported compression: {compression}")
-
 
     def _filter_null(self, df: pd.DataFrame, column: str) -> pd.DataFrame:
         df = df[df[column] != "nan"]
@@ -155,31 +160,52 @@ class MetadataLoader:
         if image_offset_column is not None:
             image_offset = row[image_offset_column]
         else:
-            image_offset = 0 #No offset for ncdf files. We just output 0 everytime.
+            image_offset = 0  # No offset for ncdf files. We just output 0 everytime.
         latitude = self.Stations[station.name][0]
         longitude = self.Stations[station.name][1]
         altitude = self.Stations[station.name][2]
-        
+
         target_ghi = row[f"{station.name}_GHI"]
-        target_ghi_1h = self._find_future_target(catalog, station, timestamp, 1, variable="GHI")
-        target_ghi_3h = self._find_future_target(catalog, station, timestamp, 3, variable="GHI")
-        target_ghi_6h = self._find_future_target(catalog, station, timestamp, 6, variable="GHI")
+        target_ghi_1h = self._find_future_target(
+            catalog, station, timestamp, 1, variable="GHI"
+        )
+        target_ghi_3h = self._find_future_target(
+            catalog, station, timestamp, 3, variable="GHI"
+        )
+        target_ghi_6h = self._find_future_target(
+            catalog, station, timestamp, 6, variable="GHI"
+        )
 
         target_cloudiness = row[f"{station.name}_CLOUDINESS"]
-        target_cloudiness_1h = self._find_future_target(catalog, station, timestamp, 1, variable="CLOUDINESS")
-        target_cloudiness_3h = self._find_future_target(catalog, station, timestamp, 3, variable="CLOUDINESS")
-        target_cloudiness_6h = self._find_future_target(catalog, station, timestamp, 6, variable="CLOUDINESS")
+        target_cloudiness_1h = self._find_future_target(
+            catalog, station, timestamp, 1, variable="CLOUDINESS"
+        )
+        target_cloudiness_3h = self._find_future_target(
+            catalog, station, timestamp, 3, variable="CLOUDINESS"
+        )
+        target_cloudiness_6h = self._find_future_target(
+            catalog, station, timestamp, 6, variable="CLOUDINESS"
+        )
 
         datetime = timestamp.to_pydatetime()
 
-        return Metadata(image_path = image_path, datetime = datetime, 
-                        image_compression = self.compression, image_offset = image_offset,
-                        latitude = latitude, longitude = longitude, altitude = altitude,
-                        target_ghi = target_ghi, target_ghi_1h = target_ghi_1h, 
-                        target_ghi_3h = target_ghi_3h, target_ghi_6h = target_ghi_6h,
-                        target_cloudiness = target_cloudiness, target_cloudiness_1h = target_cloudiness_1h,
-                        target_cloudiness_3h = target_cloudiness_3h, target_cloudiness_6h=target_cloudiness_6h
-                        )
+        return Metadata(
+            image_path=image_path,
+            datetime=datetime,
+            image_compression=self.compression,
+            image_offset=image_offset,
+            latitude=latitude,
+            longitude=longitude,
+            altitude=altitude,
+            target_ghi=target_ghi,
+            target_ghi_1h=target_ghi_1h,
+            target_ghi_3h=target_ghi_3h,
+            target_ghi_6h=target_ghi_6h,
+            target_cloudiness=target_cloudiness,
+            target_cloudiness_1h=target_cloudiness_1h,
+            target_cloudiness_3h=target_cloudiness_3h,
+            target_cloudiness_6h=target_cloudiness_6h,
+        )
 
     def _load_file(self) -> pd.DataFrame:
         try:
