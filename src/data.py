@@ -8,6 +8,7 @@ import pandas as pd
 @dataclass
 class Metadata:
     image: str
+    night_time: bool
 
 
 class MetadataLoader:
@@ -20,26 +21,30 @@ class MetadataLoader:
         """
         self.file_name = file_name
 
-    def load_all_stations(self, compression="8bits") -> List[Metadata]:
+    def load_stations(
+        self, compression="8bit", station="all", night_time=False
+    ) -> List[Metadata]:
         catalog = self._load_file()
-        catalog = catalog[catalog.hdf5_8bit_path != "nan"]
+        image_column = self._image_column(compression)
+
+        catalog = catalog[catalog[image_column] != "nan"]
+        catalog = catalog[catalog[image_column].notnull()]
+        if night_time:
+            catalog = catalog[catalog.BND_DAYTIME == 1]
 
         stations_metadata = []
         for index, row in catalog.iterrows():
-            image = self._find_image(row, compression)
-            metadata = Metadata(image)
+            image = row[image_column]
+            metadata = Metadata(image, row.BND_DAYTIME == 1)
             stations_metadata.append(metadata)
 
         return stations_metadata
 
-    def load_stations(self, stationid="BND", compression="8bits"):
-        pass
-
-    def _find_image(self, catalog_entry: pd.Series, compression: str) -> str:
-        if compression == "16bits":
-            return catalog_entry.hdf5_16bit_path
-        else:
-            return catalog_entry.hdf5_8bit_path
+    def _image_column(self, compression: str):
+        if compression == "8bit":
+            return "hdf5_8bit_path"
+        elif compression == "16bit":
+            return "hdf5_16bit_path"
 
     def _load_file(self) -> pd.DataFrame:
         with open(self.file_name, "rb") as file:
