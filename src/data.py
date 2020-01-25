@@ -54,7 +54,7 @@ class MetadataLoader:
     # Given as (latitude, longitude, altitude) tuples
 
     Stations = {
-        "BND": [0.05192, -88.37309, 230],
+        "BND": [40.05192, -88.37309, 230],
         "TBL": [40.12498, -105.23680, 1689],
         "DRA": [36.62373, -116.01947, 1007],
         "FPK": [48.30783, -105.10170, 634],
@@ -108,7 +108,7 @@ class MetadataLoader:
         time: pd.Timestamp,
         hour: int,
         variable: str = "GHI",
-    ):  # Python allows us to have a single definition for a function regardless of 
+    ):  # Python allows us to have a single definition for a function regardless of
         # datatype instead of relying on templating or reimplementation of the same logic
         # for different data types. This is why I removed the type here. Hope you won't mind ;)
         index = time + pd.to_timedelta(hour, unit="h")
