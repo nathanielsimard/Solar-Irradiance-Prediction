@@ -13,20 +13,25 @@ import pickle
 
 from enum import IntEnum
 
+
 class ClearSkyMetaDataOffsset(IntEnum):
     """Mapping for the metadata to the location in the tensor."""
+
     # TODO: Find python equivalent of "c" enums.
     GHI_T = 0
     GHI_T_1h = 1
     GHI_T_3h = 2
     GHI_T_6h = 3
 
+
 class Targets(IntEnum):
     """Mapping for the targets to their location in the target tensor."""
+
     GHI_T = 0
     GHI_T_1h = 1
     GHI_T_3h = 2
     GHI_T_6h = 3
+
 
 def read_configuration_file(filename):
     """Read the configuration file as specified in the evaluation guidelines.
@@ -113,24 +118,31 @@ def prepare_dataloader(
                 future_clearsky_ghi = bnd.get_clearsky(
                     pd.date_range(start=batch_of_datetimes[j], periods=7, freq="1H")
                 )["ghi"]
-                #Handle metadata and feature augementation
-                meta_data[j, ClearSkyMetaDataOffsset.GHI_T] = future_clearsky_ghi[0]  # T=0
-                meta_data[j, ClearSkyMetaDataOffsset.GHI_T_1h] = future_clearsky_ghi[1]  # T=T+1
-                meta_data[j, ClearSkyMetaDataOffsset.GHI_T_3h] = future_clearsky_ghi[3]  # T=T+3
-                meta_data[j, ClearSkyMetaDataOffsset.GHI_T_6h] = future_clearsky_ghi[6]  # T=T+7
-                #Handle target values
-                #print(sample.target_ghi, sample.target_ghi_1h, sample.target_ghi_3h, sample.target_ghi_6h)
+                # Handle metadata and feature augementation
+                meta_data[j, ClearSkyMetaDataOffsset.GHI_T] = future_clearsky_ghi[
+                    0
+                ]  # T=0
+                meta_data[j, ClearSkyMetaDataOffsset.GHI_T_1h] = future_clearsky_ghi[
+                    1
+                ]  # T=T+1
+                meta_data[j, ClearSkyMetaDataOffsset.GHI_T_3h] = future_clearsky_ghi[
+                    3
+                ]  # T=T+3
+                meta_data[j, ClearSkyMetaDataOffsset.GHI_T_6h] = future_clearsky_ghi[
+                    6
+                ]  # T=T+7
+                # Handle target values
                 targets[j, Targets.GHI_T] = sample.target_ghi
                 targets[j, Targets.GHI_T_1h] = sample.target_ghi_1h
                 targets[j, Targets.GHI_T_3h] = sample.target_ghi_3h
                 targets[j, Targets.GHI_T_6h] = sample.target_ghi_6h
                 j = j + 1
-            print(targets)
-            #targets = tf.zeros(shape=(len(batch_of_datetimes), output_seq_len))
             # Remember that you do not have access to the targets.
             # Your dataloader should handle this accordingly.
             # yield (tf.convert_to_tensor(meta_data), samples), targets
-            yield tf.convert_to_tensor(meta_data), samples, tf.convert_to_tensor(targets)
+            yield tf.convert_to_tensor(meta_data), samples, tf.convert_to_tensor(
+                targets
+            )
 
     data_loader = tf.data.Dataset.from_generator(
         clearsky_data_generator, (tf.float32, tf.float32, tf.float32)

@@ -178,7 +178,7 @@ class MetadataLoaderTest(unittest.TestCase):
     def test_load_metadata_target_datetimes(self):
         loader = MetadataLoader(CATALOG_PATH)
         target_datetimes = [
-            "2010-06-19 22:15:00",
+            "2010-06-19 22:15:00",  # Only test timestamp that have images.
             "2012-03-24 12:00:00",
             "2015-09-21 21:15:00",
             "2012-07-06 18:00:00",

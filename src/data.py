@@ -98,7 +98,8 @@ class MetadataLoader:
             Possible values are [None, 8bit, 16bit] (Default 8bit)
         :param night_time: If the night time must be included.
             The night time is calculated depending of the station.
-        :return: A generator of metadata.
+
+        :return: A generator of metadata which drops all rows missing a picture.
         """
         if (
             self.catalog is None
@@ -109,7 +110,6 @@ class MetadataLoader:
 
         image_column = self._image_column(compression)
         image_offset_column = self._image_column(compression, variable="offset")
-
         catalog = self._filter_null(catalog, image_column)
         catalog = self._filter_null(catalog, f"{station.name}_GHI")
         catalog = self._filter_night(catalog, station, night_time)

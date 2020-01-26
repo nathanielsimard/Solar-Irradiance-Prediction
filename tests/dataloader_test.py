@@ -102,8 +102,8 @@ class BasicDataLoaderUnitTest(unittest.TestCase):
         )
 
         for (meta, image, target) in dataset:
-            print(target[0,:])
-            self.assertEquals(0,dl.Targets.GHI_T)
+            print(target[0, :])
+            self.assertEquals(0, dl.Targets.GHI_T)
             self.assertGreater(
                 target[0, dl.Targets.GHI_T].numpy(), -4
             )  # T=0, -3.580000
@@ -113,9 +113,7 @@ class BasicDataLoaderUnitTest(unittest.TestCase):
             self.assertGreater(
                 target[0, dl.Targets.GHI_T_1h].numpy(), 29.1
             )  # T=1, 280.165857
-            self.assertLess(
-                target[0, dl.Targets.GHI_T_1h].numpy(), 29.2
-            )
+            self.assertLess(target[0, dl.Targets.GHI_T_1h].numpy(), 29.2)
             self.assertGreater(
                 target[0, dl.Targets.GHI_T_3h].numpy(), 356.27
             )  # T=3, 96.875384
@@ -127,3 +125,22 @@ class BasicDataLoaderUnitTest(unittest.TestCase):
                 meta[0, dl.ClearSkyMetaDataOffsset.GHI_T_6h].numpy(), 484.05
             )  # T=0
             pass
+
+    def test_clearsky_dataloader(self):
+        (
+            catalog,
+            target_datetimes,
+            stations,
+            target_time_offsets,
+        ) = dl.read_configuration_file("tests/data/dummy_train_cfg.json")
+
+        target_datetimes = catalog[50:80].index.strftime("%Y-%m-%d %H:%M:%S").tolist()
+        dataset = dl.prepare_dataloader(
+            catalog, target_datetimes, stations, target_time_offsets, None
+        )
+        for (meta, image, target) in dataset:
+            self.assertTrue(meta.numpy().shape == (30, 10))
+            self.assertTrue(
+                image.numpy().shape == (30, 64, 64, 5)
+            )  # TODO: Rendre la taille de l'image paramétrable
+            self.assertTrue(target.numpy().shape == (30, 4))
