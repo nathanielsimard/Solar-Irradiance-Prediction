@@ -63,7 +63,7 @@ class MetadataLoader:
         "SXF": [43.73403, -96.62328, 473],
     }
 
-    def __init__(self, file_name: str = None, dataframe=None) -> None:
+    def __init__(self, file_name=None, dataframe=None) -> None:
         """Create a metadata loader.
 
         :param file_name: Path to the catalog file.
