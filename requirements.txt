@@ -8,3 +8,6 @@ black == 19.10b0
 pandas == 0.25.3
 pyqt5==5.08
 grpcio>=1.24.3
+tqdm>=4.42
+pvlib==0.7.1
+tables==3.6.1
