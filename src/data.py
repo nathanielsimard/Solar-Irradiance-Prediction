@@ -21,7 +21,6 @@ class Station(Enum):
 
 class UnableToLoadMetadata(Exception):
     """Exception that occured when something wrong happened when loading metadata."""
-
     pass
 
 
@@ -63,18 +62,28 @@ class MetadataLoader:
         "SXF": [43.73403, -96.62328, 473],
     }
 
-    def __init__(self, file_name: str) -> None:
+    def __init__(self, file_name: str = None, dataframe = None) -> None:
         """Create a metadata loader.
 
         :param file_name: Path to the catalog file.
             The file is supposed to be a pickle file
             containing a pandas dataframe.
+
+        :param dataframe: The pandas datafram as loader by the dataloader. Can be used instead 
+            of the path to the actual dataframe when required.
+
+            Those parameters are mutually exclusive and should not be provided at the same time.
+
         """
-        print(file_name)
+        self.catalog = None
         self.file_name = file_name
+        if dataframe is not None:
+            self.catalog = dataframe
+            if self.file_name is not None:
+                raise UnableToLoadMetadata
 
     def load(
-        self, station: Station, compression="8bit", night_time=True
+        self, station: Station, compression="8bit", night_time=True, target_datetimes:Optional=None
     ) -> Generator[Metadata, None, None]:
         """Load the metadata from the catalog.
 
@@ -86,15 +95,28 @@ class MetadataLoader:
             The night time is calculated depending of the station.
         :return: A generator of metadata.
         """
-        catalog = self._load_file()
+        if self.catalog is None: #We do not want to reload the catalog each time we load data.
+            catalog = self._load_file()
+        else:
+            catalog = self.catalog
+
         image_column = self._image_column(compression)
         image_offset_column = self._image_column(compression, variable="offset")
 
         catalog = self._filter_null(catalog, image_column)
         catalog = self._filter_null(catalog, f"{station.name}_GHI")
         catalog = self._filter_night(catalog, station, night_time)
-
         self.compression = compression
+        i=0
+        
+        if target_datetimes is not None: #The dataloader will supply a list of target date times.
+            #catalog = catalog[catalog.index.isin(target_datetimes)] # TODO: Refactor in a function, for consistency
+            for target_datetime in target_datetimes:
+                yield self._build_metadata(
+                    catalog, station, image_column, image_offset_column, pd.Timestamp(target_datetime), catalog[target_datetime].iloc[0]
+                )
+                i=i+1
+            return
 
         for index, row in catalog.iterrows():
             yield self._build_metadata(

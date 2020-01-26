@@ -1,6 +1,7 @@
 import unittest
 from datetime import datetime
 from typing import Any, Generator
+import pickle
 
 from src.data import MetadataLoader, Station, UnableToLoadMetadata
 
@@ -14,6 +15,7 @@ A_STATION = Station.BND
 
 
 class MetadataLoaderTest(unittest.TestCase):
+
     def test_load_metadata_with_bad_path(self):
         loader = MetadataLoader("path/that/doesnt/exist")
         metadata = loader.load(A_STATION)
@@ -52,6 +54,7 @@ class MetadataLoaderTest(unittest.TestCase):
         metadata = loader.load(A_STATION, compression="8bit", night_time=False)
         actual = next(metadata).image_offset
         self.assertAlmostEqual(actual, 22)
+        self.assertIsInstance(actual,int)
 
     def test_load_metadata_image_offset_with_16bit_compression(self):
         loader = MetadataLoader(CATALOG_PATH)
@@ -173,6 +176,26 @@ class MetadataLoaderTest(unittest.TestCase):
         actual_altitude: Any = next(metadata).altitude
         self.assertAlmostEqual(230, actual_altitude)
 
+    def test_load_metadata_target_datetimes(self):
+        loader = MetadataLoader(CATALOG_PATH)
+        target_datetimes = ["2010-06-19 22:15:00", "2012-03-24 12:00:00",
+                            "2015-09-21 21:15:00", "2012-07-06 18:00:00",
+                            "2014-07-13 00:00:00", "2010-08-31 20:45:00",
+                            "2015-04-16 12:45:00", "2013-04-17 16:00:00",
+                            "2012-08-15 00:00:00", "2010-11-14 19:15:00",
+                            "2014-07-21 14:30:00", "2011-11-22 17:30:00",
+                            "2010-08-15 23:00:00", "2010-05-11 19:00:00",
+                            "2013-02-15 14:15:00", "2011-02-08 17:45:00"]
+        target_offsets = [57, 16, 53, 40, 64, 51, 19, 32, 64, 45, 26, 38, 60, 44, 25, 39]
+
+        metadata = loader.load(A_STATION, night_time=True, target_datetimes=target_datetimes)
+        i=0
+        for datapoint in metadata:
+            self.assertIsInstance(datapoint.image_offset, int)
+            self.assertEqual(datapoint.image_offset, target_offsets[i])
+            i=i+1
+        self.assertEqual(len(target_datetimes),i)
+
     def test_load_metadata_with_night_time(self):
         loader = MetadataLoader(CATALOG_PATH)
 
@@ -205,6 +228,15 @@ class MetadataLoaderTest(unittest.TestCase):
         for m in metadata:
             num += 1
         return num
+
+    def test_load_metadata_with_specified_dataframe(self):
+        dummy_catalog = pickle.load(open("tests/data/catalog-test.pkl","rb"))
+        loader = MetadataLoader(file_name = None, dataframe = dummy_catalog)
+        station_with_target = Station.BND
+        target_6h = 29.10666666666667
+        metadata = loader.load(station_with_target)
+        actual_target_6h: Any = next(metadata).target_ghi_6h
+        self.assertAlmostEqual(target_6h, actual_target_6h)
 
     def _next_target(self, metadata: Generator):
         return next(metadata).target
