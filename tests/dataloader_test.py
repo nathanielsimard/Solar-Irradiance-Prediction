@@ -78,13 +78,52 @@ class BasicDataLoaderUnitTest(unittest.TestCase):
                 meta[0, dl.ClearSkyMetaDataOffsset.GHI_T_1h].numpy(), 280.17
             )
             self.assertGreater(
-                meta[0, dl.ClearSkyMetaDataOffsset.GHI_T_3h].numpy(), 96.87
+                meta[0, dl.ClearSkyMetaDataOffsset.GHI_T_3h].numpy(), 0.397
             )  # T=3, 96.875384
-            self.assertLess(meta[0, dl.ClearSkyMetaDataOffsset.GHI_T_3h].numpy(), 96.88)
-            self.assertGreater(
-                meta[0, dl.ClearSkyMetaDataOffsset.GHI_T_6h].numpy(), 0.397
+            self.assertLess(meta[0, dl.ClearSkyMetaDataOffsset.GHI_T_3h].numpy(), 0.398)
+            self.assertGreaterEqual(
+                meta[0, dl.ClearSkyMetaDataOffsset.GHI_T_6h].numpy(), 0.0
             )  # T=6 0.397029
             self.assertLess(
-                meta[0, dl.ClearSkyMetaDataOffsset.GHI_T_6h].numpy(), 0.398
+                meta[0, dl.ClearSkyMetaDataOffsset.GHI_T_6h].numpy(), 0.001
+            )  # T=0
+            pass
+
+    def test_clearsky_targets(self):
+        (
+            catalog,
+            target_datetimes,
+            stations,
+            target_time_offsets,
+        ) = dl.read_configuration_file("tests/data/dummy_train_cfg.json")
+        target_datetimes = ["2010-01-01 13:00:00"]
+        dataset = dl.prepare_dataloader(
+            catalog, target_datetimes, stations, target_time_offsets, None
+        )
+
+        for (meta, image, target) in dataset:
+            print(target[0,:])
+            self.assertEquals(0,dl.Targets.GHI_T)
+            self.assertGreater(
+                target[0, dl.Targets.GHI_T].numpy(), -4
+            )  # T=0, -3.580000
+            self.assertLess(
+                target[0, dl.Targets.GHI_T].numpy(), -3.5
+            )  # T=0, 471.675670
+            self.assertGreater(
+                target[0, dl.Targets.GHI_T_1h].numpy(), 29.1
+            )  # T=1, 280.165857
+            self.assertLess(
+                target[0, dl.Targets.GHI_T_1h].numpy(), 29.2
+            )
+            self.assertGreater(
+                target[0, dl.Targets.GHI_T_3h].numpy(), 356.27
+            )  # T=3, 96.875384
+            self.assertLess(meta[0, dl.Targets.GHI_T_3h].numpy(), 356.28)
+            self.assertGreaterEqual(
+                target[0, dl.Targets.GHI_T_6h].numpy(), 480.42
+            )  # T=6 0.397029
+            self.assertLess(
+                meta[0, dl.ClearSkyMetaDataOffsset.GHI_T_6h].numpy(), 484.05
             )  # T=0
             pass
