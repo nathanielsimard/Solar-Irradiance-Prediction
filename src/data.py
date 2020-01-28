@@ -81,7 +81,9 @@ class MetadataLoader:
         if dataframe is not None:
             self.catalog = dataframe
             if self.file_name is not None:
-                raise UnableToLoadMetadata
+                raise ValueError(
+                    "A filename and catalog should not be provided at the same time."
+                )
 
     def load(
         self,
@@ -101,9 +103,9 @@ class MetadataLoader:
 
         :return: A generator of metadata which drops all rows missing a picture.
         """
-        if (
+        if (  # We do not want to reload the catalog each time we load data.
             self.catalog is None
-        ):  # We do not want to reload the catalog each time we load data.
+        ):
             catalog = self._load_file()
         else:
             catalog = self.catalog
@@ -114,30 +116,24 @@ class MetadataLoader:
         catalog = self._filter_null(catalog, f"{station.name}_GHI")
         catalog = self._filter_night(catalog, station, night_time)
         self.compression = compression
-        i = 0
-
-        if (
-            target_datetimes is not None
-        ):  # The dataloader will supply a list of target date times.
-            # catalog = catalog[catalog.index.isin(target_datetimes)] # TODO: Refactor in a function, for consistency
+        target_timestamps = []
+        if target_datetimes is not None:
             for target_datetime in target_datetimes:
-                yield self._build_metadata(
-                    catalog,
-                    station,
-                    image_column,
-                    image_offset_column,
-                    pd.Timestamp(target_datetime),
-                    catalog[target_datetime].iloc[0],
-                )
-                i = i + 1
-            return
+                target_timestamps.append(pd.Timestamp(target_datetime))
+        else:  # When no target datetimes are provided, we default to return all.
+            target_timestamps = catalog.index.tolist()
 
-        for index, row in catalog.iterrows():
+        for i, target_timestamp in enumerate(target_timestamps):
             yield self._build_metadata(
-                catalog, station, image_column, image_offset_column, index, row
+                catalog,
+                station,
+                image_column,
+                image_offset_column,
+                pd.Timestamp(target_timestamp),
+                catalog.loc[[target_timestamp]].iloc[0],
             )
 
-    def _find_future_target(
+    def _find_future_value(
         self,
         catalog: pd.DataFrame,
         station: Station,
@@ -160,7 +156,7 @@ class MetadataLoader:
             if variable == "path":
                 return "ncdf_path"
             else:
-                return None
+                return
 
         elif compression == "8bit":
             return "hdf5_8bit_" + variable
@@ -192,6 +188,8 @@ class MetadataLoader:
         timestamp: pd.Timestamp,
         row: pd.Series,
     ) -> Metadata:
+        if not isinstance(row, pd.Series):
+            raise ValueError("Not a series!")
         image_path = row[image_column]
         if image_offset_column is not None:
             image_offset = row[image_offset_column]
@@ -202,24 +200,24 @@ class MetadataLoader:
         altitude = self.Stations[station.name][2]
 
         target_ghi = row[f"{station.name}_GHI"]
-        target_ghi_1h = self._find_future_target(
+        target_ghi_1h = self._find_future_value(
             catalog, station, timestamp, 1, variable="GHI"
         )
-        target_ghi_3h = self._find_future_target(
+        target_ghi_3h = self._find_future_value(
             catalog, station, timestamp, 3, variable="GHI"
         )
-        target_ghi_6h = self._find_future_target(
+        target_ghi_6h = self._find_future_value(
             catalog, station, timestamp, 6, variable="GHI"
         )
 
         target_cloudiness = row[f"{station.name}_CLOUDINESS"]
-        target_cloudiness_1h = self._find_future_target(
+        target_cloudiness_1h = self._find_future_value(
             catalog, station, timestamp, 1, variable="CLOUDINESS"
         )
-        target_cloudiness_3h = self._find_future_target(
+        target_cloudiness_3h = self._find_future_value(
             catalog, station, timestamp, 3, variable="CLOUDINESS"
         )
-        target_cloudiness_6h = self._find_future_target(
+        target_cloudiness_6h = self._find_future_value(
             catalog, station, timestamp, 6, variable="CLOUDINESS"
         )
 

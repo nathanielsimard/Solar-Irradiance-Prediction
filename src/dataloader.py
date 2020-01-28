@@ -14,7 +14,7 @@ import pickle
 from enum import IntEnum
 
 
-class ClearSkyMetaDataOffsset(IntEnum):
+class CSMDOffset(IntEnum):
     """Mapping for the metadata to the location in the tensor."""
 
     # TODO: Find python equivalent of "c" enums.
@@ -90,7 +90,7 @@ def prepare_dataloader(
 
         Picture data will not be read in the initial branch.
         """
-        meta_loader = data.MetadataLoader(file_name=None, dataframe=dataframe)
+        meta_loader = data.MetadataLoader(dataframe=dataframe)
 
         batch_size = 32
         image_dim = (64, 64)
@@ -102,7 +102,7 @@ def prepare_dataloader(
             meta_data_loader = meta_loader.load(
                 data.Station.BND, target_datetimes=batch_of_datetimes
             )
-            meta_data = np.zeros((len(batch_of_datetimes), 10))
+            meta_data = np.zeros((len(batch_of_datetimes), len(CSMDOffset)))
             targets = np.zeros((len(batch_of_datetimes), output_seq_len))
             # TODO : Read the hd5 file and center crop it here
             samples = tf.random.uniform(
@@ -119,18 +119,10 @@ def prepare_dataloader(
                     pd.date_range(start=batch_of_datetimes[j], periods=7, freq="1H")
                 )["ghi"]
                 # Handle metadata and feature augementation
-                meta_data[j, ClearSkyMetaDataOffsset.GHI_T] = future_clearsky_ghi[
-                    0
-                ]  # T=0
-                meta_data[j, ClearSkyMetaDataOffsset.GHI_T_1h] = future_clearsky_ghi[
-                    1
-                ]  # T=T+1
-                meta_data[j, ClearSkyMetaDataOffsset.GHI_T_3h] = future_clearsky_ghi[
-                    3
-                ]  # T=T+3
-                meta_data[j, ClearSkyMetaDataOffsset.GHI_T_6h] = future_clearsky_ghi[
-                    6
-                ]  # T=T+7
+                meta_data[j, CSMDOffset.GHI_T] = future_clearsky_ghi[0]  # T=0
+                meta_data[j, CSMDOffset.GHI_T_1h] = future_clearsky_ghi[1]  # T=T+1
+                meta_data[j, CSMDOffset.GHI_T_3h] = future_clearsky_ghi[3]  # T=T+3
+                meta_data[j, CSMDOffset.GHI_T_6h] = future_clearsky_ghi[6]  # T=T+7
                 # Handle target values
                 targets[j, Targets.GHI_T] = sample.target_ghi
                 targets[j, Targets.GHI_T_1h] = sample.target_ghi_1h
