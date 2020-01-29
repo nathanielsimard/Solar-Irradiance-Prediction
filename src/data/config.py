@@ -2,7 +2,6 @@ import json
 import pickle
 from dataclasses import dataclass
 from datetime import datetime
-from functools import reduce
 from typing import Any, Dict, List, Tuple
 
 import pandas as pd
