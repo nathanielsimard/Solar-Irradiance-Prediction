@@ -1,17 +1,13 @@
 import datetime
-import json
 import typing
+from enum import IntEnum
+
+import numpy as np
+import pandas as pd
+import tensorflow as tf
 from pvlib.location import Location
 
-from src import data
-
-import pandas as pd
-import numpy as np
-import tensorflow as tf
-
-import pickle
-
-from enum import IntEnum
+from src.data import metadata
 
 
 class CSMDOffset(IntEnum):
@@ -31,27 +27,6 @@ class Targets(IntEnum):
     GHI_T_1h = 1
     GHI_T_3h = 2
     GHI_T_6h = 3
-
-
-def read_configuration_file(filename):
-    """Read the configuration file as specified in the evaluation guidelines.
-
-    Returns the parameters required for the prepare_dataloader method, which are:
-    - The dataframe
-    - The list of target date times (UTC)
-    - A dictionnary of stations and their lat, long and altitude.
-    - The target time offsets
-
-    """
-    with open(filename) as json_file:
-        configuration = json.load(json_file)
-
-    catalog_path = configuration["dataframe_path"]
-    catalog = pickle.load(open(catalog_path, "rb"))
-    stations = configuration["stations"]
-    target_datetimes = configuration["target_datetimes"]
-    target_time_offsets = configuration["target_time_offsets"]
-    return (catalog, target_datetimes, stations, target_time_offsets)
 
 
 def prepare_dataloader(
@@ -90,7 +65,7 @@ def prepare_dataloader(
 
         Picture data will not be read in the initial branch.
         """
-        meta_loader = data.MetadataLoader(dataframe=dataframe)
+        meta_loader = metadata.MetadataLoader(dataframe=dataframe)
 
         batch_size = 32
         image_dim = (64, 64)
@@ -100,7 +75,7 @@ def prepare_dataloader(
         for i in range(0, len(target_datetimes), batch_size):
             batch_of_datetimes = target_datetimes[i : i + batch_size]
             meta_data_loader = meta_loader.load(
-                data.Station.BND, target_datetimes=batch_of_datetimes
+                metadata.Station.BND, target_datetimes=batch_of_datetimes
             )
             meta_data = np.zeros((len(batch_of_datetimes), len(CSMDOffset)))
             targets = np.zeros((len(batch_of_datetimes), output_seq_len))

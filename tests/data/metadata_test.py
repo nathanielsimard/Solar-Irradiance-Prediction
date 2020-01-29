@@ -1,9 +1,9 @@
+import pickle
 import unittest
 from datetime import datetime
 from typing import Any, Generator
-import pickle
 
-from src.data import MetadataLoader, Station, UnableToLoadMetadata
+from src.data.metadata import MetadataLoader, Station, UnableToLoadMetadata
 
 CATALOG_PATH = "tests/data/catalog-test.pkl"
 
