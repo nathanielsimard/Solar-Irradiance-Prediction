@@ -2,6 +2,7 @@ import json
 import pickle
 from dataclasses import dataclass
 from datetime import datetime
+from functools import reduce
 from typing import Any, Dict, List, Tuple
 
 import pandas as pd
@@ -64,10 +65,10 @@ def _load_catalog(catalog_path: str) -> pd.DataFrame:
 
 
 def _load_stations(stations: Dict[str, Tuple[float, float]]) -> Dict[str, Coordinates]:
-    st: Dict[str, Coordinates] = {}
+    parsed_station: Dict[str, Coordinates] = {}
     for name, coordinates in stations.items():
-        st[name] = Coordinates(coordinates[0], coordinates[1])
-    return st
+        parsed_station[name] = Coordinates(coordinates[0], coordinates[1])
+    return parsed_station
 
 
 def _parse_datetime(datetimes_str: List[str]) -> List[datetime]:
