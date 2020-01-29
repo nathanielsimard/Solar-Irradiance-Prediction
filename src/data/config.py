@@ -9,6 +9,8 @@ import pandas as pd
 
 @dataclass
 class Coordinates:
+    """Simple coordinates on earth."""
+
     latitude: float
     longitude: float
 
