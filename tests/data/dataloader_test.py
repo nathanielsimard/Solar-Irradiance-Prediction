@@ -79,4 +79,3 @@ class ImageReaderTest(unittest.TestCase):
 
 def num_elems(iterable):
     return sum(1 for e in iterable)
-
