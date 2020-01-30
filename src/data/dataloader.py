@@ -20,6 +20,12 @@ class InvalidImageChannel(Exception):
     pass
 
 
+class InvalidImagePath(Exception):
+    """Exception when the path is not found."""
+
+    pass
+
+
 class ImageReader(object):
     """Read the images. Compression format is handle automaticly."""
 
@@ -29,7 +35,10 @@ class ImageReader(object):
 
     def read(self, image_path: str, image_offset: int) -> np.ndarray:
         """Read image and return multidimensionnal numpy array."""
-        file_reader = h5py.File(image_path)
+        try:
+            file_reader = h5py.File(image_path)
+        except OSError as e:
+            raise InvalidImagePath(e)
 
         return np.stack(self._read_images(image_offset, file_reader))
 
@@ -46,13 +55,17 @@ class ImageReader(object):
         except KeyError as e:
             raise InvalidImageChannel(e)
 
-    def visualize(self, image_path: str):
+    def visualize(self, image_path: str, channel="ch1"):
         """Open amazing image window."""
-        viz_hdf5_imagery(image_path, ["ch6"])
+        viz_hdf5_imagery(image_path, [channel])
 
 
 class DataLoader(object):
-    """Load the data from disk using tensorflow Dataset."""
+    """Load the data from disk using tensorflow Dataset.
+
+    To load a batch of data, you can iterate over the tf.data.Dataset by batch.
+    >>>dataset=dataset.batch(batch_size)
+    """
 
     def __init__(self, image_reader: ImageReader, config: Dict[str, Any] = {}) -> None:
         """Create a DataLoader with some user config."""
@@ -60,11 +73,29 @@ class DataLoader(object):
         self.config = config
 
     def create_dataset(self, metadata: Iterable[metadata.Metadata]) -> tf.data.Dataset:
-        """Create a tensorflow Dataset base on the metadata and dataloader's config."""
+        """Create a tensorflow Dataset base on the metadata and dataloader's config.
+
+        Targets are optional in Metadata. If one is missing, set it to zero.
+        """
 
         def gen():
             for md in metadata:
                 image = self.image_reader.read(md.image_path, md.image_offset)
-                yield tf.convert_to_tensor(image, dtype=tf.int64)
+                data = tf.convert_to_tensor(image, dtype=tf.int64)
+                target = tf.constant(
+                    [
+                        _target_value(md.target_ghi),
+                        _target_value(md.target_ghi_1h),
+                        _target_value(md.target_ghi_3h),
+                        _target_value(md.target_ghi_6h),
+                    ]
+                )
+                yield (data, target)
 
-        return tf.data.Dataset.from_generator(gen, (tf.int64))
+        return tf.data.Dataset.from_generator(gen, (tf.int64, tf.float64))
+
+
+def _target_value(target):
+    if target is None:
+        return 0
+    return target
