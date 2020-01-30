@@ -21,6 +21,7 @@ class ConfigTest(unittest.TestCase):
     def test_load_stations(self):
         self.assertAlmostEquals(self.config.stations[Station.BND].longitude, -88.37309)
         self.assertAlmostEquals(self.config.stations[Station.BND].latitude, 40.05192)
+        self.assertAlmostEquals(self.config.stations[Station.BND].altitude, 230)
 
     def test_load_target_offsets(self):
         self.assertEquals(

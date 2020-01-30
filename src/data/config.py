@@ -58,11 +58,13 @@ def _load_catalog(catalog_path: str) -> pd.DataFrame:
 
 
 def _load_stations(
-    stations: Dict[str, Tuple[float, float]]
+    stations: Dict[str, Tuple[float, float, float]]
 ) -> Dict[Station, Coordinates]:
     parsed_station: Dict[str, Coordinates] = {}
     for name, coordinates in stations.items():
-        parsed_station[Station(name)] = Coordinates(coordinates[0], coordinates[1])
+        parsed_station[Station(name)] = Coordinates(
+            coordinates[0], coordinates[1], coordinates[2]
+        )
     return parsed_station
 
 
