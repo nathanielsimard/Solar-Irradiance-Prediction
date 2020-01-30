@@ -13,15 +13,27 @@ from src.data.config import Config
 
 
 class DataLoader(object):
-    def create_dataset(
-        self, metadata_generator=Generator[metadata.Metadata, None, None]
-    ) -> tf.data.Dataset:
+    def __init__(
+        self, metadata_generator: Generator[metadata.Metadata, None, None]
+    ) -> None:
+        self.metadata_generator = metadata_generator
+
+    def create_dataset(self) -> tf.data.Dataset:
         pass
 
 
 def create_dataloader(config: Config) -> DataLoader:
-    # metadata_loader = metadata.MetadataLoader(dataframe=config.catalog)
-    return DataLoader()
+    if len(config.stations) != 1:
+        # TODO: Validate with TAs
+        raise Exception("Config should only have one station")
+
+    metadata_loader = metadata.MetadataLoader(dataframe=config.catalog)
+    station = config.stations.keys()[0]
+    metadata_generator = metadata_loader.load(
+        station, target_datetimes=config.target_datetimes
+    )
+
+    return DataLoader(metadata_generator)
 
 
 class CSMDOffset(IntEnum):

@@ -6,6 +6,8 @@ from typing import Any, Dict, List, Tuple
 
 import pandas as pd
 
+from src.data.metadata import Station
+
 
 @dataclass
 class Coordinates:
@@ -28,7 +30,7 @@ class Config:
     """
 
     catalog: pd.DataFrame
-    stations: Dict[str, Coordinates]
+    stations: Dict[Station, Coordinates]
     target_datetimes: List[datetime]
     target_time_offsets: List[str]
 
@@ -63,10 +65,12 @@ def _load_catalog(catalog_path: str) -> pd.DataFrame:
         return pickle.load(file)
 
 
-def _load_stations(stations: Dict[str, Tuple[float, float]]) -> Dict[str, Coordinates]:
+def _load_stations(
+    stations: Dict[str, Tuple[float, float]]
+) -> Dict[Station, Coordinates]:
     parsed_station: Dict[str, Coordinates] = {}
     for name, coordinates in stations.items():
-        parsed_station[name] = Coordinates(coordinates[0], coordinates[1])
+        parsed_station[Station(name)] = Coordinates(coordinates[0], coordinates[1])
     return parsed_station
 
 

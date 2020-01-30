@@ -39,13 +39,14 @@ def prepare_dataloader(
             to predict. By definition, the GHI values must be provided for the offsets given by ``target_time_offsets``
             which are added to each timestamp (T=0) in this datetimes list.
         stations: a map of station names of interest paired with their coordinates (latitude, longitude, elevation).
+            During evaluation time, it will only be one station to avoid confusions.
+            See comment on function `generate_all_predictions` with the for loop.
         target_time_offsets: the list of timedeltas to predict GHIs for (by definition: [T=0, T+1h, T+3h, T+6h]).
         config: configuration dictionary holding any extra parameters that might be required by the user. These
             parameters are loaded automatically if the user provided a JSON file in their submission. Submitting
             such a JSON file is completely optional, and this argument can be ignored if not needed.
 
     Returns
-    -------
         A ``tf.data.Dataset`` object that can be used to produce input tensors for your model. One tensor
         must correspond to one sequence of past imagery data. The tensors must be generated in the order given
         by ``target_sequences``.
@@ -91,8 +92,7 @@ def prepare_model(
             parameters are loaded automatically if the user provided a JSON file in their submission. Submitting
             such a JSON file is completely optional, and this argument can be ignored if not needed.
 
-    Returns
-    -------
+    Returns:
         A ``tf.keras.Model`` object that can be used to generate new GHI predictions given imagery tensors.
 
     """
