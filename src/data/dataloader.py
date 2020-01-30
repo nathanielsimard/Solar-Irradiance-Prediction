@@ -1,7 +1,7 @@
 import datetime
 import typing
 from enum import IntEnum
-from typing import Generator
+from typing import Any, Dict, Generator
 
 import numpy as np
 import pandas as pd
@@ -9,31 +9,20 @@ import tensorflow as tf
 from pvlib.location import Location
 
 from src.data import metadata
-from src.data.config import Config
 
 
 class DataLoader(object):
-    def __init__(
+    """Load the data from disk using tensorflow Dataset."""
+
+    def __init__(self, config: Dict[str, Any]) -> None:
+        """Create a DataLoader with some user config."""
+        self.config = config
+
+    def create_dataset(
         self, metadata_generator: Generator[metadata.Metadata, None, None]
-    ) -> None:
-        self.metadata_generator = metadata_generator
-
-    def create_dataset(self) -> tf.data.Dataset:
+    ) -> tf.data.Dataset:
+        """Create a tensorflow Dataset base on the metadata and dataloader's config."""
         pass
-
-
-def create_dataloader(config: Config) -> DataLoader:
-    if len(config.stations) != 1:
-        # TODO: Validate with TAs
-        raise Exception("Config should only have one station")
-
-    metadata_loader = metadata.MetadataLoader(dataframe=config.catalog)
-    station = config.stations.keys()[0]
-    metadata_generator = metadata_loader.load(
-        station, target_datetimes=config.target_datetimes
-    )
-
-    return DataLoader(metadata_generator)
 
 
 class CSMDOffset(IntEnum):

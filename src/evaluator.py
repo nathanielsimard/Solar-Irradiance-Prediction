@@ -10,11 +10,15 @@ import pandas as pd
 import tensorflow as tf
 import tqdm
 
+from src.data.dataloader import DataLoader, Station
+from src.data.metadata import MetadataLoader
+
 
 def prepare_dataloader(
     dataframe: pd.DataFrame,
     target_datetimes: typing.List[datetime.datetime],
-    stations: typing.Dict[typing.AnyStr, typing.Tuple[float, float, float]],
+    station: str,
+    coordinates: typing.Tuple[float, float, float],
     target_time_offsets: typing.List[datetime.timedelta],
     config: typing.Dict[typing.AnyStr, typing.Any],
 ) -> tf.data.Dataset:
@@ -38,7 +42,8 @@ def prepare_dataloader(
             The ordering of this list is important, as each element corresponds to a sequence of GHI values
             to predict. By definition, the GHI values must be provided for the offsets given by ``target_time_offsets``
             which are added to each timestamp (T=0) in this datetimes list.
-        stations: a map of station names of interest paired with their coordinates (latitude, longitude, elevation).
+        station: station name of interest
+        coordinates: station's coordinates (latitude, longitude, elevation).
             During evaluation time, it will only be one station to avoid confusions.
             See comment on function `generate_all_predictions` with the for loop.
         target_time_offsets: the list of timedeltas to predict GHIs for (by definition: [T=0, T+1h, T+3h, T+6h]).
@@ -46,39 +51,22 @@ def prepare_dataloader(
             parameters are loaded automatically if the user provided a JSON file in their submission. Submitting
             such a JSON file is completely optional, and this argument can be ignored if not needed.
 
-    Returns
+    Returns:
         A ``tf.data.Dataset`` object that can be used to produce input tensors for your model. One tensor
         must correspond to one sequence of past imagery data. The tensors must be generated in the order given
         by ``target_sequences``.
 
     """
-    # TODO: Insert our generator here.
-    def dummy_data_generator():
-        """Generate dummy data for the model, only for example purposes."""
-        batch_size = 32
-        image_dim = (64, 64)
-        n_channels = 5
-        output_seq_len = 4
+    metadata_loader = MetadataLoader(dataframe=dataframe)
+    data_loader = DataLoader(config)
 
-        for i in range(0, len(target_datetimes), batch_size):
-            batch_of_datetimes = target_datetimes[i : i + batch_size]
-            samples = tf.random.uniform(
-                shape=(len(batch_of_datetimes), image_dim[0], image_dim[1], n_channels)
-            )
-            targets = tf.zeros(shape=(len(batch_of_datetimes), output_seq_len))
-            # Remember that you do not have access to the targets.
-            # Your dataloader should handle this accordingly.
-            yield samples, targets
-
-    data_loader = tf.data.Dataset.from_generator(
-        dummy_data_generator, (tf.float32, tf.float32)
+    metadata_generator = metadata_loader.load(
+        Station(station), coordinates, target_datetimes=target_datetimes
     )
-
-    return data_loader
+    return data_loader.create_dataset(metadata_generator)
 
 
 def prepare_model(
-    stations: typing.Dict[typing.AnyStr, typing.Tuple[float, float, float]],
     target_time_offsets: typing.List[datetime.timedelta],
     config: typing.Dict[typing.AnyStr, typing.Any],
 ) -> tf.keras.Model:
@@ -86,7 +74,6 @@ def prepare_model(
 
     See https://github.com/mila-iqia/ift6759/tree/master/projects/project1/evaluation.md for more information.
     Args:
-        stations: a map of station names of interest paired with their coordinates (latitude, longitude, elevation).
         target_time_offsets: the list of timedeltas to predict GHIs for (by definition: [T=0, T+1h, T+3h, T+6h]).
         config: configuration dictionary holding any extra parameters that might be required by the user. These
             parameters are loaded automatically if the user provided a JSON file in their submission. Submitting
@@ -157,14 +144,19 @@ def generate_all_predictions(
     predictions = []
     for station_idx, station_name in enumerate(target_stations):
         # usually, we would create a single data loader for all stations, but we just want to avoid trouble...
-        stations = {station_name: target_stations[station_name]}
         print(
             f"preparing data loader & model for station '{station_name}' ({station_idx + 1}/{len(target_stations)})"
         )
+        coordinates = target_stations[station_name]
         data_loader = prepare_dataloader(
-            dataframe, target_datetimes, stations, target_time_offsets, user_config
+            dataframe,
+            target_datetimes,
+            station_name,
+            coordinates,
+            target_time_offsets,
+            user_config,
         )
-        model = prepare_model(stations, target_time_offsets, user_config)
+        model = prepare_model(target_time_offsets, user_config)
         station_preds = generate_predictions(
             data_loader, model, pred_count=len(target_datetimes)
         )

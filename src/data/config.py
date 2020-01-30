@@ -6,15 +6,7 @@ from typing import Any, Dict, List, Tuple
 
 import pandas as pd
 
-from src.data.metadata import Station
-
-
-@dataclass
-class Coordinates:
-    """Simple coordinates on earth."""
-
-    latitude: float
-    longitude: float
+from src.data.metadata import Coordinates, Station
 
 
 @dataclass

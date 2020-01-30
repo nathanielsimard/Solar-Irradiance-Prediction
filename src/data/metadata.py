@@ -19,6 +19,15 @@ class Station(Enum):
     SXF = "SXF"
 
 
+@dataclass
+class Coordinates:
+    """Simple coordinates on earth."""
+
+    latitude: float
+    longitude: float
+    altitude: Optional[float]
+
+
 class UnableToLoadMetadata(Exception):
     """Exception that occured when something wrong happened when loading metadata."""
 
@@ -33,9 +42,7 @@ class Metadata:
     image_compression: str  # "8bit", "16bit" or "None"
     image_offset: int  # Indice de l'image dans le fichier hd5
     datetime: datetime  # UTC datetime
-    latitude: float  # Coordinates of the station.
-    longitude: float
-    altitude: float
+    coordinates: Coordinates
     target_ghi: Optional[float]  # GHI, non normalized, watts/m2
     target_ghi_1h: Optional[float]  # Same, T+1h
     target_ghi_3h: Optional[float]  # Same, T+3h
@@ -52,16 +59,6 @@ class MetadataLoader:
 
     # Dictionnary of all SURFRAD station names and locations
     # Given as (latitude, longitude, altitude) tuples
-
-    Stations = {
-        "BND": [40.05192, -88.37309, 230],
-        "TBL": [40.12498, -105.23680, 1689],
-        "DRA": [36.62373, -116.01947, 1007],
-        "FPK": [48.30783, -105.10170, 634],
-        "GWN": [34.25470, -89.87290, 98],
-        "PSU": [40.72012, -77.93085, 376],
-        "SXF": [43.73403, -96.62328, 473],
-    }
 
     def __init__(self, file_name=None, dataframe=None) -> None:
         """Create a metadata loader.
@@ -88,6 +85,7 @@ class MetadataLoader:
     def load(
         self,
         station: Station,
+        coordinates: Coordinates,
         compression="8bit",
         night_time=True,
         target_datetimes: Optional[List[datetime]] = None,
@@ -123,6 +121,7 @@ class MetadataLoader:
             yield self._build_metadata(
                 catalog,
                 station,
+                coordinates,
                 image_column,
                 image_offset_column,
                 pd.Timestamp(target_timestamp),
@@ -180,6 +179,7 @@ class MetadataLoader:
         self,
         catalog: pd.DataFrame,
         station: Station,
+        coordinates: Coordinates,
         image_column: str,
         image_offset_column: str,
         timestamp: pd.Timestamp,
@@ -193,9 +193,6 @@ class MetadataLoader:
             image_offset = row[image_offset_column]
         else:
             image_offset = 0  # No offset for ncdf files. We just output 0 everytime.
-        latitude = self.Stations[station.name][0]
-        longitude = self.Stations[station.name][1]
-        altitude = self.Stations[station.name][2]
 
         target_ghi = row[f"{station.name}_GHI"]
         target_ghi_1h = self._find_future_value(
@@ -226,9 +223,7 @@ class MetadataLoader:
             datetime=datetime,
             image_compression=compression,
             image_offset=image_offset,
-            latitude=latitude,
-            longitude=longitude,
-            altitude=altitude,
+            coordinates=coordinates,
             target_ghi=target_ghi,
             target_ghi_1h=target_ghi_1h,
             target_ghi_3h=target_ghi_3h,
