@@ -25,7 +25,7 @@ class Coordinates:
 
     latitude: float
     longitude: float
-    altitude: Optional[float]
+    altitude: float
 
 
 class UnableToLoadMetadata(Exception):
