@@ -2,7 +2,7 @@ import pickle
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Generator, List, Optional
+from typing import Iterable, List, Optional
 
 import pandas as pd
 
@@ -43,15 +43,15 @@ class Metadata:
     image_offset: int  # Indice de l'image dans le fichier hd5
     datetime: datetime  # UTC datetime
     coordinates: Coordinates
-    target_ghi: Optional[float]  # GHI, non normalized, watts/m2
-    target_ghi_1h: Optional[float]  # Same, T+1h
-    target_ghi_3h: Optional[float]  # Same, T+3h
-    target_ghi_6h: Optional[float]  # Same, T+6h
+    target_ghi: Optional[float] = None  # GHI, non normalized, watts/m2
+    target_ghi_1h: Optional[float] = None  # Same, T+1h
+    target_ghi_3h: Optional[float] = None  # Same, T+3h
+    target_ghi_6h: Optional[float] = None  # Same, T+6h
     # Cloudiness category. ("night", #"cloudy", "clear", "variable", "slightly cloudy")
-    target_cloudiness: Optional[str]
-    target_cloudiness_1h: Optional[str]  # Same, T+1h
-    target_cloudiness_3h: Optional[str]  # Same, T+3h
-    target_cloudiness_6h: Optional[str]  # Same, T+6h
+    target_cloudiness: Optional[str] = None
+    target_cloudiness_1h: Optional[str] = None  # Same, T+1h
+    target_cloudiness_3h: Optional[str] = None  # Same, T+3h
+    target_cloudiness_6h: Optional[str] = None  # Same, T+6h
 
 
 class MetadataLoader:
@@ -89,7 +89,7 @@ class MetadataLoader:
         compression="8bit",
         night_time=True,
         target_datetimes: Optional[List[datetime]] = None,
-    ) -> Generator[Metadata, None, None]:
+    ) -> Iterable[Metadata]:
         """Load the metadata from the catalog.
 
         :param station: The station which impact which target, target_1h,
