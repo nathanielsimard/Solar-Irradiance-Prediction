@@ -5,6 +5,7 @@ import tensorflow as tf
 
 import src.data.dataloader as dl
 from src.data.config import read_configuration_file
+from src.data.metadata import Station
 
 DUMMY_TRAIN_CFG_PATH = "tests/data/dummy_train_cfg.json"
 
@@ -56,23 +57,25 @@ class BasicDataLoaderUnitTest(unittest.TestCase):
             self.assertCloseTo(target[0, dl.Targets.GHI_T_6h], 481.046667)
             pass
 
-    #    def test_clearsky_dataloader(self):
-    #        dataset = self._create_data_loader()
-    #
-    #        target_datetimes = catalog[50:80].index.strftime("%Y-%m-%d %H:%M:%S").tolist()
-    #        dataset = dl.prepare_dataloader(
-    #            catalog, target_datetimes, stations, target_time_offsets, None
-    #        )
-    #        for (meta, image, target) in dataset:
-    #            self.assertTrue(meta.numpy().shape == (30, len(dl.CSMDOffset)))
-    #            self.assertTrue(
-    #                image.numpy().shape == (30, 64, 64, 5)
-    #            )  # TODO: Rendre la taille de l'image paramétrable
-    #            self.assertTrue(target.numpy().shape == (30, 4))
-    #            self.assertTrue(
-    #                image.numpy().shape == (30, 64, 64, 5)
-    #            )  # TODO: Rendre la taille de l'image paramétrable
-    #            self.assertTrue(target.numpy().shape == (30, 4))
+    @unittest.skip("Need rewriting")
+    def test_clearsky_dataloader(self):
+        dataset = self._create_data_loader()
+        # target_datetimes = (
+        #     dataset.catalog[50:80].index.strftime("%Y-%m-%d %H:%M:%S").tolist()
+        # )
+        # dataset = dl.prepare_dataloader(
+        #     catalog, target_datetimes, stations, target_time_offsets, None
+        # )
+        for (meta, image, target) in dataset:
+            self.assertTrue(meta.numpy().shape == (30, len(dl.CSMDOffset)))
+            self.assertTrue(
+                image.numpy().shape == (30, 64, 64, 5)
+            )  # TODO: Rendre la taille de l'image paramétrable
+            self.assertTrue(target.numpy().shape == (30, 4))
+            self.assertTrue(
+                image.numpy().shape == (30, 64, 64, 5)
+            )  # TODO: Rendre la taille de l'image paramétrable
+            self.assertTrue(target.numpy().shape == (30, 4))
 
     def _create_data_loader(self, target_datetimes=None):
         config = read_configuration_file(DUMMY_TRAIN_CFG_PATH)
@@ -80,10 +83,13 @@ class BasicDataLoaderUnitTest(unittest.TestCase):
         if target_datetimes is None:
             target_datetimes = config.target_datetimes
 
+        station = Station.BND
+
         return dl.prepare_dataloader(
             config.catalog,
             target_datetimes,
-            config.stations,
+            station,
+            config.stations[station],
             config.target_time_offsets,
             {},
         )

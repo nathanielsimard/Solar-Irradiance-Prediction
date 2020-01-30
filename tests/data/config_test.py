@@ -2,6 +2,7 @@ import unittest
 from datetime import datetime
 
 from src.data.config import read_configuration_file
+from src.data.metadata import Station
 
 DUMMY_TRAIN_CFG_PATH = "tests/data/dummy_train_cfg.json"
 DUMMY_TEST_CFG_PATH = "tests/data/dummy_test_cfg.json"
@@ -18,8 +19,9 @@ class ConfigTest(unittest.TestCase):
         self.assertEquals(self.config.target_datetimes[10], datetime(2015, 1, 6, 16))
 
     def test_load_stations(self):
-        self.assertAlmostEquals(self.config.stations["BND"].longitude, -88.37309)
-        self.assertAlmostEquals(self.config.stations["BND"].latitude, 40.05192)
+        self.assertAlmostEquals(self.config.stations[Station.BND].longitude, -88.37309)
+        self.assertAlmostEquals(self.config.stations[Station.BND].latitude, 40.05192)
+        self.assertAlmostEquals(self.config.stations[Station.BND].altitude, 230)
 
     def test_load_target_offsets(self):
         self.assertEquals(

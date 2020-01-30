@@ -1,6 +1,7 @@
 import datetime
 import typing
 from enum import IntEnum
+from typing import Any, Dict, Generator
 
 import numpy as np
 import pandas as pd
@@ -8,6 +9,20 @@ import tensorflow as tf
 from pvlib.location import Location
 
 from src.data import metadata
+
+
+class DataLoader(object):
+    """Load the data from disk using tensorflow Dataset."""
+
+    def __init__(self, config: Dict[str, Any]) -> None:
+        """Create a DataLoader with some user config."""
+        self.config = config
+
+    def create_dataset(
+        self, metadata_generator: Generator[metadata.Metadata, None, None]
+    ) -> tf.data.Dataset:
+        """Create a tensorflow Dataset base on the metadata and dataloader's config."""
+        pass
 
 
 class CSMDOffset(IntEnum):
@@ -32,7 +47,8 @@ class Targets(IntEnum):
 def prepare_dataloader(
     dataframe: pd.DataFrame,
     target_datetimes: typing.List[datetime.datetime],
-    stations: typing.Dict[typing.AnyStr, typing.Tuple[float, float, float]],
+    station: str,
+    coordinates: metadata.Coordinates,
     target_time_offsets: typing.List[datetime.timedelta],
     config: typing.Dict[typing.AnyStr, typing.Any],
 ) -> tf.data.Dataset:
@@ -71,11 +87,10 @@ def prepare_dataloader(
         image_dim = (64, 64)
         n_channels = 5
         output_seq_len = len(Targets)
-        # TODO: Add support for other stations than BND
         for i in range(0, len(target_datetimes), batch_size):
             batch_of_datetimes = target_datetimes[i : i + batch_size]
             meta_data_loader = meta_loader.load(
-                metadata.Station.BND, target_datetimes=batch_of_datetimes
+                station, coordinates, target_datetimes=batch_of_datetimes,
             )
             meta_data = np.zeros((len(batch_of_datetimes), len(CSMDOffset)))
             targets = np.zeros((len(batch_of_datetimes), output_seq_len))
@@ -86,9 +101,9 @@ def prepare_dataloader(
             j = 0
             for sample in meta_data_loader:
                 bnd = Location(
-                    latitude=sample.latitude,
-                    longitude=sample.longitude,
-                    altitude=sample.altitude,
+                    latitude=sample.coordinates.latitude,
+                    longitude=sample.coordinates.longitude,
+                    altitude=sample.coordinates.altitude,
                 )
                 future_clearsky_ghi = bnd.get_clearsky(
                     pd.date_range(start=batch_of_datetimes[j], periods=7, freq="1H")
