@@ -13,6 +13,14 @@ NUM_METADATA_BND_DAY_TIME = 1078
 
 A_STATION = Station.BND
 
+SOME_TARGET_DATETIMES = [
+    datetime(2010, 6, 19, 22, 15),  # Only test timestamp that have images.
+    datetime(2012, 3, 24, 12),
+    datetime(2015, 9, 21, 21, 15),
+    datetime(2012, 7, 6, 18),
+    datetime(2014, 7, 13),
+]
+
 
 class MetadataLoaderTest(unittest.TestCase):
     def test_load_metadata_with_bad_path(self):
@@ -178,22 +186,22 @@ class MetadataLoaderTest(unittest.TestCase):
     def test_load_metadata_target_datetimes(self):
         loader = MetadataLoader(CATALOG_PATH)
         target_datetimes = [
-            "2010-06-19 22:15:00",  # Only test timestamp that have images.
-            "2012-03-24 12:00:00",
-            "2015-09-21 21:15:00",
-            "2012-07-06 18:00:00",
-            "2014-07-13 00:00:00",
-            "2010-08-31 20:45:00",
-            "2015-04-16 12:45:00",
-            "2013-04-17 16:00:00",
-            "2012-08-15 00:00:00",
-            "2010-11-14 19:15:00",
-            "2014-07-21 14:30:00",
-            "2011-11-22 17:30:00",
-            "2010-08-15 23:00:00",
-            "2010-05-11 19:00:00",
-            "2013-02-15 14:15:00",
-            "2011-02-08 17:45:00",
+            datetime(2010, 6, 19, 22, 15),  # Only test timestamp that have images.
+            datetime(2012, 3, 24, 12),
+            datetime(2015, 9, 21, 21, 15),
+            datetime(2012, 7, 6, 18),
+            datetime(2014, 7, 13),
+            datetime(2010, 8, 31, 20, 45),
+            datetime(2015, 4, 16, 12, 45),
+            datetime(2013, 4, 17, 16),
+            datetime(2012, 8, 15),
+            datetime(2010, 11, 14, 19, 15),
+            datetime(2014, 7, 21, 14, 30),
+            datetime(2011, 11, 22, 17, 30),
+            datetime(2010, 8, 15, 23),
+            datetime(2010, 5, 11, 19),
+            datetime(2013, 2, 15, 14, 15),
+            datetime(2011, 2, 8, 17, 45),
         ]
         target_offsets = [
             57,
@@ -265,6 +273,21 @@ class MetadataLoaderTest(unittest.TestCase):
         metadata = loader.load(station_with_target)
         actual_target_6h: Any = next(metadata).target_ghi_6h
         self.assertAlmostEqual(target_6h, actual_target_6h)
+
+    def testGivenTargetDatetimes_whenLoad_shouldLoadMetadataInOrder(self):
+        loader = MetadataLoader(CATALOG_PATH)
+
+        metadata = loader.load(Station.BND, target_datetimes=SOME_TARGET_DATETIMES)
+
+        for md, expected_datetime in zip(metadata, SOME_TARGET_DATETIMES):
+            self.assertEqual(md.datetime, expected_datetime)
+
+    def testGivenTargetDatetimes_whenLoad_shouldLoadSameAmountOfMetadata(self):
+        loader = MetadataLoader(CATALOG_PATH)
+
+        metadata = loader.load(Station.BND, target_datetimes=SOME_TARGET_DATETIMES)
+
+        self.assertEqual(self._num_metadata(metadata), len(SOME_TARGET_DATETIMES))
 
     def _next_target(self, metadata: Generator):
         return next(metadata).target

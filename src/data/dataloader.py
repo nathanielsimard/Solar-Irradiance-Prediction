@@ -1,6 +1,7 @@
 import datetime
 import typing
 from enum import IntEnum
+from typing import Generator
 
 import numpy as np
 import pandas as pd
@@ -8,6 +9,19 @@ import tensorflow as tf
 from pvlib.location import Location
 
 from src.data import metadata
+from src.data.config import Config
+
+
+class DataLoader(object):
+    def create_dataset(
+        self, metadata_generator=Generator[metadata.Metadata, None, None]
+    ) -> tf.data.Dataset:
+        pass
+
+
+def create_dataloader(config: Config) -> DataLoader:
+    # metadata_loader = metadata.MetadataLoader(dataframe=config.catalog)
+    return DataLoader()
 
 
 class CSMDOffset(IntEnum):

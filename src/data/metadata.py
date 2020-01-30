@@ -2,7 +2,7 @@ import pickle
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Generator, Optional
+from typing import Generator, List, Optional
 
 import pandas as pd
 
@@ -90,7 +90,7 @@ class MetadataLoader:
         station: Station,
         compression="8bit",
         night_time=True,
-        target_datetimes: Optional[list] = None,
+        target_datetimes: Optional[List[datetime]] = None,
     ) -> Generator[Metadata, None, None]:
         """Load the metadata from the catalog.
 
@@ -112,16 +112,12 @@ class MetadataLoader:
 
         image_column = self._image_column(compression)
         image_offset_column = self._image_column(compression, variable="offset")
+
         catalog = self._filter_null(catalog, image_column)
         catalog = self._filter_null(catalog, f"{station.name}_GHI")
         catalog = self._filter_night(catalog, station, night_time)
-        self.compression = compression
-        target_timestamps = []
-        if target_datetimes is not None:
-            for target_datetime in target_datetimes:
-                target_timestamps.append(pd.Timestamp(target_datetime))
-        else:  # When no target datetimes are provided, we default to return all.
-            target_timestamps = catalog.index.tolist()
+
+        target_timestamps = self._target_timestamps(catalog, target_datetimes)
 
         for i, target_timestamp in enumerate(target_timestamps):
             yield self._build_metadata(
@@ -131,6 +127,7 @@ class MetadataLoader:
                 image_offset_column,
                 pd.Timestamp(target_timestamp),
                 catalog.loc[[target_timestamp]].iloc[0],
+                compression,
             )
 
     def _find_future_value(
@@ -187,6 +184,7 @@ class MetadataLoader:
         image_offset_column: str,
         timestamp: pd.Timestamp,
         row: pd.Series,
+        compression: str,
     ) -> Metadata:
         if not isinstance(row, pd.Series):
             raise ValueError("Not a series!")
@@ -226,7 +224,7 @@ class MetadataLoader:
         return Metadata(
             image_path=image_path,
             datetime=datetime,
-            image_compression=self.compression,
+            image_compression=compression,
             image_offset=image_offset,
             latitude=latitude,
             longitude=longitude,
@@ -240,6 +238,14 @@ class MetadataLoader:
             target_cloudiness_3h=target_cloudiness_3h,
             target_cloudiness_6h=target_cloudiness_6h,
         )
+
+    def _target_timestamps(
+        self, catalog: pd.DataFrame, target_datetimes: Optional[List[datetime]]
+    ) -> List[datetime]:
+        if target_datetimes is None:
+            return catalog.index.tolist()
+
+        return [pd.Timestamp(target_datetime) for target_datetime in target_datetimes]
 
     def _load_file(self) -> pd.DataFrame:
         try:

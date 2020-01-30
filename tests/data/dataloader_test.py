@@ -9,6 +9,10 @@ from src.data.config import read_configuration_file
 DUMMY_TRAIN_CFG_PATH = "tests/data/dummy_train_cfg.json"
 
 
+class BasicDataLoaderTest(unittest.TestCase):
+    pass
+
+
 class BasicDataLoaderUnitTest(unittest.TestCase):
     def test_dataloader_instanciation(self):
         dataset = self._create_data_loader()
