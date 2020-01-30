@@ -4,8 +4,8 @@ from datetime import datetime
 from src.data.config import read_configuration_file
 from src.data.metadata import Station
 
-DUMMY_TRAIN_CFG_PATH = "tests/data/dummy_train_cfg.json"
-DUMMY_TEST_CFG_PATH = "tests/data/dummy_test_cfg.json"
+DUMMY_TRAIN_CFG_PATH = "tests/data/samples/dummy_train_cfg.json"
+DUMMY_TEST_CFG_PATH = "tests/data/samples/dummy_test_cfg.json"
 
 
 class ConfigTest(unittest.TestCase):

@@ -1,5 +1,5 @@
 {
-    "dataframe_path": "tests/data/catalog-test.pkl",
+    "dataframe_path": "tests/data/samples/catalog-test.pkl",
     "start_bound": "2015-01-01",
     "end_bound": "2016-01-01",
     "stations": {

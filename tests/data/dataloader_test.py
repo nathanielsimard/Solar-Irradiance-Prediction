@@ -1,16 +1,12 @@
 import unittest
 from datetime import datetime
+from typing import Optional
 from unittest import mock
-
 
 import numpy as np
 
-from src.data.dataloader import (
-    DataLoader,
-    ImageReader,
-    InvalidImageOffSet,
-    InvalidImageChannel,
-)
+from src.data.dataloader import (DataLoader, ImageReader, InvalidImageChannel,
+                                 InvalidImageOffSet, InvalidImagePath)
 from src.data.metadata import Coordinates, Metadata
 
 ANY_COMPRESSION = "8bits"
@@ -18,7 +14,11 @@ ANY_IMAGE_OFFSET = 6
 ANY_DATETIME = datetime.now()
 ANY_COORDINATES = Coordinates(10, 10, 10)
 
-IMAGE_PATH = "tests/data/2015.11.01.0800.h5"
+CHANNEL_ID = "ch1"
+INVALID_CHANNEL_ID = "ch5"
+
+INVALID_IMAGE_PATH = "path/to/nothing"
+IMAGE_PATH = "tests/data/samples/2015.11.01.0800.h5"
 IMAGE = np.random.randint(low=0, high=255, size=(50, 50))
 
 
@@ -32,8 +32,8 @@ class DataLoaderTest(unittest.TestCase):
 
         dataset = self.dataloader.create_dataset(self._metadata_iterable(IMAGE_PATH))
 
-        for first_element in dataset:
-            self.assertTrue(np.array_equal(IMAGE, first_element.numpy()))
+        for image, target in dataset:
+            self.assertTrue(np.array_equal(IMAGE, image.numpy()))
 
     def test_givenOneMetadata_whenCreateDataset_shouldReadOneImage(self):
         self.image_reader.read = mock.Mock(return_value=IMAGE)
@@ -42,9 +42,40 @@ class DataLoaderTest(unittest.TestCase):
 
         self.assertEqual(1, num_elems(dataset))
 
-    def _metadata_iterable(self, image_path: str):
+    def test_givenOneMetadata_whenCreateDataset_shouldReturnTarget(self):
+        self.image_reader.read = mock.Mock(return_value=IMAGE)
+        targets = np.array([2, 3, 4, 5])
+        dataset = self.dataloader.create_dataset(
+            self._metadata_iterable(
+                IMAGE_PATH,
+                target_ghi=targets[0],
+                target_ghi_1h=targets[1],
+                target_ghi_3h=targets[2],
+                target_ghi_6h=targets[3],
+            )
+        )
+
+        for image, actual_targets in dataset:
+            self.assertTrue(np.array_equal(actual_targets, targets))
+
+    def _metadata_iterable(
+        self,
+        image_path: str,
+        target_ghi: Optional[float] = None,
+        target_ghi_1h: Optional[float] = None,
+        target_ghi_3h: Optional[float] = None,
+        target_ghi_6h: Optional[float] = None,
+    ):
         yield Metadata(
-            image_path, ANY_COMPRESSION, ANY_IMAGE_OFFSET, ANY_DATETIME, ANY_COORDINATES
+            image_path,
+            ANY_COMPRESSION,
+            ANY_IMAGE_OFFSET,
+            ANY_DATETIME,
+            ANY_COORDINATES,
+            target_ghi=target_ghi,
+            target_ghi_1h=target_ghi_1h,
+            target_ghi_3h=target_ghi_3h,
+            target_ghi_6h=target_ghi_6h,
         )
 
 
@@ -70,10 +101,17 @@ class ImageReaderTest(unittest.TestCase):
         self.assertEqual(image.shape[0], 3)
 
     def test_givenInvalidChannel_whenReadImage_shouldRaiseException(self):
-        self.image_reader = ImageReader(channels=["ch5"])
+        self.image_reader = ImageReader(channels=[INVALID_CHANNEL_ID])
 
         self.assertRaises(
             InvalidImageChannel, lambda: self.image_reader.read(IMAGE_PATH, 0)
+        )
+
+    def test_givenInvalidPath_whenReadImage_shouldRaise(self):
+        self.image_reader = ImageReader(channels=[CHANNEL_ID])
+
+        self.assertRaises(
+            InvalidImagePath, lambda: self.image_reader.read(INVALID_IMAGE_PATH, 0)
         )
 
 
