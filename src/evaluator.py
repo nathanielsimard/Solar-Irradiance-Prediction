@@ -10,8 +10,8 @@ import pandas as pd
 import tensorflow as tf
 import tqdm
 
-from src.data.dataloader import DataLoader, Station
-from src.data.metadata import MetadataLoader
+from src.data.dataloader import DataLoader
+from src.data.metadata import Coordinates, MetadataLoader, Station
 
 
 def prepare_dataloader(
@@ -61,7 +61,9 @@ def prepare_dataloader(
     data_loader = DataLoader(config)
 
     metadata_generator = metadata_loader.load(
-        Station(station), coordinates, target_datetimes=target_datetimes
+        Station(station),
+        Coordinates(coordinates[0], coordinates[1], coordinates[2]),
+        target_datetimes=target_datetimes,
     )
     return data_loader.create_dataset(metadata_generator)
 
