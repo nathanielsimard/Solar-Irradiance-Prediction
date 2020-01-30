@@ -1,18 +1,12 @@
 import unittest
 from datetime import datetime
-from unittest import mock
 from typing import Optional
-
+from unittest import mock
 
 import numpy as np
 
-from src.data.dataloader import (
-    DataLoader,
-    ImageReader,
-    InvalidImageOffSet,
-    InvalidImageChannel,
-    InvalidImagePath,
-)
+from src.data.dataloader import (DataLoader, ImageReader, InvalidImageChannel,
+                                 InvalidImageOffSet, InvalidImagePath)
 from src.data.metadata import Coordinates, Metadata
 
 ANY_COMPRESSION = "8bits"
@@ -24,7 +18,7 @@ CHANNEL_ID = "ch1"
 INVALID_CHANNEL_ID = "ch5"
 
 INVALID_IMAGE_PATH = "path/to/nothing"
-IMAGE_PATH = "tests/data/2015.11.01.0800.h5"
+IMAGE_PATH = "tests/data/samples/2015.11.01.0800.h5"
 IMAGE = np.random.randint(low=0, high=255, size=(50, 50))
 
 

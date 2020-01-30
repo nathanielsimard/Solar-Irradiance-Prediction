@@ -5,7 +5,7 @@ from typing import Any, Generator
 
 from src.data.metadata import MetadataLoader, Station, UnableToLoadMetadata
 
-CATALOG_PATH = "tests/data/catalog-test.pkl"
+CATALOG_PATH = "tests/data/samples/catalog-test.pkl"
 
 # Don't consider 'nan' or NaN values
 NUM_METADATA = 2066
@@ -282,7 +282,7 @@ class MetadataLoaderTest(unittest.TestCase):
         return num
 
     def test_load_metadata_with_specified_dataframe(self):
-        dummy_catalog = pickle.load(open("tests/data/catalog-test.pkl", "rb"))
+        dummy_catalog = pickle.load(open("tests/data/samples/catalog-test.pkl", "rb"))
         loader = MetadataLoader(file_name=None, dataframe=dummy_catalog)
         station_with_target = Station.BND
         target_6h = 29.10666666666667
