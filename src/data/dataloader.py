@@ -1,133 +1,70 @@
-import datetime
-import typing
-from enum import IntEnum
-from typing import Any, Dict, Generator
+from typing import Any, Dict, Iterable
 
 import numpy as np
-import pandas as pd
 import tensorflow as tf
-from pvlib.location import Location
+import h5py
 
+from src.data.utils import fetch_hdf5_sample, viz_hdf5_imagery
 from src.data import metadata
+
+
+class InvalidImageOffSet(Exception):
+    """Exception raised when offset isn't valid."""
+
+    pass
+
+
+class InvalidImageChannel(Exception):
+    """Exception raised when channel isn't valid (valid channel: ch1, ch2, ch3, ch4, ch6)."""
+
+    pass
+
+
+class ImageReader(object):
+    """Read the images. Compression format is handle automaticly."""
+
+    def __init__(self, channels=["ch1"]):
+        """Default channel for image reading is ch1."""
+        self.channels = channels
+
+    def read(self, image_path: str, image_offset: int) -> np.ndarray:
+        """Read image and return multidimensionnal numpy array."""
+        file_reader = h5py.File(image_path)
+
+        return np.stack(self._read_images(image_offset, file_reader))
+
+    def _read_images(self, image_offset, file_reader):
+        """Raise errors when invalid offset or channel while reading images."""
+        try:
+            return [
+                fetch_hdf5_sample(channel, file_reader, image_offset)
+                for channel in self.channels
+            ]
+
+        except ValueError as e:
+            raise InvalidImageOffSet(e)
+        except KeyError as e:
+            raise InvalidImageChannel(e)
+
+    def visualize(self, image_path: str):
+        """Open amazing image window."""
+        viz_hdf5_imagery(image_path, ["ch6"])
 
 
 class DataLoader(object):
     """Load the data from disk using tensorflow Dataset."""
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, image_reader: ImageReader, config: Dict[str, Any] = {}) -> None:
         """Create a DataLoader with some user config."""
+        self.image_reader = image_reader
         self.config = config
 
-    def create_dataset(
-        self, metadata_generator: Generator[metadata.Metadata, None, None]
-    ) -> tf.data.Dataset:
+    def create_dataset(self, metadata: Iterable[metadata.Metadata]) -> tf.data.Dataset:
         """Create a tensorflow Dataset base on the metadata and dataloader's config."""
-        pass
 
+        def gen():
+            for md in metadata:
+                image = self.image_reader.read(md.image_path, md.image_offset)
+                yield tf.convert_to_tensor(image, dtype=tf.int64)
 
-class CSMDOffset(IntEnum):
-    """Mapping for the metadata to the location in the tensor."""
-
-    # TODO: Find python equivalent of "c" enums.
-    GHI_T = 0
-    GHI_T_1h = 1
-    GHI_T_3h = 2
-    GHI_T_6h = 3
-
-
-class Targets(IntEnum):
-    """Mapping for the targets to their location in the target tensor."""
-
-    GHI_T = 0
-    GHI_T_1h = 1
-    GHI_T_3h = 2
-    GHI_T_6h = 3
-
-
-def prepare_dataloader(
-    dataframe: pd.DataFrame,
-    target_datetimes: typing.List[datetime.datetime],
-    station: str,
-    coordinates: metadata.Coordinates,
-    target_time_offsets: typing.List[datetime.timedelta],
-    config: typing.Dict[typing.AnyStr, typing.Any],
-) -> tf.data.Dataset:
-    """Output an augmented dataset for the GHI prediction.
-
-    See https://github.com/mila-iqia/ift6759/tree/master/projects/project1/evaluation.md for more information.
-    Args:
-        dataframe: a pandas dataframe that provides the netCDF file path (or HDF5 file path and offset) for all
-            relevant timestamp values over the test period.
-        target_datetimes: a list of timestamps that your data loader should use to provide imagery for your model.
-            The ordering of this list is important, as each element corresponds to a sequence of GHI values
-            to predict. By definition, the GHI values must be provided for the offsets given by ``target_time_offsets``
-            which are added to each timestamp (T=0) in this datetimes list.
-        stations: a map of station names of interest paired with their coordinates (latitude, longitude, elevation).
-        target_time_offsets: the list of timedeltas to predict GHIs for (by definition: [T=0, T+1h, T+3h, T+6h]).
-        config: configuration dictionary holding any extra parameters that might be required by the user. These
-            parameters are loaded automatically if the user provided a JSON file in their submission. Submitting
-            such a JSON file is completely optional, and this argument can be ignored if not needed.
-
-    Returns
-    -------
-        A ``tf.data.Dataset`` object that can be used to produce input tensors for your model. One tensor
-        must correspond to one sequence of past imagery data. The tensors must be generated in the order given
-        by ``target_sequences``.
-
-    """
-
-    def clearsky_data_generator():
-        """Generate data for a baseline clearsky model.
-
-        Picture data will not be read in the initial branch.
-        """
-        meta_loader = metadata.MetadataLoader(dataframe=dataframe)
-
-        batch_size = 32
-        image_dim = (64, 64)
-        n_channels = 5
-        output_seq_len = len(Targets)
-        for i in range(0, len(target_datetimes), batch_size):
-            batch_of_datetimes = target_datetimes[i : i + batch_size]
-            meta_data_loader = meta_loader.load(
-                station, coordinates, target_datetimes=batch_of_datetimes,
-            )
-            meta_data = np.zeros((len(batch_of_datetimes), len(CSMDOffset)))
-            targets = np.zeros((len(batch_of_datetimes), output_seq_len))
-            # TODO : Read the hd5 file and center crop it here
-            samples = tf.random.uniform(
-                shape=(len(batch_of_datetimes), image_dim[0], image_dim[1], n_channels)
-            )
-            j = 0
-            for sample in meta_data_loader:
-                bnd = Location(
-                    latitude=sample.coordinates.latitude,
-                    longitude=sample.coordinates.longitude,
-                    altitude=sample.coordinates.altitude,
-                )
-                future_clearsky_ghi = bnd.get_clearsky(
-                    pd.date_range(start=batch_of_datetimes[j], periods=7, freq="1H")
-                )["ghi"]
-                # Handle metadata and feature augementation
-                meta_data[j, CSMDOffset.GHI_T] = future_clearsky_ghi[0]  # T=0
-                meta_data[j, CSMDOffset.GHI_T_1h] = future_clearsky_ghi[1]  # T=T+1
-                meta_data[j, CSMDOffset.GHI_T_3h] = future_clearsky_ghi[3]  # T=T+3
-                meta_data[j, CSMDOffset.GHI_T_6h] = future_clearsky_ghi[6]  # T=T+7
-                # Handle target values
-                targets[j, Targets.GHI_T] = sample.target_ghi
-                targets[j, Targets.GHI_T_1h] = sample.target_ghi_1h
-                targets[j, Targets.GHI_T_3h] = sample.target_ghi_3h
-                targets[j, Targets.GHI_T_6h] = sample.target_ghi_6h
-                j = j + 1
-            # Remember that you do not have access to the targets.
-            # Your dataloader should handle this accordingly.
-            # yield (tf.convert_to_tensor(meta_data), samples), targets
-            yield tf.convert_to_tensor(meta_data), samples, tf.convert_to_tensor(
-                targets
-            )
-
-    data_loader = tf.data.Dataset.from_generator(
-        clearsky_data_generator, (tf.float32, tf.float32, tf.float32)
-    )
-
-    return data_loader
+        return tf.data.Dataset.from_generator(gen, (tf.int64))
