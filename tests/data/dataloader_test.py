@@ -2,9 +2,15 @@ import unittest
 from datetime import datetime
 from unittest import mock
 
+
 import numpy as np
 
-from src.data.dataloader import DataLoader, ImageReader
+from src.data.dataloader import (
+    DataLoader,
+    ImageReader,
+    InvalidImageOffSet,
+    InvalidImageChannel,
+)
 from src.data.metadata import Coordinates, Metadata
 
 ANY_COMPRESSION = "8bits"
@@ -12,7 +18,7 @@ ANY_IMAGE_OFFSET = 6
 ANY_DATETIME = datetime.now()
 ANY_COORDINATES = Coordinates(10, 10, 10)
 
-IMAGE_PATH = "image/path"
+IMAGE_PATH = "tests/data/2015.11.01.0800.h5"
 IMAGE = np.random.randint(low=0, high=255, size=(50, 50))
 
 
@@ -42,5 +48,35 @@ class DataLoaderTest(unittest.TestCase):
         )
 
 
+class ImageReaderTest(unittest.TestCase):
+    def setUp(self):
+        self.image_reader = ImageReader()
+
+    def test_whenReadImage_shouldReturnNumpyArray(self):
+        image = self.image_reader.read(IMAGE_PATH, 0)
+
+        self.assertEqual(type(image), np.ndarray)
+
+    def test_givenInvalidOffSet_whenReadImage_shouldRaiseException(self):
+        self.assertRaises(
+            InvalidImageOffSet, lambda: self.image_reader.read(IMAGE_PATH, 100)
+        )
+
+    def test_given3Channels_whenReadImage_shouldReturn3Dimension(self):
+        self.image_reader = ImageReader(channels=["ch1", "ch2", "ch3"])
+
+        image = self.image_reader.read(IMAGE_PATH, 0)
+
+        self.assertEqual(image.shape[0], 3)
+
+    def test_givenInvalidChannel_whenReadImage_shouldRaiseException(self):
+        self.image_reader = ImageReader(channels=["ch5"])
+
+        self.assertRaises(
+            InvalidImageChannel, lambda: self.image_reader.read(IMAGE_PATH, 0)
+        )
+
+
 def num_elems(iterable):
     return sum(1 for e in iterable)
+
