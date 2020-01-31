@@ -19,3 +19,11 @@ Defaults VsCode settings can be installed.
 cp .vscode/settings.default.json .vscode/settings.json
 ```
 
+### Stations Pixel Location
+- BND: X = 688, Y = 188
+- TBL: X = 371, Y = 186
+- DRA: X = 169, Y = 252
+- FPK: X = 374, Y = 33
+- GWN: X = 660, Y = 296
+- PSU: X = 883, Y = 174
+- SXF: X = 533, Y = 118
