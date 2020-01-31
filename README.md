@@ -19,7 +19,10 @@ Defaults VsCode settings can be installed.
 cp .vscode/settings.default.json .vscode/settings.json
 ```
 
-### Stations Pixel Location
+### Image dimension
+All the images have dimension 650x1500
+
+### Stations Pixel Location (Mauvaise localisation?)
 - BND: X = 688, Y = 188
 - TBL: X = 371, Y = 186
 - DRA: X = 169, Y = 252
