@@ -59,11 +59,7 @@ class ImageReader(object):
         self, image_path: str, channel="ch1",
     ):
         """Open amazing image window."""
-        viz_hdf5_imagery(
-            image_path,
-            [channel],
-            stations={metadata.Station.BND.name: (40.05192, -88.37309, 230),},
-        )
+        viz_hdf5_imagery(image_path, [channel])
 
 
 class DataLoader(object):

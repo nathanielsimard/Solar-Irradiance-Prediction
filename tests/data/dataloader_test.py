@@ -5,8 +5,13 @@ from unittest import mock
 
 import numpy as np
 
-from src.data.dataloader import (DataLoader, ImageReader, InvalidImageChannel,
-                                 InvalidImageOffSet, InvalidImagePath)
+from src.data.dataloader import (
+    DataLoader,
+    ImageReader,
+    InvalidImageChannel,
+    InvalidImageOffSet,
+    InvalidImagePath,
+)
 from src.data.metadata import Coordinates, Metadata
 
 ANY_COMPRESSION = "8bits"
