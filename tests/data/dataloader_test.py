@@ -98,7 +98,7 @@ class ImageReaderTest(unittest.TestCase):
 
         image = self.image_reader.read(IMAGE_PATH, 0)
 
-        self.assertEqual(image.shape[0], 3)
+        self.assertEqual(image.shape[2], 3)
 
     def test_givenInvalidChannel_whenReadImage_shouldRaiseException(self):
         self.image_reader = ImageReader(channels=[INVALID_CHANNEL_ID])
