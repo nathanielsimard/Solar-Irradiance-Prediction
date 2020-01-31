@@ -1,11 +1,11 @@
 from typing import Any, Dict, Iterable
 
+import h5py
 import numpy as np
 import tensorflow as tf
-import h5py
 
-from src.data.utils import fetch_hdf5_sample, viz_hdf5_imagery
 from src.data import metadata
+from src.data.utils import fetch_hdf5_sample, viz_hdf5_imagery
 
 
 class InvalidImageOffSet(Exception):
@@ -40,7 +40,7 @@ class ImageReader(object):
         except OSError as e:
             raise InvalidImagePath(e)
 
-        return np.stack(self._read_images(image_offset, file_reader))
+        return np.dstack(self._read_images(image_offset, file_reader))
 
     def _read_images(self, image_offset, file_reader):
         """Raise errors when invalid offset or channel while reading images."""
@@ -55,7 +55,9 @@ class ImageReader(object):
         except KeyError as e:
             raise InvalidImageChannel(e)
 
-    def visualize(self, image_path: str, channel="ch1"):
+    def visualize(
+        self, image_path: str, channel="ch1",
+    ):
         """Open amazing image window."""
         viz_hdf5_imagery(image_path, [channel])
 

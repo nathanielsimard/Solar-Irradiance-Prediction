@@ -5,8 +5,13 @@ from unittest import mock
 
 import numpy as np
 
-from src.data.dataloader import (DataLoader, ImageReader, InvalidImageChannel,
-                                 InvalidImageOffSet, InvalidImagePath)
+from src.data.dataloader import (
+    DataLoader,
+    ImageReader,
+    InvalidImageChannel,
+    InvalidImageOffSet,
+    InvalidImagePath,
+)
 from src.data.metadata import Coordinates, Metadata
 
 ANY_COMPRESSION = "8bits"
@@ -98,7 +103,7 @@ class ImageReaderTest(unittest.TestCase):
 
         image = self.image_reader.read(IMAGE_PATH, 0)
 
-        self.assertEqual(image.shape[0], 3)
+        self.assertEqual(image.shape[2], 3)
 
     def test_givenInvalidChannel_whenReadImage_shouldRaiseException(self):
         self.image_reader = ImageReader(channels=[INVALID_CHANNEL_ID])
