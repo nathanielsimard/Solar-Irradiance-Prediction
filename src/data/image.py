@@ -35,7 +35,13 @@ class ImageReader(object):
     """Read the images. Compression format is handle automaticly."""
 
     def __init__(self, channels=["ch1"], output_size: Optional[Tuple[int, int]] = None):
-        """Default channel for image reading is ch1."""
+        """Default channel for image reading is ch1.
+
+        Args:
+            channels: The channels to read from the file.
+            output_size (Optional): The image shape needed, if provided, the image
+                will also be centered at coordinates when read.
+        """
         self.channels = channels
         self.output_size = output_size
 
@@ -47,9 +53,14 @@ class ImageReader(object):
         Args:
             image_path: The image location on disk.
             image_offset: The sample id, which image to read from the file.
-            coordinates (Optional): The coordinates which the image will be centered.
-                If provided, the image will be croped according to the output_size
-                provided in the __init__ function.
+            coordinates: The coordinates which the image will be centered.
+                If 'output_size' is not provided, the image will not be center nor croped.
+
+        Return:
+            Numpy array of shape (height, width, channel)
+
+        Raises:
+            InvalidImageChannel, InvalidImageOffSet, InvalidImagePath, CorruptedImage:
         """
         try:
             with h5py.File(image_path, "r") as file_reader:
@@ -75,7 +86,6 @@ class ImageReader(object):
         ]
 
     def _read_images(self, image_offset, file_reader):
-        """Raise errors when invalid offset or channel while reading images."""
         try:
             return [
                 self._read_image_channel(image_offset, file_reader, channel)
@@ -127,6 +137,7 @@ def center_image(
         coordinates: Coordinates of the center point.
         output_size: The size of the output image.
             If the size of too big, zeros-padding is applied.
+
     Return:
         2D numpy array of size 'output_size' centered at 'coordinates'.
     """
