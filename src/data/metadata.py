@@ -81,6 +81,10 @@ class MetadataLoader:
                 raise ValueError(
                     "A filename and catalog should not be provided at the same time."
                 )
+        if (  # We do not want to reload the catalog each time we load data.
+            self.catalog is None
+        ):
+            self.catalog = self._load_file()
 
     def load(
         self,
@@ -101,12 +105,8 @@ class MetadataLoader:
 
         :return: A generator of metadata which drops all rows missing a picture.
         """
-        if (  # We do not want to reload the catalog each time we load data.
-            self.catalog is None
-        ):
-            catalog = self._load_file()
-        else:
-            catalog = self.catalog
+
+        catalog = self.catalog
 
         image_column = self._image_column(compression)
         image_offset_column = self._image_column(compression, variable="offset")
@@ -247,4 +247,4 @@ class MetadataLoader:
             with open(self.file_name, "rb") as file:
                 return pickle.load(file)
         except FileNotFoundError as e:
-            raise UnableToLoadMetadata(e)
+            raise UnableToLoadMetadata("Unable to load meta data".format(e)) from None

@@ -70,7 +70,10 @@ class DataLoader(object):
     """
 
     def __init__(self, image_reader: ImageReader, config: Dict[str, Any] = {}) -> None:
-        """Create a DataLoader with some user config."""
+        """Create a DataLoader with some user config.
+        
+        TODO: Describe what is going to be in the configuration.
+        """
         self.image_reader = image_reader
         self.config = config
 
