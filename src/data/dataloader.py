@@ -79,13 +79,22 @@ class DataLoader(object):
         config["LOCAL_PATH"] = Allows overide of the base path on the server
                                to a local path. This will enable training on
                                the local machine.
+
+        config["SKIP_MISSING"]= Will skip missing samples, just leaving a warning
+                                instead of throwing an exception.
+
         """
         self.image_reader = image_reader
         self.config = config
+        self.skip_missing = False
 
+        if self.Parameters.SKIP_MISSING.name in config:
+            self.skip_missing = config[self.Parameters.SKIP_MISSING.name]
 
     class Parameters(Enum):
         LOCAL_PATH = "LOCAL_PATH"
+        SKIP_MISSING = "SKIP_MISSING"
+
     def _transform_image_path(self, original_path):
         """Transforms a supplied path on "helios" to a local path.
         """
@@ -95,27 +104,31 @@ class DataLoader(object):
         else:
             return original_path        
 
+    def gen(self):
+        for md in self.metadata:
+            image = self.image_reader.read(self._transform_image_path(md.image_path), md.image_offset)
+            if image.size==1:
+                #No image was returned. We should skip for training.
+                if self.skip_missing:
+                    #TODO: Add logging code here!
+                    continue
+            data = tf.convert_to_tensor(image, dtype=tf.int64)
+            target = tf.constant(
+                [
+                    _target_value(md.target_ghi),
+                    _target_value(md.target_ghi_1h),
+                    _target_value(md.target_ghi_3h),
+                    _target_value(md.target_ghi_6h),
+                ]
+            )
+            yield (data, target)
     def create_dataset(self, metadata: Iterable[metadata.Metadata]) -> tf.data.Dataset:
         """Create a tensorflow Dataset base on the metadata and dataloader's config.
 
         Targets are optional in Metadata. If one is missing, set it to zero.
         """
-
-        def gen():
-            for md in metadata:
-                image = self.image_reader.read(md.image_path, md.image_offset)
-                data = tf.convert_to_tensor(image, dtype=tf.int64)
-                target = tf.constant(
-                    [
-                        _target_value(md.target_ghi),
-                        _target_value(md.target_ghi_1h),
-                        _target_value(md.target_ghi_3h),
-                        _target_value(md.target_ghi_6h),
-                    ]
-                )
-                yield (data, target)
-
-        return tf.data.Dataset.from_generator(gen, (tf.int64, tf.float64))
+        self.metadata = metadata
+        return tf.data.Dataset.from_generator(self.gen, (tf.int64, tf.float64))
 
 
 def _target_value(target):
