@@ -11,6 +11,7 @@ import tensorflow as tf
 import tqdm
 
 from src.data.dataloader import DataLoader
+from src.data.image import ImageReader
 from src.data.metadata import Coordinates, MetadataLoader, Station
 
 
@@ -58,7 +59,8 @@ def prepare_dataloader(
 
     """
     metadata_loader = MetadataLoader(dataframe=dataframe)
-    data_loader = DataLoader(config)
+    image_reader = ImageReader()
+    data_loader = DataLoader(image_reader, config)
 
     metadata_generator = metadata_loader.load(
         Station(station),

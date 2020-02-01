@@ -5,8 +5,8 @@ from unittest import mock
 
 import numpy as np
 
-from src.data.dataloader import (DataLoader, ImageReader, InvalidImageChannel,
-                                 InvalidImageOffSet, InvalidImagePath)
+from src.data.dataloader import DataLoader
+from src.data.image import ImageReader
 from src.data.metadata import Coordinates, Metadata
 
 ANY_COMPRESSION = "8bits"
@@ -14,15 +14,9 @@ ANY_IMAGE_OFFSET = 6
 ANY_DATETIME = datetime.now()
 ANY_COORDINATES = Coordinates(10, 10, 10)
 
-CHANNEL_ID = "ch1"
-INVALID_CHANNEL_ID = "ch5"
-
 FAKE_IMAGE = np.random.randint(low=0, high=255, size=(50, 50))
 
-INVALID_IMAGE_PATH = "path/to/nothing"
 IMAGE_PATH = "tests/data/samples/2015.11.01.0800.h5"
-IMAGE_SHAPE = (650, 1500)
-COORDINATES = Coordinates(40.05192, -88.37309, 230)
 
 
 class DataLoaderTest(unittest.TestCase):
@@ -80,59 +74,6 @@ class DataLoaderTest(unittest.TestCase):
             target_ghi_3h=target_ghi_3h,
             target_ghi_6h=target_ghi_6h,
         )
-
-
-class ImageReaderTest(unittest.TestCase):
-    def setUp(self):
-        self.image_reader = ImageReader()
-
-    def test_whenReadImage_shouldReturnNumpyArray(self):
-        image = self.image_reader.read(IMAGE_PATH, 0)
-
-        self.assertEqual(type(image), np.ndarray)
-
-    def test_givenInvalidOffSet_whenReadImage_shouldRaiseException(self):
-        self.assertRaises(
-            InvalidImageOffSet, lambda: self.image_reader.read(IMAGE_PATH, 100)
-        )
-
-    def test_given3Channels_whenReadImage_shouldReturn3Dimension(self):
-        self.image_reader = ImageReader(channels=["ch1", "ch2", "ch3"])
-
-        image = self.image_reader.read(IMAGE_PATH, 0)
-
-        self.assertEqual(image.shape[2], 3)
-
-    def test_givenInvalidChannel_whenReadImage_shouldRaiseException(self):
-        self.image_reader = ImageReader(channels=[INVALID_CHANNEL_ID])
-
-        self.assertRaises(
-            InvalidImageChannel, lambda: self.image_reader.read(IMAGE_PATH, 0)
-        )
-
-    def test_givenInvalidPath_whenReadImage_shouldRaise(self):
-        self.image_reader = ImageReader(channels=[CHANNEL_ID])
-
-        self.assertRaises(
-            InvalidImagePath, lambda: self.image_reader.read(INVALID_IMAGE_PATH, 0)
-        )
-
-    def test_givenOutputSize_whenReadImageWithoutCoordinates_shouldReturnFullSize(self):
-        self.image_reader = ImageReader(output_size=(64, 64))
-
-        image = self.image_reader.read(IMAGE_PATH, 0)
-
-        image_shape_without_channel = image.shape[:2]
-        self.assertEqual(IMAGE_SHAPE, image_shape_without_channel)
-
-    def test_givenOutputSize_whenReadImageWithCoordinates_shouldReturnCropedImage(self):
-        output_size = (64, 64)
-        self.image_reader = ImageReader(output_size=output_size)
-
-        image = self.image_reader.read(IMAGE_PATH, 0, coordinates=COORDINATES)
-
-        image_shape_without_channel = image.shape[:2]
-        self.assertEqual(output_size, image_shape_without_channel)
 
 
 def num_elems(iterable):
