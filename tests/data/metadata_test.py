@@ -39,7 +39,7 @@ class MetadataLoaderTest(unittest.TestCase):
         loader = MetadataLoader("path/that/doesnt/exist")
         metadata = loader.load(A_STATION, A_STATION_COORDINATE)
 
-        self.CORUPTED_IMAGE_OFFSET(
+        self.assertRaises(
             UnableToLoadMetadata, lambda: next(metadata),
         )
 
