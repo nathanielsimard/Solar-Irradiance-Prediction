@@ -92,6 +92,7 @@ class MetadataLoader:
         coordinates: Coordinates,
         compression="8bit",
         night_time=True,
+        skip_missing=False,
         target_datetimes: Optional[List[datetime]] = None,
     ) -> Iterable[Metadata]:
         """Load the metadata from the catalog.
@@ -118,6 +119,10 @@ class MetadataLoader:
         target_timestamps = self._target_timestamps(catalog, target_datetimes)
 
         for i, target_timestamp in enumerate(target_timestamps):
+            if skip_missing: #During training, we will just ignore missing values.
+                if not target_timestamp in catalog.index:
+                    #TODO: Log missing point.
+                    continue
             yield self._build_metadata(
                 catalog,
                 station,
