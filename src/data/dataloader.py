@@ -92,25 +92,30 @@ class DataLoader(object):
             self.skip_missing = config[self.Parameters.SKIP_MISSING.name]
 
     class Parameters(Enum):
+        """Parameter dictionnary for the loader."""
+
         LOCAL_PATH = "LOCAL_PATH"
         SKIP_MISSING = "SKIP_MISSING"
 
     def _transform_image_path(self, original_path):
-        """Transforms a supplied path on "helios" to a local path.
-        """
+        """Transforms a supplied path on "helios" to a local path."""
         if DataLoader.Parameters.LOCAL_PATH.name in self.config:
             # "/home/raphael/MILA/ift6759/project1_data/hdf5v7_8bit/"
             basedir = self.config[DataLoader.Parameters.LOCAL_PATH.name]
             return str(Path(basedir + "/" + Path(original_path).name))
         else:
             return original_path
+
     # I moved the generator outside the create_dataset function in order to
     # be able to debug it! I think it should stay here as I want to be able
     # to step in the code if something goes wrong.
 
     def gen(self):
+        """Generator for images."""
         for md in self.metadata:
-            image = self.image_reader.read(self._transform_image_path(md.image_path), md.image_offset)
+            image = self.image_reader.read(
+                self._transform_image_path(md.image_path), md.image_offset
+            )
             if image.size == 1:
                 # No image was returned. We should skip for training.
                 if self.skip_missing:

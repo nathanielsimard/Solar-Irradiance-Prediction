@@ -66,17 +66,23 @@ class DataLoaderTest(unittest.TestCase):
     def test_transform_image_path_no_transform(self):
         self.dataloader.config.pop(DataLoader.Parameters.LOCAL_PATH.name)
         new_path = self.dataloader._transform_image_path(
-            '/project/cq-training-1/project1/data/hdf5v7_8bit/2010.01.11.0800.h5'
+            "/project/cq-training-1/project1/data/hdf5v7_8bit/2010.01.11.0800.h5"
         )
-        self.assertEqual(new_path, '/project/cq-training-1/project1/data/hdf5v7_8bit/2010.01.11.0800.h5')
+        self.assertEqual(
+            new_path,
+            "/project/cq-training-1/project1/data/hdf5v7_8bit/2010.01.11.0800.h5",
+        )
 
     def test_transform_image_path(self):
-        local_path = '/home/raphael/MILA/ift6759/project1_data/hdf5v7_8bit/'
+        local_path = "/home/raphael/MILA/ift6759/project1_data/hdf5v7_8bit/"
         self.dataloader.config[DataLoader.Parameters.LOCAL_PATH.name] = local_path
         new_path = self.dataloader._transform_image_path(
-            '/project/cq-training-1/project1/data/hdf5v7_8bit/2010.01.11.0800.h5'
+            "/project/cq-training-1/project1/data/hdf5v7_8bit/2010.01.11.0800.h5"
         )
-        self.assertEqual(new_path, '/home/raphael/MILA/ift6759/project1_data/hdf5v7_8bit/2010.01.11.0800.h5')
+        self.assertEqual(
+            new_path,
+            "/home/raphael/MILA/ift6759/project1_data/hdf5v7_8bit/2010.01.11.0800.h5",
+        )
 
     def _metadata_iterable(
         self,

@@ -36,7 +36,9 @@ A_STATION_COORDINATE = STATION_COORDINATES[A_STATION]
 
 class MetadataLoaderTest(unittest.TestCase):
     def test_load_metadata_with_bad_path(self):
-        self.assertRaises(UnableToLoadMetadata, MetadataLoader, "path/that/doesnt/exist")
+        self.assertRaises(
+            UnableToLoadMetadata, MetadataLoader, "path/that/doesnt/exist"
+        )
         # self.assertRaises(
         #    UnableToLoadMetadata, MetadataLoader("path/that/doesnt/exist") )
 

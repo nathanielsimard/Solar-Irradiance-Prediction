@@ -106,7 +106,6 @@ class MetadataLoader:
 
         :return: A generator of metadata which drops all rows missing a picture.
         """
-
         catalog = self.catalog
 
         image_column = self._image_column(compression)
