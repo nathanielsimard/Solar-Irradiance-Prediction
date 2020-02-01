@@ -36,12 +36,10 @@ A_STATION_COORDINATE = STATION_COORDINATES[A_STATION]
 
 class MetadataLoaderTest(unittest.TestCase):
     def test_load_metadata_with_bad_path(self):
-        loader = MetadataLoader("path/that/doesnt/exist")
-        metadata = loader.load(A_STATION, A_STATION_COORDINATE)
+        self.assertRaises(UnableToLoadMetadata, MetadataLoader, "path/that/doesnt/exist")
+        #self.assertRaises(
+        #    UnableToLoadMetadata, MetadataLoader("path/that/doesnt/exist") )
 
-        self.assertRaises(
-            UnableToLoadMetadata, lambda: next(metadata),
-        )
 
     def test_load_metadata_image_path_without_compression(self):
         loader = MetadataLoader(CATALOG_PATH)
