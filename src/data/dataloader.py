@@ -103,7 +103,10 @@ class DataLoader(object):
             return str(Path(basedir + "/" + Path(original_path).name))
         else:
             return original_path        
-
+    # I moved the generator outside the create_dataset function in order to 
+    # be able to debug it! I think it should stay here as I want to be able 
+    # to step in the code if something goes wrong.
+    
     def gen(self):
         for md in self.metadata:
             image = self.image_reader.read(self._transform_image_path(md.image_path), md.image_offset)
@@ -112,7 +115,7 @@ class DataLoader(object):
                 if self.skip_missing:
                     #TODO: Add logging code here!
                     continue
-            data = tf.convert_to_tensor(image, dtype=tf.int64)
+            data = tf.convert_to_tensor(image, dtype=tf.float32)
             target = tf.constant(
                 [
                     _target_value(md.target_ghi),
@@ -122,13 +125,14 @@ class DataLoader(object):
                 ]
             )
             yield (data, target)
+            
     def create_dataset(self, metadata: Iterable[metadata.Metadata]) -> tf.data.Dataset:
         """Create a tensorflow Dataset base on the metadata and dataloader's config.
 
         Targets are optional in Metadata. If one is missing, set it to zero.
         """
         self.metadata = metadata
-        return tf.data.Dataset.from_generator(self.gen, (tf.int64, tf.float64))
+        return tf.data.Dataset.from_generator(self.gen, (tf.float32, tf.float32))
 
 
 def _target_value(target):
