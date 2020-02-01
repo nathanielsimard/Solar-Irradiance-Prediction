@@ -46,12 +46,7 @@ def _metadata_iterable(image_paths, offsets, coordinates):
 def show_images(
     images: List[List[np.ndarray]], channels, offsets, output_size, scale=0.1
 ):
-    """Show image in a grid.
-
-    Args:
-        images: Rows correspond the all the channels of one image.
-        Columns correspond to different times (offsets).
-    """
+    """Show images in a grid."""
     plt.cla()
     plt.clf()
 
