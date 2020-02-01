@@ -5,13 +5,8 @@ from unittest import mock
 
 import numpy as np
 
-from src.data.dataloader import (
-    DataLoader,
-    ImageReader,
-    InvalidImageChannel,
-    InvalidImageOffSet,
-    InvalidImagePath,
-)
+from src.data.dataloader import (DataLoader, ImageReader, InvalidImageChannel,
+                                 InvalidImageOffSet, InvalidImagePath)
 from src.data.metadata import Coordinates, Metadata
 
 ANY_COMPRESSION = "8bits"
@@ -22,9 +17,12 @@ ANY_COORDINATES = Coordinates(10, 10, 10)
 CHANNEL_ID = "ch1"
 INVALID_CHANNEL_ID = "ch5"
 
+FAKE_IMAGE = np.random.randint(low=0, high=255, size=(50, 50))
+
 INVALID_IMAGE_PATH = "path/to/nothing"
 IMAGE_PATH = "tests/data/samples/2015.11.01.0800.h5"
-IMAGE = np.random.randint(low=0, high=255, size=(50, 50))
+IMAGE_SHAPE = (650, 1500)
+COORDINATES = Coordinates(40.05192, -88.37309, 230)
 
 
 class DataLoaderTest(unittest.TestCase):
@@ -33,22 +31,22 @@ class DataLoaderTest(unittest.TestCase):
         self.dataloader = DataLoader(self.image_reader)
 
     def test_givenOneMetadata_whenCreateDataset_shouldReadImage(self):
-        self.image_reader.read = mock.Mock(return_value=IMAGE)
+        self.image_reader.read = mock.Mock(return_value=FAKE_IMAGE)
 
         dataset = self.dataloader.create_dataset(self._metadata_iterable(IMAGE_PATH))
 
         for image, target in dataset:
-            self.assertTrue(np.array_equal(IMAGE, image.numpy()))
+            self.assertTrue(np.array_equal(FAKE_IMAGE, image.numpy()))
 
     def test_givenOneMetadata_whenCreateDataset_shouldReadOneImage(self):
-        self.image_reader.read = mock.Mock(return_value=IMAGE)
+        self.image_reader.read = mock.Mock(return_value=FAKE_IMAGE)
 
         dataset = self.dataloader.create_dataset(self._metadata_iterable(IMAGE_PATH))
 
         self.assertEqual(1, num_elems(dataset))
 
     def test_givenOneMetadata_whenCreateDataset_shouldReturnTarget(self):
-        self.image_reader.read = mock.Mock(return_value=IMAGE)
+        self.image_reader.read = mock.Mock(return_value=FAKE_IMAGE)
         targets = np.array([2, 3, 4, 5])
         dataset = self.dataloader.create_dataset(
             self._metadata_iterable(
@@ -118,6 +116,23 @@ class ImageReaderTest(unittest.TestCase):
         self.assertRaises(
             InvalidImagePath, lambda: self.image_reader.read(INVALID_IMAGE_PATH, 0)
         )
+
+    def test_givenOutputSize_whenReadImageWithoutCoordinates_shouldReturnFullSize(self):
+        self.image_reader = ImageReader(output_size=(64, 64))
+
+        image = self.image_reader.read(IMAGE_PATH, 0)
+
+        image_shape_without_channel = image.shape[:2]
+        self.assertEqual(IMAGE_SHAPE, image_shape_without_channel)
+
+    def test_givenOutputSize_whenReadImageWithCoordinates_shouldReturnCropedImage(self):
+        output_size = (64, 64)
+        self.image_reader = ImageReader(output_size=output_size)
+
+        image = self.image_reader.read(IMAGE_PATH, 0, coordinates=COORDINATES)
+
+        image_shape_without_channel = image.shape[:2]
+        self.assertEqual(output_size, image_shape_without_channel)
 
 
 def num_elems(iterable):
