@@ -1,36 +1,38 @@
-import tensorflow as tf
-
+import numpy as np
+from typing import Dict
 from src.data.metadata import Coordinates
+from src.data.dataloader import ImageReader
 
 BND_COORDINATES = Coordinates(40.05192, -88.37309, 230)
 BND_CENTER_POINT_PXL = (500, 300)
 
 
-def center_station_coordinates(
-    dataset: tf.data.Dataset, coordinates=BND_COORDINATES, output_size=(64, 64),
-) -> tf.data.Dataset:
-    """Center image in dataset to coordinates.
+def coordinates_to_pixel(
+    coordinates: Coordinates, image_path: str, offset: int
+) -> Dict[str, int]:
+    """Return the x and y pixel value in an image of a given coordinate."""
+    # Latitude: 650
+    image_reader_lat = ImageReader(channels=["lat"])
+    image_lat = image_reader_lat.read(image_path, offset)
 
-    Args:
-        dataset: Dataset containing images (batch, height, width, channels) and targets.
-        coordinates: Coordinates on the map where the image must be centered.
-        output_size: The size of the output image (height, width)
-    """
-    return dataset.map(
-        lambda data, target: _center_image(data, output_size, BND_CENTER_POINT_PXL)
-    )
+    # Longitude: 1500
+    image_reader_lon = ImageReader(channels=["lon"])
+    image_lon = image_reader_lon.read(image_path, offset)
+
+    pixel_x = np.argmin(np.abs(image_lat - coordinates.latitude))
+    pixel_y = np.argmin(np.abs(image_lon - coordinates.longitude))
+
+    return {"x": pixel_x, "y": pixel_y}
 
 
-def _center_image(image, output_size, center_point_px):
-    height = output_size[0]
-    width = output_size[1]
+def crop_around_pixel(
+    image: np.array, center_pixel: Dict[str, int], output_size=(64, 64)
+) -> np.array:
+    """Crop a given image around the  center pixel."""
+    start_x = center_pixel["x"] - (output_size[0] // 2)
+    start_y = center_pixel["y"] - (output_size[1] // 2)
 
-    height_2 = int(height / 2)
-    width_2 = int(width / 2)
+    end_x = start_x + output_size[0]
+    end_y = start_y + output_size[1]
 
-    offset_height = center_point_px[0] - height_2
-    offset_width = center_point_px[1] - width_2
-
-    return tf.image.crop_to_bounding_box(
-        image, offset_height, offset_width, height, width
-    )
+    return image[start_x:end_x, start_y:end_y]
