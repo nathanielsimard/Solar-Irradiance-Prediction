@@ -3,6 +3,8 @@ from typing import Any, Dict, Iterable
 import h5py
 import numpy as np
 import tensorflow as tf
+from enum import Enum
+from pathlib import Path
 
 from src.data import metadata
 from src.data.utils import fetch_hdf5_sample, viz_hdf5_imagery
@@ -73,9 +75,25 @@ class DataLoader(object):
         """Create a DataLoader with some user config.
         
         TODO: Describe what is going to be in the configuration.
+
+        config["LOCAL_PATH"] = Allows overide of the base path on the server
+                               to a local path. This will enable training on
+                               the local machine.
         """
         self.image_reader = image_reader
         self.config = config
+
+
+    class Parameters(Enum):
+        LOCAL_PATH = "LOCAL_PATH"
+    def _transform_image_path(self, original_path):
+        """Transforms a supplied path on "helios" to a local path.
+        """
+        if DataLoader.Parameters.LOCAL_PATH.name in self.config:
+            basedir = self.config[DataLoader.Parameters.LOCAL_PATH.name] #"/home/raphael/MILA/ift6759/project1_data/hdf5v7_8bit/"
+            return str(Path(basedir + "/" + Path(original_path).name))
+        else:
+            return original_path        
 
     def create_dataset(self, metadata: Iterable[metadata.Metadata]) -> tf.data.Dataset:
         """Create a tensorflow Dataset base on the metadata and dataloader's config.
