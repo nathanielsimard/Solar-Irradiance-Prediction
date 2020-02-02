@@ -27,6 +27,9 @@ class Coordinates:
     longitude: float
     altitude: float
 
+    def __str__(self):
+        return "(" + str(self.latitude) + "," + str(self.longitude) + "," + str(self.altitude) + ")"
+
 
 class UnableToLoadMetadata(Exception):
     """Exception that occured when something wrong happened when loading metadata."""
@@ -52,6 +55,9 @@ class Metadata:
     target_cloudiness_1h: Optional[str] = None  # Same, T+1h
     target_cloudiness_3h: Optional[str] = None  # Same, T+3h
     target_cloudiness_6h: Optional[str] = None  # Same, T+6h
+
+    def __str__(self):
+        return str(self.image_path) + "," + str(self.datetime) + "," + str(self.coordinates)
 
 
 class MetadataLoader:
@@ -107,6 +113,9 @@ class MetadataLoader:
         :return: A generator of metadata which drops all rows missing a picture.
         """
         catalog = self.catalog
+
+        if not isinstance(coordinates, Coordinates):
+            raise ValueError("Must provide a Coordinate object")
 
         image_column = self._image_column(compression)
         image_offset_column = self._image_column(compression, variable="offset")
@@ -251,4 +260,4 @@ class MetadataLoader:
             with open(self.file_name, "rb") as file:
                 return pickle.load(file)
         except FileNotFoundError as e:
-            raise UnableToLoadMetadata("Unable to load meta data".format(e)) from None
+            raise UnableToLoadMetadata(e)

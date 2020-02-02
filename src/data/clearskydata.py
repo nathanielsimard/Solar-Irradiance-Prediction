@@ -29,6 +29,33 @@ class Targets(IntEnum):
     GHI_T_6h = 3
 
 
+def get_clearsky_values(coordinates: metadata.Coordinates, timestamp: pd.Timestamp) -> np.array:
+    """Get a numpy array for clearsky values.
+
+    Arguments:
+        coordinates {metadata.Coordinates} -- Coordinates of the station.
+        timestamp {pd.Timestamp} -- Time at which the model should be evaluated
+
+    Returns:
+        np.array:-- A numpy array with the computed values at T, T+1, T+3 and T+6 hours.
+    """
+    bnd = Location(
+        latitude=coordinates.latitude,
+        longitude=coordinates.longitude,
+        altitude=coordinates.altitude,
+    )
+    future_clearsky_ghi = bnd.get_clearsky(
+        pd.date_range(start=timestamp, periods=7, freq="1H")
+    )["ghi"]
+    # Handle metadata and feature augementation
+    meta_data = np.zeros(len(CSMDOffset))
+    meta_data[CSMDOffset.GHI_T] = future_clearsky_ghi[0]  # T=0
+    meta_data[CSMDOffset.GHI_T_1h] = future_clearsky_ghi[1]  # T=T+1
+    meta_data[CSMDOffset.GHI_T_3h] = future_clearsky_ghi[3]  # T=T+3
+    meta_data[CSMDOffset.GHI_T_6h] = future_clearsky_ghi[6]  # T=T+7
+    return meta_data
+
+
 def prepare_dataloader(
     dataframe: pd.DataFrame,
     target_datetimes: typing.List[datetime.datetime],
