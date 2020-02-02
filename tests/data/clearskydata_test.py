@@ -3,10 +3,10 @@ from datetime import datetime
 
 import tensorflow as tf
 
-import src.data.clearskydata as dl
+import src.data.clearskydata as csd
 from src.data.config import read_configuration_file
 from src.data.metadata import Station
-
+import tests.data.config_test as config_test
 DUMMY_TRAIN_CFG_PATH = "tests/data/samples/dummy_train_cfg.json"
 
 
@@ -40,21 +40,30 @@ class ClearSkyDataTest(unittest.TestCase):
 
         for (meta, image, target) in dataset:
             print(meta[0, 0])
-            self.assertCloseTo(meta[0, dl.CSMDOffset.GHI_T].numpy(), 471.675670)
-            self.assertCloseTo(meta[0, dl.CSMDOffset.GHI_T_1h].numpy(), 280.165857)
-            self.assertCloseTo(meta[0, dl.CSMDOffset.GHI_T_3h].numpy(), 0.397029)
-            self.assertCloseTo(meta[0, dl.CSMDOffset.GHI_T_6h].numpy(), 0.0)
+            self.assertCloseTo(meta[0, csd.CSMDOffset.GHI_T].numpy(), 471.675670)
+            self.assertCloseTo(meta[0, csd.CSMDOffset.GHI_T_1h].numpy(), 280.165857)
+            self.assertCloseTo(meta[0, csd.CSMDOffset.GHI_T_3h].numpy(), 0.397029)
+            self.assertCloseTo(meta[0, csd.CSMDOffset.GHI_T_6h].numpy(), 0.0)
             pass
+
+    def test_clearsky_prediction_function(self):
+        target_datetime = datetime(2010, 6, 19, 22, 15)
+        config = read_configuration_file(config_test.DUMMY_TEST_CFG_PATH)
+        preditions = csd.get_clearsky_values(config.stations[Station.BND], target_datetime)
+        self.assertCloseTo(preditions[csd.CSMDOffset.GHI_T], 471.675670)
+        self.assertCloseTo(preditions[csd.CSMDOffset.GHI_T_1h], 280.165857)
+        self.assertCloseTo(preditions[csd.CSMDOffset.GHI_T_3h], 0.397029)
+        self.assertCloseTo(preditions[csd.CSMDOffset.GHI_T_6h], 0.0)
 
     def test_clearsky_targets(self):
         dataset = self._create_data_loader(target_datetimes=[datetime(2010, 1, 1, 13)])
 
         for (meta, image, target) in dataset:
             print(target[0, :])
-            self.assertCloseTo(target[0, dl.Targets.GHI_T], -3.58)
-            self.assertCloseTo(target[0, dl.Targets.GHI_T_1h], 29.106667)
-            self.assertCloseTo(target[0, dl.Targets.GHI_T_3h], 356.273333)
-            self.assertCloseTo(target[0, dl.Targets.GHI_T_6h], 481.046667)
+            self.assertCloseTo(target[0, csd.Targets.GHI_T], -3.58)
+            self.assertCloseTo(target[0, csd.Targets.GHI_T_1h], 29.106667)
+            self.assertCloseTo(target[0, csd.Targets.GHI_T_3h], 356.273333)
+            self.assertCloseTo(target[0, csd.Targets.GHI_T_6h], 481.046667)
             pass
 
     @unittest.skip("Need rewriting")
@@ -63,11 +72,11 @@ class ClearSkyDataTest(unittest.TestCase):
         # target_datetimes = (
         #     dataset.catalog[50:80].index.strftime("%Y-%m-%d %H:%M:%S").tolist()
         # )
-        # dataset = dl.prepare_dataloader(
+        # dataset = csd.prepare_dataloader(
         #     catalog, target_datetimes, stations, target_time_offsets, None
         # )
         for (meta, image, target) in dataset:
-            self.assertTrue(meta.numpy().shape == (30, len(dl.CSMDOffset)))
+            self.assertTrue(meta.numpy().shape == (30, len(csd.CSMDOffset)))
             self.assertTrue(
                 image.numpy().shape == (30, 64, 64, 5)
             )  # TODO: Rendre la taille de l'image paramétrable
@@ -85,7 +94,7 @@ class ClearSkyDataTest(unittest.TestCase):
 
         station = Station.BND
 
-        return dl.prepare_dataloader(
+        return csd.prepare_dataloader(
             config.catalog,
             target_datetimes,
             station,
