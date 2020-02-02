@@ -34,19 +34,18 @@ class CorruptedImage(Exception):
 class ImageReader(object):
     """Read the images. Compression format is handle automaticly."""
 
-    def __init__(self, channels=["ch1"], output_size: Optional[Tuple[int, int]] = None):
+    def __init__(self, channels=["ch1"]):
         """Default channel for image reading is ch1.
 
         Args:
             channels: The channels to read from the file.
-            output_size (Optional): The image shape needed, if provided, the image
-                will also be centered at coordinates when read.
+
         """
         self.channels = channels
-        self.output_size = output_size
 
     def read(
         self, image_path: str, image_offset: int, coordinates: metadata.Coordinates,
+        output_size: Optional[Tuple[int, int]] = None
     ) -> np.ndarray:
         """Read image with multiple channels from a compressed file.
 
@@ -54,7 +53,8 @@ class ImageReader(object):
             image_path: The image location on disk.
             image_offset: The sample id, which image to read from the file.
             coordinates: The coordinates which the image will be centered.
-                If 'output_size' is not provided, the image will not be center nor croped.
+            output_size (Optional): The image shape needed, if provided, the image
+                will also be centered at coordinates when read.
 
         Return:
             Numpy array of shape (height, width, channel)
@@ -66,22 +66,22 @@ class ImageReader(object):
             with h5py.File(image_path, "r") as file_reader:
                 images = self._read_images(image_offset, file_reader)
                 images = self._center_images(
-                    images, image_offset, coordinates, file_reader
+                    images, image_offset, coordinates, file_reader, output_size
                 )
 
                 return np.dstack(images)
         except OSError as e:
             raise InvalidImagePath(e)
 
-    def _center_images(self, images, offset, coordinates, file_reader):
-        if self.output_size is None:
+    def _center_images(self, images, offset, coordinates, file_reader, output_size=None):
+        if output_size is None:
             return images
 
         image_lat = fetch_hdf5_sample("lat", file_reader, offset)
         image_lon = fetch_hdf5_sample("lon", file_reader, offset)
 
         return [
-            center_image(image, image_lat, image_lon, coordinates, self.output_size)
+            center_image(image, image_lat, image_lon, coordinates, output_size)
             for image in images
         ]
 
