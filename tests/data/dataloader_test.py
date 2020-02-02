@@ -12,7 +12,8 @@ from src.data.dataloader import (
     InvalidImageOffSet,
     InvalidImagePath,
 )
-from src.data.metadata import Coordinates, Metadata
+from src.data.metadata import Coordinates, Metadata, MetadataLoader
+import tests.data.metadata_test as metadata_test
 
 ANY_COMPRESSION = "8bits"
 ANY_IMAGE_OFFSET = 6
@@ -64,7 +65,7 @@ class DataLoaderTest(unittest.TestCase):
             self.assertTrue(np.array_equal(actual_targets, targets))
 
     def test_transform_image_path_no_transform(self):
-        self.dataloader.config.pop(DataLoader.Parameters.LOCAL_PATH.name)
+        self.dataloader.local_path = None
         new_path = self.dataloader._transform_image_path(
             "/project/cq-training-1/project1/data/hdf5v7_8bit/2010.01.11.0800.h5"
         )
@@ -75,7 +76,7 @@ class DataLoaderTest(unittest.TestCase):
 
     def test_transform_image_path(self):
         local_path = "/home/raphael/MILA/ift6759/project1_data/hdf5v7_8bit/"
-        self.dataloader.config[DataLoader.Parameters.LOCAL_PATH.name] = local_path
+        self.dataloader.local_path = local_path
         new_path = self.dataloader._transform_image_path(
             "/project/cq-training-1/project1/data/hdf5v7_8bit/2010.01.11.0800.h5"
         )
@@ -83,6 +84,29 @@ class DataLoaderTest(unittest.TestCase):
             new_path,
             "/home/raphael/MILA/ift6759/project1_data/hdf5v7_8bit/2010.01.11.0800.h5",
         )
+
+    def test_create_dataset_once(self):
+        dl = DataLoader(self.image_reader)
+        loader = MetadataLoader(metadata_test.CATALOG_PATH)
+        metadata = loader.load(
+            metadata_test.A_STATION,
+            metadata_test.A_STATION_COORDINATE,
+            compression=None,
+        )
+        dl.create_dataset(metadata)
+        self.assertRaises(ValueError, callable=dl.create_dataset, args=metadata)
+
+    def test_parse_config_local_path(self):
+        dl = DataLoader(self.image_reader, config={"LOCAL_PATH": "test"})
+        self.assertEqual(dl.local_path, "test")
+        dl = DataLoader(self.image_reader)
+        self.assertEqual(dl.local_path, None)
+
+    def test_parse_config_skip_missing(self):
+        dl = DataLoader(self.image_reader, config={"SKIP_MISSING": True})
+        self.assertEqual(dl.skip_missing, True)
+        dl = DataLoader(self.image_reader)
+        self.assertEqual(dl.skip_missing, False)
 
     def _metadata_iterable(
         self,

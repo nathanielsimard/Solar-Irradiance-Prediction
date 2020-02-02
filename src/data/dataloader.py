@@ -3,7 +3,6 @@ from typing import Any, Dict, Iterable
 import h5py
 import numpy as np
 import tensorflow as tf
-from enum import Enum
 from pathlib import Path
 
 from src.data import metadata
@@ -87,22 +86,19 @@ class DataLoader(object):
         self.image_reader = image_reader
         self.config = config
         self.skip_missing = False
+        self.local_path = None
+        self.metadata = None
 
-        if self.Parameters.SKIP_MISSING.name in config:
-            self.skip_missing = config[self.Parameters.SKIP_MISSING.name]
-
-    class Parameters(Enum):
-        """Parameter dictionnary for the loader."""
-
-        LOCAL_PATH = "LOCAL_PATH"
-        SKIP_MISSING = "SKIP_MISSING"
+        if "SKIP_MISSING" in config:
+            self.skip_missing = config["SKIP_MISSING"]
+        if "LOCAL_PATH" in self.config:
+            self.local_path = config["LOCAL_PATH"]
 
     def _transform_image_path(self, original_path):
         """Transforms a supplied path on "helios" to a local path."""
-        if DataLoader.Parameters.LOCAL_PATH.name in self.config:
+        if self.local_path is not None:
             # "/home/raphael/MILA/ift6759/project1_data/hdf5v7_8bit/"
-            basedir = self.config[DataLoader.Parameters.LOCAL_PATH.name]
-            return str(Path(basedir + "/" + Path(original_path).name))
+            return str(Path(self.local_path + "/" + Path(original_path).name))
         else:
             return original_path
 
@@ -137,6 +133,8 @@ class DataLoader(object):
 
         Targets are optional in Metadata. If one is missing, set it to zero.
         """
+        if self.metadata is not None:
+            raise ValueError("Create_dataset can only be called once per instance")
         self.metadata = metadata
         return tf.data.Dataset.from_generator(self.gen, (tf.float32, tf.float32))
 

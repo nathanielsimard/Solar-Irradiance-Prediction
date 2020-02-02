@@ -39,8 +39,6 @@ class MetadataLoaderTest(unittest.TestCase):
         self.assertRaises(
             UnableToLoadMetadata, MetadataLoader, "path/that/doesnt/exist"
         )
-        # self.assertRaises(
-        #    UnableToLoadMetadata, MetadataLoader("path/that/doesnt/exist") )
 
     def test_load_metadata_image_path_without_compression(self):
         loader = MetadataLoader(CATALOG_PATH)
