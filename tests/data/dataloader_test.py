@@ -139,7 +139,13 @@ class DataLoaderTest(unittest.TestCase):
     def test_metadata_format(self):
         # TODO: Add more metadata, such as solar time.
         config = cf.read_configuration_file(config_test.DUMMY_TEST_CFG_PATH)
-        md = Metadata("", "", 0, datetime=datetime(2010, 6, 19, 22, 15), coordinates=config.stations[cf.Station.BND])
+        md = Metadata(
+            "",
+            "",
+            0,
+            datetime=datetime(2010, 6, 19, 22, 15),
+            coordinates=config.stations[cf.Station.BND],
+        )
         meta = self.dataloader._prepare_meta(md)
         self.assertCloseTo(meta[AugmentedFeatures.GHI_T], 471.675670)
         self.assertCloseTo(meta[AugmentedFeatures.GHI_T_1h], 280.165857)
@@ -147,7 +153,7 @@ class DataLoaderTest(unittest.TestCase):
         self.assertCloseTo(meta[AugmentedFeatures.GHI_T_6h], 0.0)
         self.assertCloseTo(meta[AugmentedFeatures.SOLAR_TIME], 0.0)
 
-    def test_metadate_enable(self):
+    def test_metadata_enable(self):
         config = {}
         config["ENABLE_META"] = True
         dl = DataLoader(self.image_reader, config)
@@ -158,6 +164,9 @@ class DataLoaderTest(unittest.TestCase):
             compression=None,
         )
         dataset = dl.create_dataset(metadata)
+        for output in dataset:
+            print(output)
+            self.assertEqual(len(output), 3)
 
     def assertCloseTo(self, value: float, target: float, epsilon: float = 0.001):
         """ Check if a value is close to another, between +- epsilon.

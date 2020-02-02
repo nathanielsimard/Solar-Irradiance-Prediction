@@ -44,8 +44,11 @@ class ImageReader(object):
         self.channels = channels
 
     def read(
-        self, image_path: str, image_offset: int, coordinates: metadata.Coordinates,
-        output_size: Optional[Tuple[int, int]] = None
+        self,
+        image_path: str,
+        image_offset: int,
+        coordinates: metadata.Coordinates,
+        output_size: Optional[Tuple[int, int]] = None,
     ) -> np.ndarray:
         """Read image with multiple channels from a compressed file.
 
@@ -73,7 +76,9 @@ class ImageReader(object):
         except OSError as e:
             raise InvalidImagePath(e)
 
-    def _center_images(self, images, offset, coordinates, file_reader, output_size=None):
+    def _center_images(
+        self, images, offset, coordinates, file_reader, output_size=None
+    ):
         if output_size is None:
             return images
 

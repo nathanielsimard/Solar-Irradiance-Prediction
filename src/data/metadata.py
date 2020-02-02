@@ -28,7 +28,16 @@ class Coordinates:
     altitude: float
 
     def __str__(self):
-        return "(" + str(self.latitude) + "," + str(self.longitude) + "," + str(self.altitude) + ")"
+        """Convertes coordinates to string. Will be used for logging."""
+        return (
+            "("
+            + str(self.latitude)
+            + ","
+            + str(self.longitude)
+            + ","
+            + str(self.altitude)
+            + ")"
+        )
 
 
 class UnableToLoadMetadata(Exception):
@@ -57,7 +66,14 @@ class Metadata:
     target_cloudiness_6h: Optional[str] = None  # Same, T+6h
 
     def __str__(self):
-        return str(self.image_path) + "," + str(self.datetime) + "," + str(self.coordinates)
+        """Converts metadata to string for logging. Not all info is output."""
+        return (
+            str(self.image_path)
+            + ","
+            + str(self.datetime)
+            + ","
+            + str(self.coordinates)
+        )
 
 
 class MetadataLoader:

@@ -29,7 +29,9 @@ class Targets(IntEnum):
     GHI_T_6h = 3
 
 
-def get_clearsky_values(coordinates: metadata.Coordinates, timestamp: pd.Timestamp) -> np.array:
+def get_clearsky_values(
+    coordinates: metadata.Coordinates, timestamp: pd.Timestamp
+) -> np.array:
     """Get a numpy array for clearsky values.
 
     Arguments:

@@ -10,12 +10,12 @@ from enum import IntEnum
 
 from src.data import image, metadata
 from src.data.image import CorruptedImage
-import src.data.config as config
 import src.data.clearskydata as csd
 
 
 class AugmentedFeatures(IntEnum):
     """Mapping for the augmented features to the location in the tensor."""
+
     GHI_T = 0
     GHI_T_1h = 1
     GHI_T_3h = 2
@@ -44,10 +44,8 @@ class DataLoader(object):
         config["SKIP_MISSING"]= Will skip missing samples, just leaving a warning
                                 instead of throwing an exception.
         config["ENABLE_META"] = Will enable outputing meta data along with the other data.
-
-        config["CROP_SIZE"] = Size of the crop image arround the center. None will return the 
+        config["CROP_SIZE"] = Size of the crop image arround the center. None will return the
                               whole image.
-
         """
         self.image_reader = image_reader
         self.config = config
@@ -70,7 +68,7 @@ class DataLoader(object):
         # TODO: Add other meta information, such as local solar time.
         meta = np.zeros(len(AugmentedFeatures))
         clearsky_values = csd.get_clearsky_values(md.coordinates, md.datetime)
-        meta[0:len(clearsky_values)] = clearsky_values
+        meta[0 : len(clearsky_values)] = clearsky_values
 
         return tf.convert_to_tensor(meta)
 
@@ -95,6 +93,7 @@ class DataLoader(object):
                     self._transform_image_path(md.image_path),
                     md.image_offset,
                     md.coordinates,
+                    self.crop_size,
                 )
             except CorruptedImage as e:
                 if self.skip_missing:
@@ -115,7 +114,7 @@ class DataLoader(object):
             output = (data, target)
             if self.enable_meta:
                 meta = self._prepare_meta(md)
-                output = output + (meta, )
+                output = output + (meta,)
             yield output
 
     def create_dataset(self, metadata: Iterable[metadata.Metadata]) -> tf.data.Dataset:
@@ -125,7 +124,7 @@ class DataLoader(object):
         """
         output_shape = (tf.float32, tf.float32)
         if self.enable_meta:
-            output_shape = output_shape + (tf.float32, )
+            output_shape = output_shape + (tf.float32,)
         if self.metadata is not None:
             raise ValueError("Create_dataset can only be called once per instance")
         self.metadata = metadata

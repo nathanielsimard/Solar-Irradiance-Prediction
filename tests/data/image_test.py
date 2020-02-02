@@ -68,7 +68,9 @@ class ImageReaderTest(unittest.TestCase):
         output_size = (64, 64)
         self.image_reader = ImageReader()
 
-        image = self.image_reader.read(IMAGE_PATH, OFFSET, COORDINATES, output_size=output_size)
+        image = self.image_reader.read(
+            IMAGE_PATH, OFFSET, COORDINATES, output_size=output_size
+        )
 
         image_shape_without_channel = image.shape[:2]
         self.assertEqual(output_size, image_shape_without_channel)
@@ -87,7 +89,9 @@ class ImageReaderTest(unittest.TestCase):
         output_size = (2000, 2000)
         self.image_reader = ImageReader()
 
-        image = self.image_reader.read(IMAGE_PATH, OFFSET, COORDINATES, output_size=output_size)
+        image = self.image_reader.read(
+            IMAGE_PATH, OFFSET, COORDINATES, output_size=output_size
+        )
 
         image_shape_without_channel = image.shape[:2]
         self.assertEqual(output_size, image_shape_without_channel)
