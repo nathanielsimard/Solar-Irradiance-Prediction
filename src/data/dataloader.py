@@ -4,6 +4,7 @@ import tensorflow as tf
 from pathlib import Path
 
 from src.data import image, metadata
+from src.data.image import CorruptedImage
 
 
 class DataLoader(object):
@@ -54,14 +55,19 @@ class DataLoader(object):
     def gen(self):
         """Generator for images."""
         for md in self.metadata:
-            image = self.image_reader.read(
-                self._transform_image_path(md.image_path), md.image_offset
-            )
-            if image.size == 1:
-                # No image was returned. We should skip for training.
+            try:
+                image = self.image_reader.read(
+                    self._transform_image_path(md.image_path),
+                    md.image_offset,
+                    md.coordinates,
+                )
+            except CorruptedImage:
                 if self.skip_missing:
                     # TODO: Add logging code here!
                     continue
+            # if image.size == 1:
+            #    # No image was returned. We should skip for training.
+
             data = tf.convert_to_tensor(image, dtype=tf.float32)
             target = tf.constant(
                 [
