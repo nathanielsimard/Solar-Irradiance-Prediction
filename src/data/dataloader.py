@@ -1,66 +1,9 @@
 from typing import Any, Dict, Iterable
 
-import h5py
-import numpy as np
 import tensorflow as tf
 from pathlib import Path
 
-from src.data import metadata
-from src.data.utils import fetch_hdf5_sample, viz_hdf5_imagery
-
-
-class InvalidImageOffSet(Exception):
-    """Exception raised when offset isn't valid."""
-
-    pass
-
-
-class InvalidImageChannel(Exception):
-    """Exception raised when channel isn't valid (valid channel: ch1, ch2, ch3, ch4, ch6)."""
-
-    pass
-
-
-class InvalidImagePath(Exception):
-    """Exception when the path is not found."""
-
-    pass
-
-
-class ImageReader(object):
-    """Read the images. Compression format is handle automaticly."""
-
-    def __init__(self, channels=["ch1"]):
-        """Default channel for image reading is ch1."""
-        self.channels = channels
-
-    def read(self, image_path: str, image_offset: int) -> np.ndarray:
-        """Read image and return multidimensionnal numpy array."""
-        try:
-            file_reader = h5py.File(image_path)
-        except OSError as e:
-            raise InvalidImagePath(e)
-
-        return np.dstack(self._read_images(image_offset, file_reader))
-
-    def _read_images(self, image_offset, file_reader):
-        """Raise errors when invalid offset or channel while reading images."""
-        try:
-            return [
-                fetch_hdf5_sample(channel, file_reader, image_offset)
-                for channel in self.channels
-            ]
-
-        except ValueError as e:
-            raise InvalidImageOffSet(e)
-        except KeyError as e:
-            raise InvalidImageChannel(e)
-
-    def visualize(
-        self, image_path: str, channel="ch1",
-    ):
-        """Open amazing image window."""
-        viz_hdf5_imagery(image_path, [channel])
+from src.data import image, metadata
 
 
 class DataLoader(object):
@@ -70,7 +13,7 @@ class DataLoader(object):
     >>>dataset=dataset.batch(batch_size)
     """
 
-    def __init__(self, image_reader: ImageReader, config: Dict[str, Any] = {}) -> None:
+    def __init__(self, image_reader: image.ImageReader, config: Dict[str, Any] = {}) -> None:
         """Create a DataLoader with some user config.
 
         TODO: Describe what is going to be in the configuration.
