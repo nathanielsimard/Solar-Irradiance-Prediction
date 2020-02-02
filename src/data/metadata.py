@@ -81,6 +81,10 @@ class MetadataLoader:
                 raise ValueError(
                     "A filename and catalog should not be provided at the same time."
                 )
+        if (  # We do not want to reload the catalog each time we load data.
+            self.catalog is None
+        ):
+            self.catalog = self._load_file()
 
     def load(
         self,
@@ -88,6 +92,7 @@ class MetadataLoader:
         coordinates: Coordinates,
         compression="8bit",
         night_time=True,
+        skip_missing=False,
         target_datetimes: Optional[List[datetime]] = None,
     ) -> Iterable[Metadata]:
         """Load the metadata from the catalog.
@@ -101,12 +106,7 @@ class MetadataLoader:
 
         :return: A generator of metadata which drops all rows missing a picture.
         """
-        if (  # We do not want to reload the catalog each time we load data.
-            self.catalog is None
-        ):
-            catalog = self._load_file()
-        else:
-            catalog = self.catalog
+        catalog = self.catalog
 
         image_column = self._image_column(compression)
         image_offset_column = self._image_column(compression, variable="offset")
@@ -118,6 +118,10 @@ class MetadataLoader:
         target_timestamps = self._target_timestamps(catalog, target_datetimes)
 
         for i, target_timestamp in enumerate(target_timestamps):
+            if skip_missing:  # During training, we will just ignore missing values.
+                if target_timestamp not in catalog.index:
+                    # TODO: Log missing point.
+                    continue
             yield self._build_metadata(
                 catalog,
                 station,
@@ -247,4 +251,4 @@ class MetadataLoader:
             with open(self.file_name, "rb") as file:
                 return pickle.load(file)
         except FileNotFoundError as e:
-            raise UnableToLoadMetadata(e)
+            raise UnableToLoadMetadata("Unable to load meta data".format(e)) from None
