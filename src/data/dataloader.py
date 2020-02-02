@@ -13,7 +13,9 @@ class DataLoader(object):
     >>>dataset=dataset.batch(batch_size)
     """
 
-    def __init__(self, image_reader: image.ImageReader, config: Dict[str, Any] = {}) -> None:
+    def __init__(
+        self, image_reader: image.ImageReader, config: Dict[str, Any] = {}
+    ) -> None:
         """Create a DataLoader with some user config.
 
         TODO: Describe what is going to be in the configuration.
