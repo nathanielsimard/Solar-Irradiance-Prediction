@@ -52,7 +52,7 @@ class UnregognizedErrorStrategy(Exception):
 
 
 class MissingTargetException(Exception):
-    """Exceotion raised when reading targets."""
+    """Exception raised when reading targets."""
 
     def __init__(self):
         """Create an error message."""
@@ -145,10 +145,10 @@ class DataLoader(object):
     def _read_target(self, metadata: Metadata) -> tf.Tensor:
         return tf.constant(
             [
-                _target_value(metadata.target_ghi, self.config.error_strategy),
-                _target_value(metadata.target_ghi_1h, self.config.error_strategy),
-                _target_value(metadata.target_ghi_3h, self.config.error_strategy),
-                _target_value(metadata.target_ghi_6h, self.config.error_strategy),
+                self._target_value(metadata.target_ghi),
+                self._target_value(metadata.target_ghi_1h),
+                self._target_value(metadata.target_ghi_3h),
+                self._target_value(metadata.target_ghi_6h),
             ]
         )
 
@@ -179,6 +179,15 @@ class DataLoader(object):
         meta[0 : len(clearsky_values)] = clearsky_values
 
         return tf.convert_to_tensor(meta)
+
+    def _target_value(self, target):
+        if target is not None:
+            return target
+
+        if self.config.error_strategy == ErrorStrategy.ignore:
+            return 0
+
+        raise MissingTargetException()
 
     def _transform_image_path(self, original_path):
         """Transforms a supplied path on "helios" to a local path."""
@@ -274,13 +283,3 @@ def _read_config(config, key, default):
     if key not in config:
         return default
     return config[key]
-
-
-def _target_value(target, error_strategy: ErrorStrategy):
-    if target is not None:
-        return target
-
-    if error_strategy == ErrorStrategy.ignore:
-        return 0
-
-    raise MissingTargetException()
