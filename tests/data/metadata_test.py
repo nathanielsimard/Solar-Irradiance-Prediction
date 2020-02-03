@@ -3,7 +3,7 @@ import unittest
 from datetime import datetime
 from typing import Any, Generator
 
-from src.data.metadata import MetadataLoader, Station, UnableToLoadMetadata
+from src.data.metadata import MetadataLoader, Station, UnableToLoadMetadata, Coordinates
 
 CATALOG_PATH = "tests/data/samples/catalog-test.pkl"
 
@@ -31,7 +31,7 @@ STATION_COORDINATES = {
 }
 
 A_STATION = Station.BND
-A_STATION_COORDINATE = STATION_COORDINATES[A_STATION]
+A_STATION_COORDINATE = Coordinates(*STATION_COORDINATES[A_STATION])
 
 
 class MetadataLoaderTest(unittest.TestCase):
@@ -182,7 +182,7 @@ class MetadataLoaderTest(unittest.TestCase):
     def test_load_metadata_coodinates(self):
         loader = MetadataLoader(CATALOG_PATH)
         station = Station.BND
-        coordinates = STATION_COORDINATES[station]
+        coordinates = Coordinates(*STATION_COORDINATES[station])
 
         metadata = loader.load(station, coordinates, night_time=False)
 

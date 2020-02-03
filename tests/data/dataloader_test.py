@@ -5,11 +5,14 @@ from unittest import mock
 
 import numpy as np
 
-from src.data.dataloader import DataLoader
+from src.data.dataloader import DataLoader, AugmentedFeatures
 from src.data.image import ImageReader
 from src.data.metadata import Coordinates, Metadata, MetadataLoader
 
 import tests.data.metadata_test as metadata_test
+import tests.data.config_test as config_test
+
+import src.data.config as cf
 
 ANY_COMPRESSION = "8bits"
 ANY_IMAGE_OFFSET = 6
@@ -101,6 +104,20 @@ class DataLoaderTest(unittest.TestCase):
         dl = DataLoader(self.image_reader)
         self.assertEqual(dl.skip_missing, False)
 
+    def test_parse_config_enable_meta(self):
+        dl = DataLoader(self.image_reader, config={"ENABLE_META": True})
+        self.assertEqual(dl.enable_meta, True)
+        dl = DataLoader(self.image_reader)
+        self.assertEqual(dl.enable_meta, False)
+
+    def test_parse_config_crop_size(self):
+        dl = DataLoader(self.image_reader, config={"CROP_SIZE": (128, 128)})
+        self.assertEqual(dl.crop_size, (128, 128))
+
+    def test_test_parse_config_crop_size_default(self):
+        dl = DataLoader(self.image_reader)
+        self.assertEqual(dl.crop_size, dl.default_crop_size)  # Checks default size
+
     def _metadata_iterable(
         self,
         image_path: str,
@@ -120,6 +137,50 @@ class DataLoaderTest(unittest.TestCase):
             target_ghi_3h=target_ghi_3h,
             target_ghi_6h=target_ghi_6h,
         )
+
+    def test_metadata_format(self):
+        # TODO: Add more metadata, such as solar time.
+        config = cf.read_configuration_file(config_test.DUMMY_TEST_CFG_PATH)
+        md = Metadata(
+            "",
+            "",
+            0,
+            datetime=datetime(2010, 6, 19, 22, 15),
+            coordinates=config.stations[cf.Station.BND],
+        )
+        meta = self.dataloader._prepare_meta(md)
+        self.assertCloseTo(meta[AugmentedFeatures.GHI_T], 471.675670)
+        self.assertCloseTo(meta[AugmentedFeatures.GHI_T_1h], 280.165857)
+        self.assertCloseTo(meta[AugmentedFeatures.GHI_T_3h], 0.397029)
+        self.assertCloseTo(meta[AugmentedFeatures.GHI_T_6h], 0.0)
+        self.assertCloseTo(meta[AugmentedFeatures.SOLAR_TIME], 0.0)
+
+    def test_metadata_enable(self):
+        config = {}
+        config["ENABLE_META"] = True
+        dl = DataLoader(self.image_reader, config)
+        loader = MetadataLoader(metadata_test.CATALOG_PATH)
+        metadata = loader.load(
+            metadata_test.A_STATION,
+            metadata_test.A_STATION_COORDINATE,
+            compression=None,
+        )
+        dataset = dl.create_dataset(metadata)
+        for output in dataset:
+            self.assertEqual(len(output), 3)
+
+    def assertCloseTo(self, value: float, target: float, epsilon: float = 0.001):
+        """ Check if a value is close to another, between +- epsilon.
+
+        Arguments:
+            value {float} -- value to test
+            target {float} -- value wanted
+
+        Keyword Arguments:
+            epsilon {float} -- [+- range for the value] (default: {0.001})
+        """
+        self.assertGreater(value, target - epsilon)
+        self.assertLess(value, target + epsilon)
 
 
 def num_elems(iterable):

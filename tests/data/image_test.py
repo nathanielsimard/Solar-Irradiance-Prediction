@@ -66,9 +66,11 @@ class ImageReaderTest(unittest.TestCase):
 
     def test_givenOutputSize_whenReadImageWithCoordinates_shouldReturnCropedImage(self):
         output_size = (64, 64)
-        self.image_reader = ImageReader(output_size=output_size)
+        self.image_reader = ImageReader()
 
-        image = self.image_reader.read(IMAGE_PATH, OFFSET, COORDINATES)
+        image = self.image_reader.read(
+            IMAGE_PATH, OFFSET, COORDINATES, output_size=output_size
+        )
 
         image_shape_without_channel = image.shape[:2]
         self.assertEqual(output_size, image_shape_without_channel)
@@ -85,9 +87,11 @@ class ImageReaderTest(unittest.TestCase):
         self,
     ):
         output_size = (2000, 2000)
-        self.image_reader = ImageReader(output_size=output_size)
+        self.image_reader = ImageReader()
 
-        image = self.image_reader.read(IMAGE_PATH, OFFSET, COORDINATES)
+        image = self.image_reader.read(
+            IMAGE_PATH, OFFSET, COORDINATES, output_size=output_size
+        )
 
         image_shape_without_channel = image.shape[:2]
         self.assertEqual(output_size, image_shape_without_channel)

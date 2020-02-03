@@ -1,10 +1,26 @@
 from typing import Any, Dict, Iterable
 
+import logging
+
 import tensorflow as tf
+import numpy as np
+
 from pathlib import Path
+from enum import IntEnum
 
 from src.data import image, metadata
-from src.data.image import CorruptedImage
+from src.data.image import CorruptedImage, InvalidImagePath
+import src.data.clearskydata as csd
+
+
+class AugmentedFeatures(IntEnum):
+    """Mapping for the augmented features to the location in the tensor."""
+
+    GHI_T = 0
+    GHI_T_1h = 1
+    GHI_T_3h = 2
+    GHI_T_6h = 3
+    SOLAR_TIME = 4
 
 
 class DataLoader(object):
@@ -13,6 +29,12 @@ class DataLoader(object):
     To load a batch of data, you can iterate over the tf.data.Dataset by batch.
     >>>dataset=dataset.batch(batch_size)
     """
+
+    def _get_config(self, key, default):
+        """Helper function for configuration parsing."""
+        if key not in self.config:
+            return default
+        return self.config[key]
 
     def __init__(
         self, image_reader: image.ImageReader, config: Dict[str, Any] = {}
@@ -27,18 +49,29 @@ class DataLoader(object):
 
         config["SKIP_MISSING"]= Will skip missing samples, just leaving a warning
                                 instead of throwing an exception.
-
+        config["ENABLE_META"] = Will enable outputing meta data along with the other data.
+        config["CROP_SIZE"] = Size of the crop image arround the center. None will return the
+                              whole image.
         """
         self.image_reader = image_reader
         self.config = config
-        self.skip_missing = False
-        self.local_path = None
+
+        self.default_crop_size = (64, 64)  # Default for now, we should add a parameter
+
         self.metadata = None
 
-        if "SKIP_MISSING" in config:
-            self.skip_missing = config["SKIP_MISSING"]
-        if "LOCAL_PATH" in self.config:
-            self.local_path = config["LOCAL_PATH"]
+        self.skip_missing = self._get_config("SKIP_MISSING", False)
+        self.local_path = self._get_config("LOCAL_PATH", None)
+        self.enable_meta = self._get_config("ENABLE_META", False)
+        self.crop_size = self._get_config("CROP_SIZE", self.default_crop_size)
+
+    def _prepare_meta(self, md: metadata.Metadata):
+        # TODO: Add other meta information, such as local solar time.
+        meta = np.zeros(len(AugmentedFeatures))
+        clearsky_values = csd.calculate_clearsky_values(md.coordinates, md.datetime)
+        meta[0 : len(clearsky_values)] = clearsky_values
+
+        return tf.convert_to_tensor(meta)
 
     def _transform_image_path(self, original_path):
         """Transforms a supplied path on "helios" to a local path."""
@@ -55,18 +88,20 @@ class DataLoader(object):
     def gen(self):
         """Generator for images."""
         for md in self.metadata:
+            logging.info(str(md))
             try:
                 image = self.image_reader.read(
                     self._transform_image_path(md.image_path),
                     md.image_offset,
                     md.coordinates,
+                    self.crop_size,
                 )
-            except CorruptedImage:
+            except (CorruptedImage, InvalidImagePath) as e:
                 if self.skip_missing:
-                    # TODO: Add logging code here!
+                    logging.warning("Skipping corrupted image:" + str(md))
                     continue
-            # if image.size == 1:
-            #    # No image was returned. We should skip for training.
+                else:
+                    raise e  # Not handled!
 
             data = tf.convert_to_tensor(image, dtype=tf.float32)
             target = tf.constant(
@@ -77,17 +112,24 @@ class DataLoader(object):
                     _target_value(md.target_ghi_6h),
                 ]
             )
-            yield (data, target)
+            output = (data, target)
+            if self.enable_meta:
+                meta = self._prepare_meta(md)
+                output = output + (meta,)
+            yield output
 
     def create_dataset(self, metadata: Iterable[metadata.Metadata]) -> tf.data.Dataset:
         """Create a tensorflow Dataset base on the metadata and dataloader's config.
 
         Targets are optional in Metadata. If one is missing, set it to zero.
         """
+        output_shape = (tf.float32, tf.float32)
+        if self.enable_meta:
+            output_shape = output_shape + (tf.float32,)
         if self.metadata is not None:
             raise ValueError("Create_dataset can only be called once per instance")
         self.metadata = metadata
-        return tf.data.Dataset.from_generator(self.gen, (tf.float32, tf.float32))
+        return tf.data.Dataset.from_generator(self.gen, output_shape)
 
 
 def _target_value(target):
