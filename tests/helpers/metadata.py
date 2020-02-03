@@ -12,7 +12,7 @@ IMAGE_SIZE = (650, 1500)
 
 def create_dataset(channels):
     dataloader = DataLoader(ImageReader(channels=channels))
-    return dataloader.create_dataset(_metadata_iterable())
+    return dataloader.create_tf_dataset(_metadata_iterable())
 
 
 def _metadata_iterable():

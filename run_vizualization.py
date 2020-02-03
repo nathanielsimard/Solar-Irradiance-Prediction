@@ -4,8 +4,7 @@ from typing import List
 import numpy as np
 from matplotlib import pyplot as plt
 
-from src.data.dataloader import DataLoader
-from src.data.image import ImageReader
+from src.data import dataloader
 from src.data.metadata import Coordinates, Metadata
 
 BND_COORDINATES = Coordinates(40.05192, -88.37309, 230)
@@ -21,10 +20,12 @@ IMAGE_PATH_2 = "tests/data/samples/2015.11.02.0800.h5"
 
 
 def create_dataset(image_paths, channels, output_size, offsets, coordinates):
-    dataloader = DataLoader(ImageReader(channels=channels, output_size=output_size))
-    return dataloader.create_dataset(
-        _metadata_iterable(image_paths, offsets, coordinates)
+    metadata = _metadata_iterable(image_paths, offsets, coordinates)
+    config = dataloader.Config(
+        crop_size=output_size, channels=channels, features=[dataloader.Feature.image]
     )
+
+    return dataloader.create_dataset(metadata, config=config)
 
 
 def _metadata_iterable(image_paths, offsets, coordinates):
@@ -106,7 +107,7 @@ def visualize():
     ]:
         images = [
             image
-            for image, _ in create_dataset(
+            for (image,) in create_dataset(
                 [IMAGE_PATH_1], channels, output_size, offsets, coordinates
             )
         ]
