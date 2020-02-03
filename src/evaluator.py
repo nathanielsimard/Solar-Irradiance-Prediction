@@ -11,7 +11,6 @@ import tensorflow as tf
 import tqdm
 
 from src.data import dataloader
-from src.data.image import ImageReader
 from src.data.metadata import Coordinates, MetadataLoader, Station
 
 
