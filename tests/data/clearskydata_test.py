@@ -50,7 +50,7 @@ class ClearSkyDataTest(unittest.TestCase):
     def test_clearsky_prediction_function(self):
         target_datetime = datetime(2010, 6, 19, 22, 15)
         config = read_configuration_file(config_test.DUMMY_TEST_CFG_PATH)
-        preditions = csd.get_clearsky_values(
+        preditions = csd.calculate_clearsky_values(
             config.stations[Station.BND], target_datetime
         )
         self.assertCloseTo(preditions[csd.CSMDOffset.GHI_T], 471.675670)

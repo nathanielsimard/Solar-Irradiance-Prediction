@@ -9,7 +9,7 @@ from pathlib import Path
 from enum import IntEnum
 
 from src.data import image, metadata
-from src.data.image import CorruptedImage
+from src.data.image import CorruptedImage, InvalidImagePath
 import src.data.clearskydata as csd
 
 
@@ -30,6 +30,12 @@ class DataLoader(object):
     >>>dataset=dataset.batch(batch_size)
     """
 
+    def _get_config(self, key, default):
+        """Helper function for configuration parsing."""
+        if key not in self.config:
+            return default
+        return self.config[key]
+
     def __init__(
         self, image_reader: image.ImageReader, config: Dict[str, Any] = {}
     ) -> None:
@@ -49,25 +55,20 @@ class DataLoader(object):
         """
         self.image_reader = image_reader
         self.config = config
-        self.skip_missing = False
-        self.local_path = None
-        self.metadata = None
-        self.enable_meta = False
-        self.crop_size = (64, 64)  # Default for now, we should add a parameter
 
-        if "SKIP_MISSING" in config:
-            self.skip_missing = config["SKIP_MISSING"]
-        if "LOCAL_PATH" in self.config:
-            self.local_path = config["LOCAL_PATH"]
-        if "ENABLE_META" in self.config:
-            self.enable_meta = config["ENABLE_META"]
-        if "CROP_SIZE" in self.config:
-            self.crop_size = config["CROP_SIZE"]
+        self.default_crop_size = (64, 64)  # Default for now, we should add a parameter
+
+        self.metadata = None
+
+        self.skip_missing = self._get_config("SKIP_MISSING", False)
+        self.local_path = self._get_config("LOCAL_PATH", None)
+        self.enable_meta = self._get_config("ENABLE_META", False)
+        self.crop_size = self._get_config("CROP_SIZE", self.default_crop_size)
 
     def _prepare_meta(self, md: metadata.Metadata):
         # TODO: Add other meta information, such as local solar time.
         meta = np.zeros(len(AugmentedFeatures))
-        clearsky_values = csd.get_clearsky_values(md.coordinates, md.datetime)
+        clearsky_values = csd.calculate_clearsky_values(md.coordinates, md.datetime)
         meta[0 : len(clearsky_values)] = clearsky_values
 
         return tf.convert_to_tensor(meta)
@@ -95,7 +96,7 @@ class DataLoader(object):
                     md.coordinates,
                     self.crop_size,
                 )
-            except CorruptedImage as e:
+            except (CorruptedImage, InvalidImagePath) as e:
                 if self.skip_missing:
                     logging.warning("Skipping corrupted image:" + str(md))
                     continue

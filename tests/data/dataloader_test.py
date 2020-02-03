@@ -113,8 +113,10 @@ class DataLoaderTest(unittest.TestCase):
     def test_parse_config_crop_size(self):
         dl = DataLoader(self.image_reader, config={"CROP_SIZE": (128, 128)})
         self.assertEqual(dl.crop_size, (128, 128))
+
+    def test_test_parse_config_crop_size_default(self):
         dl = DataLoader(self.image_reader)
-        self.assertEqual(dl.crop_size, (64, 64))  # Checks default size
+        self.assertEqual(dl.crop_size, dl.default_crop_size)  # Checks default size
 
     def _metadata_iterable(
         self,
@@ -165,7 +167,6 @@ class DataLoaderTest(unittest.TestCase):
         )
         dataset = dl.create_dataset(metadata)
         for output in dataset:
-            print(output)
             self.assertEqual(len(output), 3)
 
     def assertCloseTo(self, value: float, target: float, epsilon: float = 0.001):

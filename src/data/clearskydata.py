@@ -29,7 +29,7 @@ class Targets(IntEnum):
     GHI_T_6h = 3
 
 
-def get_clearsky_values(
+def calculate_clearsky_values(
     coordinates: metadata.Coordinates, timestamp: pd.Timestamp
 ) -> np.array:
     """Get a numpy array for clearsky values.
@@ -41,12 +41,12 @@ def get_clearsky_values(
     Returns:
         np.array:-- A numpy array with the computed values at T, T+1, T+3 and T+6 hours.
     """
-    bnd = Location(
+    location = Location(
         latitude=coordinates.latitude,
         longitude=coordinates.longitude,
         altitude=coordinates.altitude,
     )
-    future_clearsky_ghi = bnd.get_clearsky(
+    future_clearsky_ghi = location.get_clearsky(
         pd.date_range(start=timestamp, periods=7, freq="1H")
     )["ghi"]
     # Handle metadata and feature augementation

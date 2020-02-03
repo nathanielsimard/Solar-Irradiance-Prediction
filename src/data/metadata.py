@@ -29,15 +29,7 @@ class Coordinates:
 
     def __str__(self):
         """Convertes coordinates to string. Will be used for logging."""
-        return (
-            "("
-            + str(self.latitude)
-            + ","
-            + str(self.longitude)
-            + ","
-            + str(self.altitude)
-            + ")"
-        )
+        return f"({self.latitude}, {self.longitude}, {self.altitude})"
 
 
 class UnableToLoadMetadata(Exception):
@@ -67,13 +59,7 @@ class Metadata:
 
     def __str__(self):
         """Converts metadata to string for logging. Not all info is output."""
-        return (
-            str(self.image_path)
-            + ","
-            + str(self.datetime)
-            + ","
-            + str(self.coordinates)
-        )
+        return f"{self.image_path}, {self.image_offset}, {self.datetime}, {self.coordinates}"
 
 
 class MetadataLoader:
