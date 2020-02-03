@@ -5,14 +5,18 @@ from unittest import mock
 
 import numpy as np
 
-from src.data.dataloader import DataLoader, AugmentedFeatures
-from src.data.image import ImageReader
-from src.data.metadata import Coordinates, Metadata, MetadataLoader
-
-import tests.data.metadata_test as metadata_test
-import tests.data.config_test as config_test
-
 import src.data.config as cf
+import tests.data.config_test as config_test
+from src.data.dataloader import (
+    Config,
+    DataLoader,
+    Feature,
+    MetadataFeatureIndex,
+    UnregognizedFeature,
+    parse_config,
+)
+from src.data.image import ImageReader
+from src.data.metadata import Coordinates, Metadata
 
 ANY_COMPRESSION = "8bits"
 ANY_IMAGE_OFFSET = 6
@@ -21,18 +25,19 @@ ANY_COORDINATES = Coordinates(10, 10, 10)
 
 FAKE_IMAGE = np.random.randint(low=0, high=255, size=(50, 50))
 
-IMAGE_PATH = "tests/data/samples/2015.11.01.0800.h5"
+IMAGE_NAME = "2015.11.01.0800.h5"
+IMAGE_PATH = f"tests/data/samples/{IMAGE_NAME}"
 
 
 class DataLoaderTest(unittest.TestCase):
     def setUp(self):
         self.image_reader = mock.MagicMock(ImageReader)
-        self.dataloader = DataLoader(self.image_reader)
+        self.dataloader = DataLoader(self._metadata_iterable(), self.image_reader)
 
     def test_givenOneMetadata_whenCreateDataset_shouldReadImage(self):
         self.image_reader.read = mock.Mock(return_value=FAKE_IMAGE)
 
-        dataset = self.dataloader.create_dataset(self._metadata_iterable(IMAGE_PATH))
+        dataset = self.dataloader.generator()
 
         for image, target in dataset:
             self.assertTrue(np.array_equal(FAKE_IMAGE, image.numpy()))
@@ -40,87 +45,120 @@ class DataLoaderTest(unittest.TestCase):
     def test_givenOneMetadata_whenCreateDataset_shouldReadOneImage(self):
         self.image_reader.read = mock.Mock(return_value=FAKE_IMAGE)
 
-        dataset = self.dataloader.create_dataset(self._metadata_iterable(IMAGE_PATH))
+        dataset = self.dataloader.generator()
 
         self.assertEqual(1, num_elems(dataset))
 
     def test_givenOneMetadata_whenCreateDataset_shouldReturnTarget(self):
         self.image_reader.read = mock.Mock(return_value=FAKE_IMAGE)
         targets = np.array([2, 3, 4, 5])
-        dataset = self.dataloader.create_dataset(
+        self.dataloader = DataLoader(
             self._metadata_iterable(
-                IMAGE_PATH,
                 target_ghi=targets[0],
                 target_ghi_1h=targets[1],
                 target_ghi_3h=targets[2],
                 target_ghi_6h=targets[3],
-            )
+            ),
+            self.image_reader,
         )
 
-        for image, actual_targets in dataset:
+        for image, actual_targets in self.dataloader.generator():
             self.assertTrue(np.array_equal(actual_targets, targets))
 
-    def test_transform_image_path_no_transform(self):
-        self.dataloader.local_path = None
-        new_path = self.dataloader._transform_image_path(
-            "/project/cq-training-1/project1/data/hdf5v7_8bit/2010.01.11.0800.h5"
-        )
-        self.assertEqual(
-            new_path,
-            "/project/cq-training-1/project1/data/hdf5v7_8bit/2010.01.11.0800.h5",
+    def test_givenNoLocalPath_shouldUseOriginalPath(self):
+        self.dataloader = DataLoader(
+            self._metadata_iterable(), self.image_reader, Config(local_path=None),
         )
 
-    def test_transform_image_path(self):
-        local_path = "/home/raphael/MILA/ift6759/project1_data/hdf5v7_8bit/"
-        self.dataloader.local_path = local_path
-        new_path = self.dataloader._transform_image_path(
-            "/project/cq-training-1/project1/data/hdf5v7_8bit/2010.01.11.0800.h5"
-        )
-        self.assertEqual(
-            new_path,
-            "/home/raphael/MILA/ift6759/project1_data/hdf5v7_8bit/2010.01.11.0800.h5",
+        dataset = self.dataloader.generator()
+        list(dataset)  # Force evaluate the dataset
+
+        self.image_reader.read.assert_called_with(
+            IMAGE_PATH, mock.ANY, mock.ANY, mock.ANY
         )
 
-    def test_create_dataset_once(self):
-        dl = DataLoader(self.image_reader)
-        loader = MetadataLoader(metadata_test.CATALOG_PATH)
-        metadata = loader.load(
-            metadata_test.A_STATION,
-            metadata_test.A_STATION_COORDINATE,
-            compression=None,
+    def test_givenLocalPath_shouldUseLocalPathAsRoot(self):
+        local_path = "local/path/"
+        self.dataloader = DataLoader(
+            self._metadata_iterable(), self.image_reader, Config(local_path=local_path),
         )
-        dl.create_dataset(metadata)
-        self.assertRaises(ValueError, callable=dl.create_dataset, args=metadata)
+
+        dataset = self.dataloader.generator()
+        list(dataset)
+
+        expected_path = f"{local_path}{IMAGE_NAME}"
+        self.image_reader.read.assert_called_with(
+            expected_path, mock.ANY, mock.ANY, mock.ANY
+        )
 
     def test_parse_config_local_path(self):
-        dl = DataLoader(self.image_reader, config={"LOCAL_PATH": "test"})
-        self.assertEqual(dl.local_path, "test")
-        dl = DataLoader(self.image_reader)
-        self.assertEqual(dl.local_path, None)
+        config = parse_config({"LOCAL_PATH": "test"})
+
+        self.assertEqual(config.local_path, "test")
 
     def test_parse_config_skip_missing(self):
-        dl = DataLoader(self.image_reader, config={"SKIP_MISSING": True})
-        self.assertEqual(dl.skip_missing, True)
-        dl = DataLoader(self.image_reader)
-        self.assertEqual(dl.skip_missing, False)
+        config = parse_config({"SKIP_MISSING": True})
 
-    def test_parse_config_enable_meta(self):
-        dl = DataLoader(self.image_reader, config={"ENABLE_META": True})
-        self.assertEqual(dl.enable_meta, True)
-        dl = DataLoader(self.image_reader)
-        self.assertEqual(dl.enable_meta, False)
+        self.assertEqual(config.skip_missing, True)
 
     def test_parse_config_crop_size(self):
-        dl = DataLoader(self.image_reader, config={"CROP_SIZE": (128, 128)})
-        self.assertEqual(dl.crop_size, (128, 128))
+        config = parse_config({"CROP_SIZE": (128, 128)})
 
-    def test_test_parse_config_crop_size_default(self):
-        dl = DataLoader(self.image_reader)
-        self.assertEqual(dl.crop_size, dl.default_crop_size)  # Checks default size
+        self.assertEqual(config.crop_size, (128, 128))
+
+    def test_parse_config_features(self):
+        config = parse_config({"FEATURES": ["image", "target_ghi", "metadata"]})
+
+        self.assertEqual(
+            config.features, [Feature.image, Feature.target_ghi, Feature.metadata],
+        )
+
+    def test_metadata_format(self):
+        config = cf.read_configuration_file(config_test.DUMMY_TEST_CFG_PATH)
+        metadata = Metadata(
+            "",
+            "",
+            0,
+            datetime=datetime(2010, 6, 19, 22, 15),
+            coordinates=config.stations[cf.Station.BND],
+        )
+
+        self.dataloader = DataLoader(
+            [metadata], self.image_reader, Config(features=[Feature.metadata]),
+        )
+
+        for (meta,) in self.dataloader.generator():
+            self.assertCloseTo(meta[MetadataFeatureIndex.GHI_T], 471.675670)
+            self.assertCloseTo(meta[MetadataFeatureIndex.GHI_T_1h], 280.165857)
+            self.assertCloseTo(meta[MetadataFeatureIndex.GHI_T_3h], 0.397029)
+            self.assertCloseTo(meta[MetadataFeatureIndex.GHI_T_6h], 0.0)
+            self.assertCloseTo(meta[MetadataFeatureIndex.SOLAR_TIME], 0.0)
+
+    def test_givenFeatures_whenCreateDataset_shouldReturnSameNumberOfFeatures(self):
+        features = [
+            Feature.image,
+            Feature.target_ghi,
+            Feature.metadata,
+        ]
+
+        self.dataloader = DataLoader(
+            self._metadata_iterable(), self.image_reader, Config(features=features),
+        )
+
+        for data in self.dataloader.generator():
+            self.assertEqual(len(data), len(features))
+
+    def test_givenWrongFeature_whenParse_shouldRaise(self):
+        self.assertRaises(
+            UnregognizedFeature, lambda: parse_config({"FEATURES": ["wrong_format"]}),
+        )
+
+    def assertCloseTo(self, value: float, target: float, epsilon: float = 0.001):
+        self.assertAlmostEqual(value, target, delta=epsilon)
 
     def _metadata_iterable(
         self,
-        image_path: str,
+        image_path: str = IMAGE_PATH,
         target_ghi: Optional[float] = None,
         target_ghi_1h: Optional[float] = None,
         target_ghi_3h: Optional[float] = None,
@@ -137,50 +175,6 @@ class DataLoaderTest(unittest.TestCase):
             target_ghi_3h=target_ghi_3h,
             target_ghi_6h=target_ghi_6h,
         )
-
-    def test_metadata_format(self):
-        # TODO: Add more metadata, such as solar time.
-        config = cf.read_configuration_file(config_test.DUMMY_TEST_CFG_PATH)
-        md = Metadata(
-            "",
-            "",
-            0,
-            datetime=datetime(2010, 6, 19, 22, 15),
-            coordinates=config.stations[cf.Station.BND],
-        )
-        meta = self.dataloader._prepare_meta(md)
-        self.assertCloseTo(meta[AugmentedFeatures.GHI_T], 471.675670)
-        self.assertCloseTo(meta[AugmentedFeatures.GHI_T_1h], 280.165857)
-        self.assertCloseTo(meta[AugmentedFeatures.GHI_T_3h], 0.397029)
-        self.assertCloseTo(meta[AugmentedFeatures.GHI_T_6h], 0.0)
-        self.assertCloseTo(meta[AugmentedFeatures.SOLAR_TIME], 0.0)
-
-    def test_metadata_enable(self):
-        config = {}
-        config["ENABLE_META"] = True
-        dl = DataLoader(self.image_reader, config)
-        loader = MetadataLoader(metadata_test.CATALOG_PATH)
-        metadata = loader.load(
-            metadata_test.A_STATION,
-            metadata_test.A_STATION_COORDINATE,
-            compression=None,
-        )
-        dataset = dl.create_dataset(metadata)
-        for output in dataset:
-            self.assertEqual(len(output), 3)
-
-    def assertCloseTo(self, value: float, target: float, epsilon: float = 0.001):
-        """ Check if a value is close to another, between +- epsilon.
-
-        Arguments:
-            value {float} -- value to test
-            target {float} -- value wanted
-
-        Keyword Arguments:
-            epsilon {float} -- [+- range for the value] (default: {0.001})
-        """
-        self.assertGreater(value, target - epsilon)
-        self.assertLess(value, target + epsilon)
 
 
 def num_elems(iterable):
