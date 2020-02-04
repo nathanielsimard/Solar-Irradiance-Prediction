@@ -8,7 +8,6 @@ import tensorflow as tf
 
 import src.data.clearskydata as csd
 from src.data import image
-from src.data.image import CorruptedImage, InvalidImagePath
 from src.data.metadata import Metadata
 
 
@@ -20,16 +19,44 @@ class Feature(Enum):
     metadata = "metadata"
 
 
+class ErrorStrategy(Enum):
+    """How error are handled by the dataloader."""
+
+    skip = "skip"
+    ignore = "ignore"
+    stop = "stop"
+
+
 class UnregognizedFeature(Exception):
     """Exception raised when parsing config."""
 
     def __init__(self, feature: str):
         """Create an error message from the unrecognized feature."""
+        possible_values = [e.value for e in Feature]
         super().__init__(
             f"Feature '{feature}' is unrecognized.\n"
-            + f"Valid features are {Feature.image},"
-            + f"{Feature.target_ghi} and {Feature.metadata}."
+            + f"Valid features are {possible_values}."
         )
+
+
+class UnregognizedErrorStrategy(Exception):
+    """Exception raised when parsing config."""
+
+    def __init__(self, error_strategy: str):
+        """Create an error message from the unrecognized error strategy."""
+        possible_values = [e.value for e in ErrorStrategy]
+        super().__init__(
+            f"Error Stategy '{error_strategy}' is unrecognized.\n"
+            + f"Valid error strategies are {possible_values}."
+        )
+
+
+class MissingTargetException(Exception):
+    """Exception raised when reading targets."""
+
+    def __init__(self):
+        """Create an error message."""
+        super().__init__(f"Target is missing.")
 
 
 class Config:
@@ -38,7 +65,7 @@ class Config:
     def __init__(
         self,
         local_path: Optional[str] = None,
-        skip_missing: bool = False,
+        error_strategy=ErrorStrategy.skip,
         crop_size: Tuple[int, int] = (64, 64),
         features: List[Feature] = [Feature.image, Feature.target_ghi],
         channels: List[str] = ["ch1"],
@@ -47,13 +74,13 @@ class Config:
 
         Args:
             local_path: Can overrite the root path of each images.
-            skip_missing: When no image is found, don't load the data.
+            error_strategy: How to handle errors.
             crop_size: Image sized needed.
             features: List of features needed.
             channels: List of channels needed.
         """
         self.local_path = local_path
-        self.skip_missing = skip_missing
+        self.error_strategy = error_strategy
         self.crop_size = crop_size
         self.features = features
         self.channels = channels
@@ -100,35 +127,49 @@ class DataLoader(object):
         for metadata in self.metadata:
             logging.info(str(metadata))
 
-            yield tuple(
-                [self._readers[feature](metadata) for feature in self.config.features]
-            )
+            try:
+                yield tuple(
+                    [
+                        self._readers[feature](metadata)
+                        for feature in self.config.features
+                    ]
+                )
+
+            except Exception as e:
+                if self.config.error_strategy == ErrorStrategy.stop:
+                    logging.error(f"Error while generating data, stopping : {e}")
+                    raise e
+
+                logging.warning(f"Error while generating data, skipping : {e}")
 
     def _read_target(self, metadata: Metadata) -> tf.Tensor:
         return tf.constant(
             [
-                _target_value(metadata.target_ghi),
-                _target_value(metadata.target_ghi_1h),
-                _target_value(metadata.target_ghi_3h),
-                _target_value(metadata.target_ghi_6h),
+                self._target_value(metadata.target_ghi),
+                self._target_value(metadata.target_ghi_1h),
+                self._target_value(metadata.target_ghi_3h),
+                self._target_value(metadata.target_ghi_6h),
             ]
         )
 
     def _read_image(self, metadata: Metadata) -> tf.Tensor:
-        image_path = self._transform_image_path(metadata.image_path)
         try:
+            image_path = self._transform_image_path(metadata.image_path)
             image = self.image_reader.read(
                 image_path,
                 metadata.image_offset,
                 metadata.coordinates,
                 self.config.crop_size,
             )
-        except (CorruptedImage, InvalidImagePath) as e:
-            if not self.config.skip_missing:
-                raise e
-            logging.warning(f"Error while reading image, skipping : {e}")
 
-        return tf.convert_to_tensor(image, dtype=tf.float32)
+            return tf.convert_to_tensor(image, dtype=tf.float32)
+        except Exception as e:
+            if self.config.error_strategy != ErrorStrategy.ignore:
+                raise e
+
+            logging.warning(f"Error while generating data, ignoring : {e}")
+            output_shape = list(self.config.crop_size) + [len(self.config.channels)]
+            return tf.convert_to_tensor(np.zeros(output_shape))
 
     def _read_metadata(self, metadata: Metadata) -> tf.Tensor:
         meta = np.zeros(len(MetadataFeatureIndex))
@@ -138,6 +179,15 @@ class DataLoader(object):
         meta[0 : len(clearsky_values)] = clearsky_values
 
         return tf.convert_to_tensor(meta)
+
+    def _target_value(self, target):
+        if target is not None:
+            return target
+
+        if self.config.error_strategy == ErrorStrategy.ignore:
+            return 0
+
+        raise MissingTargetException()
 
     def _transform_image_path(self, original_path):
         """Transforms a supplied path on "helios" to a local path."""
@@ -176,8 +226,8 @@ def parse_config(config: Dict[str, Any] = {}) -> Config:
                               to a local path. This will enable training on
                               the local machine.
 
-    config["SKIP_MISSING"]  = Will skip missing samples, just leaving a warning
-                              instead of throwing an exception.
+    config["ERROR_STATEGY"] = How error are handled by the dataloader.
+                              Supported values are ["skip", "stop", "ignore"]
 
     config["CROP_SIZE"]     = Size of the crop image arround the center. None will return the
                               whole image.
@@ -196,18 +246,27 @@ def parse_config(config: Dict[str, Any] = {}) -> Config:
     )
     features = _parse_features(features)
 
-    skip_missing = _read_config(config, "SKIP_MISSING", False)
+    error_strategy = _read_config(config, "ERROR_STATEGY", ErrorStrategy.skip.value)
+    error_strategy = _parse_error_strategy(error_strategy)
+
     local_path = _read_config(config, "LOCAL_PATH", None)
     crop_size = _read_config(config, "CROP_SIZE", (64, 64))
     channels = _read_config(config, "CHANNELS", ["ch1"])
 
     return Config(
         local_path=local_path,
-        skip_missing=skip_missing,
+        error_strategy=error_strategy,
         crop_size=crop_size,
         features=features,
         channels=channels,
     )
+
+
+def _parse_error_strategy(error_strategy) -> ErrorStrategy:
+    try:
+        return ErrorStrategy(error_strategy)
+    except ValueError:
+        raise UnregognizedErrorStrategy(error_strategy)
 
 
 def _parse_features(features) -> List[Feature]:
@@ -224,9 +283,3 @@ def _read_config(config, key, default):
     if key not in config:
         return default
     return config[key]
-
-
-def _target_value(target):
-    if target is None:
-        return 0
-    return target
