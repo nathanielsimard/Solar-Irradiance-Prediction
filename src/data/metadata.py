@@ -2,7 +2,7 @@ import pickle
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Iterable, List, Optional
+from typing import Iterable, List, Optional, Tuple
 
 import pandas as pd
 
@@ -263,3 +263,22 @@ class MetadataLoader:
                 return pickle.load(file)
         except FileNotFoundError as e:
             raise UnableToLoadMetadata(e)
+
+
+def train_valid_split(
+    metadata: Iterable[Metadata],
+    date: pd.Timestamp = pd.Timestamp("2015-01-01 00:00:00"),
+) -> Tuple[Iterable[Metadata], Iterable[Metadata]]:
+    """Takes an iterable of metadata and outputs a tuple of metadata sets.
+
+    The split should be made using the 'date' parameter, to ensure the models won't overfit over specific
+    seasons or years. The default split returns as a validation set the whole year of 2015.
+    """
+    training_set = []
+    validation_set = []
+    for md in metadata:
+        if md.datetime < date:
+            training_set.append(md)
+        else:
+            validation_set.append(md)
+    return (training_set, validation_set)
