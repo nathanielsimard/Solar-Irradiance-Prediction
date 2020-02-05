@@ -5,6 +5,8 @@ from enum import IntEnum
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+import shelve
+
 from pvlib.location import Location
 
 from src.data import metadata
@@ -29,33 +31,69 @@ class Targets(IntEnum):
     GHI_T_6h = 3
 
 
-def calculate_clearsky_values(
-    coordinates: metadata.Coordinates, timestamp: pd.Timestamp
-) -> np.array:
-    """Get a numpy array for clearsky values.
+class Clearsky:
+    """Clearsky Prediction Handling Class.
 
-    Arguments:
-        coordinates {metadata.Coordinates} -- Coordinates of the station.
-        timestamp {pd.Timestamp} -- Time at which the model should be evaluated
+    Now with crude caching! (Will take about 1gb on disk / ram)
 
-    Returns:
-        np.array:-- A numpy array with the computed values at T, T+1, T+3 and T+6 hours.
     """
-    location = Location(
-        latitude=coordinates.latitude,
-        longitude=coordinates.longitude,
-        altitude=coordinates.altitude,
-    )
-    future_clearsky_ghi = location.get_clearsky(
-        pd.date_range(start=timestamp, periods=7, freq="1H")
-    )["ghi"]
-    # Handle metadata and feature augementation
-    meta_data = np.zeros(len(CSMDOffset))
-    meta_data[CSMDOffset.GHI_T] = future_clearsky_ghi[0]  # T=0
-    meta_data[CSMDOffset.GHI_T_1h] = future_clearsky_ghi[1]  # T=T+1
-    meta_data[CSMDOffset.GHI_T_3h] = future_clearsky_ghi[3]  # T=T+3
-    meta_data[CSMDOffset.GHI_T_6h] = future_clearsky_ghi[6]  # T=T+7
-    return meta_data
+
+    def __init__(self, clear_cache=False):
+        """Constructor for the cached clearsky.
+
+        Keyword Arguments:
+            clear_cache {bool} -- [Force to clear the cache] (default: {False})
+        """
+        # self.cache = {}  # Crude caching
+        self.cache = shelve.open("clearsky.cache")
+        if clear_cache:
+            self.cache.clear()
+
+    def __del__(self):
+        """Delete the objects and close the cache."""
+        self.cache.close()
+
+    def clear_cache(self):
+        """Forces clearing the cache."""
+        self.cache.clear()
+
+    def _generate_cache_key(self, coordinates, timestamp):
+        ts_str = str(timestamp)
+        return f"{coordinates.latitude:.4f};{coordinates.longitude:.4f};{coordinates.altitude:.2f};{ts_str}"
+
+    def calculate_clearsky_values(
+        self, coordinates: metadata.Coordinates, timestamp: pd.Timestamp
+    ) -> np.array:
+        """Get a numpy array for clearsky values.
+
+        Arguments:
+            coordinates {metadata.Coordinates} -- Coordinates of the station.
+            timestamp {pd.Timestamp} -- Time at which the model should be evaluated
+
+        Returns:
+            np.array:-- A numpy array with the computed values at T, T+1, T+3 and T+6 hours.
+        """
+        cache_key = self._generate_cache_key(coordinates, timestamp)
+        if cache_key not in self.cache:
+            location = Location(
+                latitude=coordinates.latitude,
+                longitude=coordinates.longitude,
+                altitude=coordinates.altitude,
+            )
+            future_clearsky_ghi = location.get_clearsky(
+                pd.date_range(start=timestamp, periods=7, freq="1H")
+            )["ghi"].to_numpy()
+            self.cache[cache_key] = future_clearsky_ghi
+        else:
+            future_clearsky_ghi = self.cache[cache_key]
+
+        # Handle metadata and feature augementation
+        meta_data = np.zeros(len(CSMDOffset))
+        meta_data[CSMDOffset.GHI_T] = future_clearsky_ghi[0]  # T=0
+        meta_data[CSMDOffset.GHI_T_1h] = future_clearsky_ghi[1]  # T=T+1
+        meta_data[CSMDOffset.GHI_T_3h] = future_clearsky_ghi[3]  # T=T+3
+        meta_data[CSMDOffset.GHI_T_6h] = future_clearsky_ghi[6]  # T=T+6
+        return meta_data
 
 
 def prepare_dataloader(
