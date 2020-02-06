@@ -5,6 +5,8 @@ from typing import Iterator
 from src.data import dataloader, split
 from src.data.metadata import Coordinates, Metadata, MetadataLoader, Station
 
+logger = logging.getLogger(__name__)
+
 STATION_COORDINATES = {
     Station.BND: Coordinates(40.05192, -88.37309, 230),
     Station.TBL: Coordinates(40.12498, -105.23680, 1689),
@@ -28,12 +30,12 @@ def train(
     file_name="/project/cq-training-1/project1/data/catalog.helios.public.20100101-20160101.pkl",
     batch_size=64,
 ):
-    logging.info("Start training")
+    logger.info("Start training")
     dataset_train, dataset_valid, dataset_test = _load_data(file_name)
 
     for i, (target,) in enumerate(dataset_train.batch(batch_size)):
         if i % 100 == 0:
-            logging.info(f"Loader target with size {target}")
+            logger.info(f"Loader target with size {target}")
 
 
 def _load_data(file_name):

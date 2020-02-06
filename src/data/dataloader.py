@@ -10,6 +10,8 @@ import src.data.clearskydata as csd
 from src.data import image
 from src.data.metadata import Metadata
 
+logger = logging.getLogger(__name__)
+
 
 class Feature(Enum):
     """Feature which the dataloader can load."""
@@ -125,7 +127,7 @@ class DataLoader(object):
             The order is kept.
         """
         for metadata in self.metadata:
-            logging.info(str(metadata))
+            logger.info(str(metadata))
 
             try:
                 yield tuple(
@@ -137,10 +139,10 @@ class DataLoader(object):
 
             except Exception as e:
                 if self.config.error_strategy == ErrorStrategy.stop:
-                    logging.error(f"Error while generating data, stopping : {e}")
+                    logger.error(f"Error while generating data, stopping : {e}")
                     raise e
 
-                logging.warning(f"Error while generating data, skipping : {e}")
+                logger.warning(f"Error while generating data, skipping : {e}")
 
     def _read_target(self, metadata: Metadata) -> tf.Tensor:
         return tf.constant(
@@ -167,7 +169,7 @@ class DataLoader(object):
             if self.config.error_strategy != ErrorStrategy.ignore:
                 raise e
 
-            logging.warning(f"Error while generating data, ignoring : {e}")
+            logger.warning(f"Error while generating data, ignoring : {e}")
             output_shape = list(self.config.crop_size) + [len(self.config.channels)]
             return tf.convert_to_tensor(np.zeros(output_shape))
 
