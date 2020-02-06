@@ -1,6 +1,6 @@
 import unittest
 
-from src import train
+from src.data import train
 from src.data.metadata import Metadata, MetadataLoader
 
 CATALOG_PATH = "tests/data/samples/catalog-test.pkl"
