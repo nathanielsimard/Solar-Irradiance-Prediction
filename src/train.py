@@ -40,9 +40,9 @@ def _load_data(file_name):
     train_datetimes, valid_datetimes, test_datetimes = split.load()
 
     metadata_loader = MetadataLoader(file_name=file_name)
-    metadata_train = _metadata_station(metadata_loader, train_datetimes)
-    metadata_valid = _metadata_station(metadata_loader, valid_datetimes)
-    metadata_test = _metadata_station(metadata_loader, test_datetimes)
+    metadata_train = metadata_station(metadata_loader, train_datetimes)
+    metadata_valid = metadata_station(metadata_loader, valid_datetimes)
+    metadata_test = metadata_station(metadata_loader, test_datetimes)
 
     dataset_train = dataloader.create_dataset(metadata_train, TRAIN_CONFIG)
     dataset_valid = dataloader.create_dataset(metadata_valid, TRAIN_CONFIG)
@@ -51,7 +51,7 @@ def _load_data(file_name):
     return dataset_train, dataset_valid, dataset_test
 
 
-def _metadata_station(metadata_loader, datetimes) -> Iterator[Metadata]:
+def metadata_station(metadata_loader, datetimes) -> Iterator[Metadata]:
     generators = []
     for station, coordinate in STATION_COORDINATES.items():
         generators.append(
@@ -63,4 +63,4 @@ def _metadata_station(metadata_loader, datetimes) -> Iterator[Metadata]:
                 skip_missing=True,
             )
         )
-    return itertools.chain(generators)
+    return itertools.chain(*generators)
