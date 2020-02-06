@@ -5,27 +5,29 @@ import pandas as pd
 
 from src.data import split
 
+logger = logging.getLogger(__name__)
+
 
 def find_datetimes(
     df_file_name="/project/cq-training-1/project1/data/catalog.helios.public.20100101-20160101.pkl",
 ):
-    logging.info("Finding datetimes")
+    logger.info("Finding datetimes")
     with open(df_file_name, "rb") as file:
         df: pd.Dataframe = pickle.load(file)
         timestamps = df.index.tolist()
         datetimes = [timestamp.to_pydatetime() for timestamp in timestamps]
-        logging.info(f"Found {len(datetimes)} datetimes")
+        logger.info(f"Found {len(datetimes)} datetimes")
 
         return datetimes
 
 
 def main():
-    logging.info("Creating splits")
+    logger.info("Creating splits")
     datetimes = find_datetimes()
     train_set, valid_set, test_set = split.create_split(datetimes)
-    logging.info("Slits created")
+    logger.info("Slits created")
     split.persist_split(train_set, valid_set, test_set)
-    logging.info("Slits persisted")
+    logger.info("Slits persisted")
 
 
 if __name__ == "__main__":
