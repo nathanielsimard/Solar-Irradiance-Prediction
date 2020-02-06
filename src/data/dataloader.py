@@ -127,7 +127,7 @@ class DataLoader(object):
             The order is kept.
         """
         for metadata in self.metadata:
-            logger.info(str(metadata))
+            logger.debug(str(metadata))
 
             try:
                 yield tuple(
