@@ -31,18 +31,18 @@ def create_model():
 
 
 def train(model, batch_size=32):
-    logging.info("Training Conv2D model.")
+    logger.info("Training Conv2D model.")
     optimizer = SGD(0.0001)
-    logging.info("Loading datasets")
+    logger.info("Loading datasets")
     train_set, valid_set, _ = load_data()
     model.compile(loss="mean_squared_error", optimizer=optimizer, metrics=["mse"])
 
-    logging.info("Iterating datasets")
+    logger.info("Iterating datasets")
     for image, target in train_set.batch(32):
-        print(f"Image shape {image.shape}")
-        print(f"Target shape {target.shape}")
+        logger.info(f"Image shape {image.shape}")
+        logger.info(f"Target shape {target.shape}")
 
-    logging.info("Done.")
+    logger.info("Done.")
     historic = model.fit(
         train_set.batch(batch_size),
         validation_data=valid_set.batch(batch_size),
