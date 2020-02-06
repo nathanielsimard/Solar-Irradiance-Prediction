@@ -37,11 +37,10 @@ def train(model, batch_size=32):
     optimizer = SGD(0.0001)
     model.compile(loss="mean_squared_error", optimizer=optimizer, metrics=["mse"])
 
-    historic = model.fit(
+    historic = model.fit_generator(
         train_set.batch(batch_size),
         validation_data=valid_set.batch(batch_size),
         epochs=1,
-        batch_size=None,
     )
     logger.info("Done.")
     print(historic)
