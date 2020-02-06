@@ -12,7 +12,8 @@ def find_datetimes(
     logging.info("Finding datetimes")
     with open(df_file_name, "rb") as file:
         df: pd.Dataframe = pickle.load(file)
-        datetimes = df.index.tolist()
+        timestamps = df.index.tolist()
+        datetimes = [timestamp.to_pydatetime() for timestamp in timestamps]
         logging.info(f"Found {len(datetimes)} datetimes")
 
         return datetimes
