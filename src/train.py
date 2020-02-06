@@ -38,8 +38,8 @@ def train(
 
 def _load_data(file_name):
     train_datetimes, valid_datetimes, test_datetimes = split.load()
-    metadata_loader = MetadataLoader(file_name=file_name)
 
+    metadata_loader = MetadataLoader(file_name=file_name)
     metadata_train = _metadata_station(metadata_loader, train_datetimes)
     metadata_valid = _metadata_station(metadata_loader, valid_datetimes)
     metadata_test = _metadata_station(metadata_loader, test_datetimes)

@@ -5,8 +5,6 @@
 #SBATCH --mem=10000M
 
 module load python/3.7
-virtualenv --no-download $SLURM_TMPDIR/env
-source $SLURM_TMPDIR/env/bin/activate
-pip install --no-index -r requirements.txt
+source /project/cq-training-1/project1/teams/team10/env/bin/activate
 
 python run_train.py
