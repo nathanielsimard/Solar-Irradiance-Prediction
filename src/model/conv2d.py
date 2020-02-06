@@ -1,7 +1,9 @@
+from tensorflow.keras.layers import (Activation, Conv2D, Dense, Flatten,
+                                     MaxPooling2D)
+from tensorflow.keras.Model import Sequential
+from tensorflow.keras.optimizers import SGD
+
 from src.data.train import load_data
-from tf.keras.layers import Activation, Conv2D, Dense, Flatten, MaxPooling2D
-from tf.keras.Model import Sequential
-from tf.keras.optimizers import SGD
 
 
 def create_model():
