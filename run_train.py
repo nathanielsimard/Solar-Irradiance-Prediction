@@ -4,7 +4,8 @@ from src.model import conv2d
 
 
 def main():
-    conv2d.train(None)
+    model = conv2d.create_model()
+    conv2d.train(model)
 
 
 if __name__ == "__main__":
