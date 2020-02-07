@@ -41,7 +41,7 @@ def create_model():
 def train(model, batch_size=32, epochs=10):
     """Train Conv2D model."""
     logger.info("Training Conv2D model.")
-    train_set, valid_set, _ = load_data(enable_tf_caching=True)
+    train_set, valid_set, _ = load_data(enable_tf_caching=False)
 
     scaling_image = preprocessing.MinMaxScaling(
         preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
@@ -61,10 +61,10 @@ def train(model, batch_size=32, epochs=10):
         loss="mse", optimizer=optimizer, metrics=["mse"],
     )
 
-    log_directory = "/project/cq-training-1/project1/teams/team10/result_log" + datetime.now().strftime(
-        "%Y%m%d-%H%M%S"
+    log_directory = "/project/cq-training-1/project1/teams/team10/tensorboard/run-" + datetime.now().strftime(
+        "%Y-%m-%d_%Hh%Mm%Ss"
     )
-    tensorboard_callback = TensorBoard(log_dir=log_directory, histogram_freq=1)
+    tensorboard_callback = TensorBoard(log_dir=log_directory, update_freq="batch", profile_batch=0)
 
     logger.info("Fit model.")
     model.fit_generator(
