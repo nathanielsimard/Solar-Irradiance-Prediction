@@ -22,7 +22,7 @@ def main():
 
     data_train, _, _ = train.load_data(config=config)
 
-    max_target = data_train.reduce(0, reduce_max)
+    max_target = data_train.reduce(0.0, reduce_max)
     min_target = data_train.reduce(max_target, reduce_min)
 
     logger.info(f"max target value: {max_target}")
