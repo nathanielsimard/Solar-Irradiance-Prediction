@@ -1,7 +1,7 @@
 from datetime import datetime
 
-import tensorflow as tf
 from tensorflow.keras import Sequential
+from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras.layers import (Activation, Conv2D, Dense, Flatten,
                                      MaxPooling2D)
 from tensorflow.keras.optimizers import SGD
@@ -42,9 +42,7 @@ def train(model, batch_size=32):
     log_directory = "/project/cq-training-1/project1/teams/team10/result_log" + datetime.now().strftime(
         "%Y%m%d-%H%M%S"
     )
-    tensorboard_callback = tf.keras.callbacks.Tensorboard(
-        log_dir=log_directory, histogram_freq=1
-    )
+    tensorboard_callback = TensorBoard(log_dir=log_directory, histogram_freq=1)
 
     model.fit_generator(
         train_set.batch(batch_size),
