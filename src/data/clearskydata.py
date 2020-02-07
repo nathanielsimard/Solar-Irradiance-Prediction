@@ -38,24 +38,28 @@ class Clearsky:
 
     """
 
-    def __init__(self, clear_cache=False):
+    def __init__(self, clear_cache=False, enable_caching=False):
         """Constructor for the cached clearsky.
 
         Keyword Arguments:
             clear_cache {bool} -- [Force to clear the cache] (default: {False})
         """
-        # self.cache = {}  # Crude caching
-        self.cache = shelve.open("clearsky.cache")
-        if clear_cache:
-            self.cache.clear()
+        self.cache = {}  # Crude caching
+        self.enable_caching = enable_caching
+        if enable_caching:
+            self.cache = shelve.open("clearsky.cache")
+            if clear_cache:
+                self.cache.clear()
 
     def __del__(self):
         """Delete the objects and close the cache."""
-        self.cache.close()
+        if self.enable_caching:
+            self.cache.close()
 
     def clear_cache(self):
         """Forces clearing the cache."""
-        self.cache.clear()
+        if self.enable_caching:
+            self.cache.clear()
 
     def _generate_cache_key(self, coordinates, timestamp):
         ts_str = str(timestamp)
@@ -74,7 +78,7 @@ class Clearsky:
             np.array:-- A numpy array with the computed values at T, T+1, T+3 and T+6 hours.
         """
         cache_key = self._generate_cache_key(coordinates, timestamp)
-        if cache_key not in self.cache:
+        if cache_key not in self.cache or not self.enable_caching:
             location = Location(
                 latitude=coordinates.latitude,
                 longitude=coordinates.longitude,
@@ -83,7 +87,8 @@ class Clearsky:
             future_clearsky_ghi = location.get_clearsky(
                 pd.date_range(start=timestamp, periods=7, freq="1H")
             )["ghi"].to_numpy()
-            self.cache[cache_key] = future_clearsky_ghi
+            if self.enable_caching:
+                self.cache[cache_key] = future_clearsky_ghi
         else:
             future_clearsky_ghi = self.cache[cache_key]
 
