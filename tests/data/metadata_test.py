@@ -2,6 +2,8 @@ import pickle
 import unittest
 from datetime import datetime
 from typing import Any, Generator
+import time
+
 
 from src.data.metadata import MetadataLoader, Station, UnableToLoadMetadata, Coordinates
 
@@ -108,6 +110,22 @@ class MetadataLoaderTest(unittest.TestCase):
 
         actual_target: Any = next(metadata).target_ghi
         self.assertAlmostEqual(target, actual_target)
+
+    @unittest.skip("Will probably fail on computers slower than i5-8600k")
+    def test_load_metadata_generator_throughput(self):
+        loader = MetadataLoader(CATALOG_PATH)
+        station_with_target = Station.BND
+        metadata = loader.load(station_with_target, A_STATION_COORDINATE)
+        start_time = time.time()
+        i = 0
+        for md in metadata:
+            i = i + 1
+        delta = time.time() - start_time
+        samples_per_second = i / delta
+        # Reference value on on i5 8600k. Quite slow!
+        # But not the bottleneck. Will need improvement though!
+        self.assertGreater(samples_per_second, 300)
+        self.assertLess(delta, 6.5)
 
     def test_load_metadata_target_ghi_1hour(self):
         loader = MetadataLoader(CATALOG_PATH)

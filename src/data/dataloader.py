@@ -111,6 +111,7 @@ class DataLoader(object):
         self.metadata = metadata
         self.image_reader = image_reader
         self.config = config
+        self.csd = csd.Clearsky()
 
         self._readers = {
             Feature.image: self._read_image,
@@ -175,7 +176,7 @@ class DataLoader(object):
 
     def _read_metadata(self, metadata: Metadata) -> tf.Tensor:
         meta = np.zeros(len(MetadataFeatureIndex))
-        clearsky_values = csd.calculate_clearsky_values(
+        clearsky_values = self.csd.calculate_clearsky_values(
             metadata.coordinates, metadata.datetime
         )
         meta[0 : len(clearsky_values)] = clearsky_values

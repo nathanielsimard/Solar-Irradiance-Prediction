@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime
 
 import tensorflow as tf
-
+import time
 import src.data.clearskydata as csd
 from src.data.config import read_configuration_file
 from src.data.metadata import Station
@@ -50,13 +50,49 @@ class ClearSkyDataTest(unittest.TestCase):
     def test_clearsky_prediction_function(self):
         target_datetime = datetime(2010, 6, 19, 22, 15)
         config = read_configuration_file(config_test.DUMMY_TEST_CFG_PATH)
-        preditions = csd.calculate_clearsky_values(
+        preditions = csd.Clearsky().calculate_clearsky_values(
             config.stations[Station.BND], target_datetime
         )
         self.assertCloseTo(preditions[csd.CSMDOffset.GHI_T], 471.675670)
         self.assertCloseTo(preditions[csd.CSMDOffset.GHI_T_1h], 280.165857)
         self.assertCloseTo(preditions[csd.CSMDOffset.GHI_T_3h], 0.397029)
         self.assertCloseTo(preditions[csd.CSMDOffset.GHI_T_6h], 0.0)
+
+    def test_clearsky_cache_key(self):
+        cs = csd.Clearsky()
+        target_datetime = datetime(2010, 6, 19, 22, 15)
+        config = read_configuration_file(config_test.DUMMY_TEST_CFG_PATH)
+        key = cs._generate_cache_key(config.stations[Station.BND], target_datetime)
+        self.assertEquals(key, "40.0519;-88.3731;230.00;2010-06-19 22:15:00")
+
+    @unittest.skip("Not essential")
+    def test_clearsky_prediction_uncached_performance(self):
+        target_datetime = datetime(2010, 6, 19, 22, 15)
+        config = read_configuration_file(config_test.DUMMY_TEST_CFG_PATH)
+        start_time = time.time()
+        iterations = 100
+        for i in range(0, iterations):
+            csd.Clearsky(clear_cache=True).calculate_clearsky_values(
+                config.stations[Station.BND], target_datetime
+            )
+        delta = time.time() - start_time
+        iterations_per_seconde = iterations / delta
+        self.assertLess(delta, 4)  # 3.59s on i5 8600k
+        self.assertGreater(iterations_per_seconde, 25)  # 27.57 IPS. Too slow!
+
+    @unittest.skip("Not essential")
+    def test_clearsky_prediction_cached_performance(self):
+        target_datetime = datetime(2010, 6, 19, 22, 15)
+        config = read_configuration_file(config_test.DUMMY_TEST_CFG_PATH)
+        start_time = time.time()
+        iterations = 1000
+        cs = csd.Clearsky()
+        for i in range(0, iterations):
+            cs.calculate_clearsky_values(config.stations[Station.BND], target_datetime)
+        delta = time.time() - start_time
+        iterations_per_seconde = iterations / delta
+        self.assertLess(delta, 0.1)  # 0.058s on i5 8600k
+        self.assertGreater(iterations_per_seconde, 25)  # 17 196 IPS. Ok!
 
     def test_clearsky_targets(self):
         dataset = self._create_data_loader(target_datetimes=[datetime(2010, 1, 1, 13)])
