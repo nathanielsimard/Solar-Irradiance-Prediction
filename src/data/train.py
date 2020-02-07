@@ -1,13 +1,13 @@
 import itertools
-import logging
 from typing import Iterator, Tuple
 
 import tensorflow as tf
 
+from src import logging
 from src.data import dataloader, split
 from src.data.metadata import Coordinates, Metadata, MetadataLoader, Station
 
-logger = logging.getLogger(__name__)
+logger = logging.create_logger(__name__)
 
 STATION_COORDINATES = {
     Station.BND: Coordinates(40.05192, -88.37309, 230),

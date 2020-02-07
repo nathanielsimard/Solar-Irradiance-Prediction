@@ -1,14 +1,15 @@
-import logging
+from datetime import datetime
 
 import tensorflow as tf
 from tensorflow.keras import Sequential
-from tensorflow.keras.layers import Activation, Conv2D, Dense, Flatten, MaxPooling2D
+from tensorflow.keras.layers import (Activation, Conv2D, Dense, Flatten,
+                                     MaxPooling2D)
 from tensorflow.keras.optimizers import SGD
 
+from src import logging
 from src.data.train import load_data
-from datetime import datetime
 
-logger = logging.getLogger(__name__)
+logger = logging.create_logger(__name__)
 
 
 def create_model():
@@ -38,8 +39,9 @@ def train(model, batch_size=32):
     optimizer = SGD(0.0001)
     model.compile(loss="mean_squared_error", optimizer=optimizer, metrics=["mse"])
 
-    log_directory = "/project/cq-training-1/project1/teams/team10/result_log"
-    +datetime.now().strftime("%Y%m%d-%H%M%S")
+    log_directory = "/project/cq-training-1/project1/teams/team10/result_log" + datetime.now().strftime(
+        "%Y%m%d-%H%M%S"
+    )
     tensorboard_callback = tf.keras.callbacks.Tensorboard(
         log_dir=log_directory, histogram_freq=1
     )

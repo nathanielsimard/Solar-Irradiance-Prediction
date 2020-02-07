@@ -1,4 +1,3 @@
-import logging
 from enum import Enum, IntEnum
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
@@ -7,10 +6,11 @@ import numpy as np
 import tensorflow as tf
 
 import src.data.clearskydata as csd
+from src import logging
 from src.data import image
 from src.data.metadata import Metadata
 
-logger = logging.getLogger(__name__)
+logger = logging.create_logger(__name__)
 
 
 class Feature(Enum):
