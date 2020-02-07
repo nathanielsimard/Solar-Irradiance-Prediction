@@ -30,3 +30,18 @@ All the images have dimension 650x1500
 - GWN: X = 660, Y = 296
 - PSU: X = 883, Y = 174
 - SXF: X = 533, Y = 118
+
+## TensorBoard
+
+You can view the tensorboard interactivly on `helio` by creating a ssh bridge.
+For example, given a tensorboard file `/path/to/tensorboard/file_dir` on port `8008`.
+
+```bash
+ssh -L 8008:localhost:8008 helios
+```
+Then run the script which will make the tensorboard available at `localhost:8008`.
+
+```bash
+scripts/tensorboard.sh /path/to/tensorboard/file_dir 8008`.
+```
+
