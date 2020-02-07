@@ -201,8 +201,8 @@ class DataLoader(object):
     def _scale_image(self, image):
         return image / 255
 
-    def _scale_target(self, target_value):
-        return target_value / 600
+    def _scale_target(self, target_value, scaling_value):
+        return target_value / scaling_value
 
 
 def create_dataset(
