@@ -1,17 +1,18 @@
-from src.data import train, dataloader
+import tensorflow as tf
+
 from src import logging
-import numpy as np
+from src.data import dataloader, train
 
 logger = logging.create_logger(__name__)
 
 
 def reduce_max(acc, x):
-    max_x = np.max(x.numpy())
+    max_x = tf.math.reduce_max(x[0])
     return acc if acc > max_x else max_x
 
 
 def reduce_min(acc, x):
-    min_x = np.min(x.numpy())
+    min_x = tf.math.reduce_min(x[0])
     return acc if acc < min_x else min_x
 
 
