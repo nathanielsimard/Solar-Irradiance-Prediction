@@ -7,17 +7,10 @@ import numpy as np
 
 import src.data.config as cf
 import tests.data.config_test as config_test
-from src.data.dataloader import (
-    Config,
-    DataLoader,
-    ErrorStrategy,
-    Feature,
-    MetadataFeatureIndex,
-    MissingTargetException,
-    UnregognizedErrorStrategy,
-    UnregognizedFeature,
-    parse_config,
-)
+from src.data.dataloader import (Config, DataLoader, ErrorStrategy, Feature,
+                                 MetadataFeatureIndex, MissingTargetException,
+                                 UnregognizedErrorStrategy,
+                                 UnregognizedFeature, parse_config)
 from src.data.image import ImageReader
 from src.data.metadata import Coordinates, Metadata
 
@@ -38,7 +31,7 @@ AN_EXCEPTION_TYPE = UnregognizedErrorStrategy
 class DataLoaderTest(unittest.TestCase):
     def setUp(self):
         self.image_reader = mock.MagicMock(ImageReader)
-        self.dataloader = DataLoader([self._metadata()], self.image_reader)
+        self.dataloader = DataLoader(lambda: [self._metadata()], self.image_reader)
 
     def test_givenOneMetadata_whenCreateDataset_shouldReadImage(self):
         self.image_reader.read = mock.Mock(return_value=FAKE_IMAGE)
@@ -59,7 +52,7 @@ class DataLoaderTest(unittest.TestCase):
         self.image_reader.read = mock.Mock(return_value=FAKE_IMAGE)
         targets = np.array([2, 3, 4, 5])
         self.dataloader = DataLoader(
-            [
+            lambda: [
                 self._metadata(
                     target_ghi=targets[0],
                     target_ghi_1h=targets[1],
@@ -75,7 +68,7 @@ class DataLoaderTest(unittest.TestCase):
 
     def test_givenNoLocalPath_shouldUseOriginalPath(self):
         self.dataloader = DataLoader(
-            [self._metadata()], self.image_reader, Config(local_path=None),
+            lambda: [self._metadata()], self.image_reader, Config(local_path=None),
         )
 
         dataset = self.dataloader.generator()
@@ -88,7 +81,9 @@ class DataLoaderTest(unittest.TestCase):
     def test_givenLocalPath_shouldUseLocalPathAsRoot(self):
         local_path = "local/path/"
         self.dataloader = DataLoader(
-            [self._metadata()], self.image_reader, Config(local_path=local_path),
+            lambda: [self._metadata()],
+            self.image_reader,
+            Config(local_path=local_path),
         )
 
         dataset = self.dataloader.generator()
@@ -105,7 +100,7 @@ class DataLoaderTest(unittest.TestCase):
         self.image_reader.read = mock.Mock(side_effect=[AN_EXCEPTION, FAKE_IMAGE])
 
         self.dataloader = DataLoader(
-            [self._metadata(), self._metadata()],
+            lambda: [self._metadata(), self._metadata()],
             self.image_reader,
             Config(error_strategy=ErrorStrategy.skip),
         )
@@ -117,7 +112,7 @@ class DataLoaderTest(unittest.TestCase):
         self.image_reader.read = mock.Mock(side_effect=[AN_EXCEPTION, FAKE_IMAGE])
 
         self.dataloader = DataLoader(
-            [self._metadata(), self._metadata()],
+            lambda: [self._metadata(), self._metadata()],
             self.image_reader,
             Config(error_strategy=ErrorStrategy.stop),
         )
@@ -133,7 +128,7 @@ class DataLoaderTest(unittest.TestCase):
         expected_image_shape = crop_size + [num_channels]
 
         self.dataloader = DataLoader(
-            [self._metadata(), self._metadata()],
+            lambda: [self._metadata(), self._metadata()],
             self.image_reader,
             Config(
                 error_strategy=ErrorStrategy.ignore,
@@ -150,7 +145,7 @@ class DataLoaderTest(unittest.TestCase):
 
     def test_givenSkipErrorStrategy_whenMissingTarget_shouldSkipToNextItem(self,):
         self.dataloader = DataLoader(
-            [self._metadata(target_ghi_1h=None), self._metadata()],
+            lambda: [self._metadata(target_ghi_1h=None), self._metadata()],
             self.image_reader,
             Config(error_strategy=ErrorStrategy.skip),
         )
@@ -160,7 +155,7 @@ class DataLoaderTest(unittest.TestCase):
 
     def test_givenStopErrorStrategy_whenMissingTarget_shouldRaise(self):
         self.dataloader = DataLoader(
-            [self._metadata(), self._metadata(target_ghi_3h=None)],
+            lambda: [self._metadata(), self._metadata(target_ghi_3h=None)],
             self.image_reader,
             Config(error_strategy=ErrorStrategy.stop),
         )
@@ -170,7 +165,7 @@ class DataLoaderTest(unittest.TestCase):
 
     def test_givenIgnoreErrorStrategy_whenMissingTarget_shouldReturnDummyTarget(self,):
         self.dataloader = DataLoader(
-            [self._metadata(target_ghi=None)],
+            lambda: [self._metadata(target_ghi=None)],
             self.image_reader,
             Config(error_strategy=ErrorStrategy.ignore,),
         )
@@ -225,7 +220,7 @@ class DataLoaderTest(unittest.TestCase):
         )
 
         self.dataloader = DataLoader(
-            [metadata], self.image_reader, Config(features=[Feature.metadata]),
+            lambda: [metadata], self.image_reader, Config(features=[Feature.metadata]),
         )
 
         for (meta,) in self.dataloader.generator():
@@ -243,7 +238,7 @@ class DataLoaderTest(unittest.TestCase):
         ]
 
         self.dataloader = DataLoader(
-            [self._metadata()], self.image_reader, Config(features=features),
+            lambda: [self._metadata()], self.image_reader, Config(features=features),
         )
 
         for data in self.dataloader.generator():
