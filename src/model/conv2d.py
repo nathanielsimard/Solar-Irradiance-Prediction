@@ -16,14 +16,17 @@ def create_model():
     input_shape = (64, 64, 5)
     model = Sequential(
         [
-            Conv2D(32, kernel_size=(8, 8), input_shape=input_shape),
+            Conv2D(64, kernel_size=(5, 5), input_shape=input_shape),
             Activation("relu"),
             MaxPooling2D(pool_size=(2, 2)),
-            Conv2D(64, kernel_size=(8, 8)),
+            Conv2D(128, kernel_size=(5, 5)),
+            Activation("relu"),
+            MaxPooling2D(pool_size=(2, 2)),
+            Conv2D(128, kernel_size=(3, 3)),
             Activation("relu"),
             MaxPooling2D(pool_size=(2, 2)),
             Flatten(),
-            Dense(128),
+            Dense(256),
             Activation("relu"),
             Dense(4),
         ]
@@ -37,7 +40,11 @@ def train(model, batch_size=32):
     train_set, valid_set, _ = load_data()
 
     optimizer = SGD(0.0001)
-    model.compile(loss="mean_squared_error", optimizer=optimizer, metrics=["mse"])
+    model.compile(
+        loss="root_mean_squared_error",
+        optimizer=optimizer,
+        metrics=["root_mean_squared_error"],
+    )
 
     log_directory = "/project/cq-training-1/project1/teams/team10/result_log" + datetime.now().strftime(
         "%Y%m%d-%H%M%S"
