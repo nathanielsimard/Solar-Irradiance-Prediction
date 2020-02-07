@@ -41,9 +41,7 @@ def train(model, batch_size=32):
 
     optimizer = SGD(0.0001)
     model.compile(
-        loss="root_mean_squared_error",
-        optimizer=optimizer,
-        metrics=["root_mean_squared_error"],
+        loss="mse", optimizer=optimizer, metrics=["mse"],
     )
 
     log_directory = "/project/cq-training-1/project1/teams/team10/result_log" + datetime.now().strftime(
