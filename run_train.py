@@ -1,5 +1,3 @@
-# Configuring logger.
-from src import logging  # noqa: F401
 from src.model import conv2d
 
 
