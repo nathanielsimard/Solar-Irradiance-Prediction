@@ -1,8 +1,7 @@
 import unittest
 
 from src.data import dataloader, metadata
-from src.data.preprocessing import (MinMaxScaling, find_target_ghi_max_value,
-                                    find_target_ghi_min_value)
+from src.data.preprocessing import MinMaxScaling, find_target_ghi_minmax_value
 from src.data.train import default_config
 
 CATALOG_PATH = "tests/data/samples/catalog-test.pkl"
@@ -59,12 +58,8 @@ class TargetGHIIntegrationTest(unittest.TestCase):
             metadata_loader.load(A_STATION, A_STATION_COORDINATE), config=config
         )
 
-    def test_find_max_value(self):
-        max_target = find_target_ghi_max_value(dataset=self.dataset)
+    def test_find_minmax_value(self):
+        max_target, min_target = find_target_ghi_minmax_value(dataset=self.dataset)
 
         self.assertTrue(max_target > 0)
-
-    def test_find_min_value(self):
-        min_target = find_target_ghi_min_value(dataset=self.dataset)
-
         self.assertTrue(min_target < 0)

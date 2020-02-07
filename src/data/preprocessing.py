@@ -25,31 +25,23 @@ class MinMaxScaling(object):
         return (value * (self.max_value - self.min_value)) + self.min_value
 
 
-def find_target_ghi_min_value(dataset=None):
+def find_target_ghi_minmax_value(dataset=None):
     """Find the minimum value of target ghi.
 
     The values are found based on the training dataset.
+
+    Return:
+        Tuple with (max_value, min_value)
     """
     if dataset is None:
         config = default_config()
         config.features = [dataloader.Feature.target_ghi]
         dataset, _, _ = load_data(config=config)
 
-    max_value = 100000.0  # Big enough, but still float32
-    return dataset.reduce(max_value, _reduce_min)
+    max_value = dataset.reduce(0.0, _reduce_max)
+    min_value = dataset.reduce(max_value, _reduce_min)
 
-
-def find_target_ghi_max_value(dataset=None):
-    """Find the maximum value of target ghi.
-
-    The values are found based on the training dataset.
-    """
-    if dataset is None:
-        config = default_config()
-        config.features = [dataloader.Feature.target_ghi]
-        dataset, _, _ = load_data(config=config)
-
-    return dataset.reduce(0.0, _reduce_max)
+    return max_value, min_value
 
 
 def _reduce_max(acc, x):

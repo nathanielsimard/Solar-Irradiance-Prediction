@@ -211,11 +211,11 @@ def create_dataset(
     if isinstance(config, Dict):
         config = parse_config(config)
 
+    features_type = tuple(len(config.features) * [tf.float32])
     image_reader = image.ImageReader(channels=config.channels)
-
+    metadata = list(metadata)  # Enable Dataset to be iterated multiple times.
     dataloader = DataLoader(metadata, image_reader, config=config)
 
-    features_type = tuple(len(config.features) * [tf.float32])
     return tf.data.Dataset.from_generator(dataloader.generator, features_type)
 
 

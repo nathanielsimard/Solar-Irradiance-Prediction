@@ -1,13 +1,11 @@
 from src import logging
-from src.data.preprocessing import (find_target_ghi_max_value,
-                                    find_target_ghi_min_value)
+from src.data.preprocessing import find_target_ghi_minmax_value
 
 logger = logging.create_logger(__name__)
 
 
 def main():
-    max_target = find_target_ghi_max_value()
-    min_target = find_target_ghi_min_value()
+    max_target, min_target = find_target_ghi_minmax_value()
 
     logger.info(f"Max target value: {max_target}")
     logger.info(f"Min target value: {min_target}")
