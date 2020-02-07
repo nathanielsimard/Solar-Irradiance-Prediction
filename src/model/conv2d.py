@@ -38,13 +38,13 @@ def create_model():
     return model
 
 
-def train(model, batch_size=32):
+def train(model, batch_size=32, epochs=10):
     """Train Conv2D model."""
     logger.info("Training Conv2D model.")
-    train_set, valid_set, _ = load_data()
+    train_set, valid_set, _ = load_data(enable_tf_caching=True)
 
     scaling_image = preprocessing.MinMaxScaling(0, 255)
-    scaling_target = preprocessing.MinMaxScaling(-3, 650)
+    scaling_target = preprocessing.MinMaxScaling(-6, 1200)
 
     train_set = _scale_dataset(scaling_image, scaling_target, train_set)
     valid_set = _scale_dataset(scaling_image, scaling_target, valid_set)
@@ -63,7 +63,7 @@ def train(model, batch_size=32):
         train_set.batch(batch_size),
         validation_data=valid_set.batch(batch_size),
         callbacks=[tensorboard_callback],
-        epochs=1,
+        epochs=epochs,
     )
     logger.info("Done.")
 

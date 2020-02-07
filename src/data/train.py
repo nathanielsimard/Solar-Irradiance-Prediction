@@ -37,7 +37,7 @@ def load_data(
     skip_missing=True,
     config=default_config(),
     enable_tf_caching=False,
-    cache_file="default_cache",
+    cache_file="/project/cq-training-1/project1/teams/team10/cached/cached",
 ) -> Tuple[tf.data.Dataset, tf.data.Dataset, tf.data.Dataset]:
     """Load train, valid and test datasets.
 
