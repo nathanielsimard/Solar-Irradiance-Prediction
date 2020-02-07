@@ -36,7 +36,7 @@ def load_data(
     night_time=False,
     skip_missing=True,
     config=default_config(),
-    enable_tf_caching=True,
+    enable_tf_caching=False,
     cache_file="default_cache",
 ) -> Tuple[tf.data.Dataset, tf.data.Dataset, tf.data.Dataset]:
     """Load train, valid and test datasets.
