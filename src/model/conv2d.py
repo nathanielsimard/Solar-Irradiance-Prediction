@@ -44,7 +44,7 @@ def train(model, batch_size=32):
         log_dir=log_directory, histogram_freq=1
     )
 
-    historic = model.fit_generator(
+    model.fit_generator(
         train_set.batch(batch_size),
         validation_data=valid_set.batch(batch_size),
         callbacks=[tensorboard_callback],
