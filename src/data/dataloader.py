@@ -1,4 +1,3 @@
-import logging
 from enum import Enum, IntEnum
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
@@ -7,10 +6,11 @@ import numpy as np
 import tensorflow as tf
 
 import src.data.clearskydata as csd
+from src import logging
 from src.data import image
 from src.data.metadata import Metadata
 
-logger = logging.getLogger(__name__)
+logger = logging.create_logger(__name__)
 
 
 class Feature(Enum):
@@ -142,7 +142,7 @@ class DataLoader(object):
                     logger.error(f"Error while generating data, stopping : {e}")
                     raise e
 
-                logger.warning(f"Error while generating data, skipping : {e}")
+                logger.debug(f"Error while generating data, skipping : {e}")
 
     def _read_target(self, metadata: Metadata) -> tf.Tensor:
         return tf.constant(
@@ -169,7 +169,7 @@ class DataLoader(object):
             if self.config.error_strategy != ErrorStrategy.ignore:
                 raise e
 
-            logger.warning(f"Error while generating data, ignoring : {e}")
+            logger.debug(f"Error while generating data, ignoring : {e}")
             output_shape = list(self.config.crop_size) + [len(self.config.channels)]
             return tf.convert_to_tensor(np.zeros(output_shape))
 

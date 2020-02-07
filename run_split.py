@@ -1,11 +1,11 @@
-import logging
 import pickle
 
 import pandas as pd
 
+from src import logging
 from src.data import split
 
-logger = logging.getLogger(__name__)
+logger = logging.create_logger(__name__)
 
 
 def find_datetimes(
@@ -31,9 +31,4 @@ def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        filemode="w",
-        format="%(name)s - %(levelname)s - %(message)s",
-    )
     main()
