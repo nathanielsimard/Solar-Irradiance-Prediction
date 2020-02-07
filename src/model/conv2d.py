@@ -2,8 +2,7 @@ from datetime import datetime
 
 from tensorflow.keras import Sequential
 from tensorflow.keras.callbacks import TensorBoard
-from tensorflow.keras.layers import (Activation, Conv2D, Dense, Flatten,
-                                     MaxPooling2D)
+from tensorflow.keras.layers import Activation, Conv2D, Dense, Flatten, MaxPooling2D
 from tensorflow.keras.optimizers import SGD
 
 from src import logging
@@ -13,6 +12,7 @@ logger = logging.create_logger(__name__)
 
 
 def create_model():
+    """Create Conv2D model."""
     input_shape = (64, 64, 5)
     model = Sequential(
         [
@@ -36,6 +36,7 @@ def create_model():
 
 
 def train(model, batch_size=32):
+    """Train Conv2D model."""
     logger.info("Training Conv2D model.")
     train_set, valid_set, _ = load_data()
 
