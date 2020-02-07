@@ -34,7 +34,7 @@ def create_model():
             Dense(4),
         ]
     )
-    print(model.summary())
+    logger.info(model.summary())
     return model
 
 
@@ -43,8 +43,12 @@ def train(model, batch_size=32, epochs=10):
     logger.info("Training Conv2D model.")
     train_set, valid_set, _ = load_data(enable_tf_caching=True)
 
-    scaling_image = preprocessing.MinMaxScaling(0, 255)
-    scaling_target = preprocessing.MinMaxScaling(-6, 1200)
+    scaling_image = preprocessing.MinMaxScaling(
+        preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
+    )
+    scaling_target = preprocessing.MinMaxScaling(
+        preprocessing.TARGET_GHI_MIN, preprocessing.TARGET_GHI_MAX
+    )
 
     logger.info("Scaling train set.")
     train_set = _scale_dataset(scaling_image, scaling_target, train_set)

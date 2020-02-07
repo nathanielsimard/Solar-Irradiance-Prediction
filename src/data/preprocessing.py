@@ -3,6 +3,12 @@ import tensorflow as tf
 from src.data import dataloader
 from src.data.train import default_config, load_data
 
+TARGET_GHI_MIN = -22.42
+TARGET_GHI_MAX = 1278.55
+
+IMAGE_MIN = 0
+IMAGE_MAX = 255
+
 
 class MinMaxScaling(object):
     """Scale value given the maximum and minimum possible values."""
