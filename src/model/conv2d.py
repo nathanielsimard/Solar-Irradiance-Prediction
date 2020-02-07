@@ -1,11 +1,14 @@
 from datetime import datetime
 
+import tensorflow as tf
 from tensorflow.keras import Sequential
 from tensorflow.keras.callbacks import TensorBoard
-from tensorflow.keras.layers import Activation, Conv2D, Dense, Flatten, MaxPooling2D
+from tensorflow.keras.layers import (Activation, Conv2D, Dense, Flatten,
+                                     MaxPooling2D)
 from tensorflow.keras.optimizers import SGD
 
 from src import logging
+from src.data import preprocessing
 from src.data.train import load_data
 
 logger = logging.create_logger(__name__)
@@ -40,6 +43,12 @@ def train(model, batch_size=32):
     logger.info("Training Conv2D model.")
     train_set, valid_set, _ = load_data()
 
+    scaling_image = preprocessing.MinMaxScaling(0, 255)
+    scaling_target = preprocessing.MinMaxScaling(-3, 650)
+
+    train_set = _scale_dataset(scaling_image, scaling_target, train_set)
+    valid_set = _scale_dataset(scaling_image, scaling_target, valid_set)
+
     optimizer = SGD(0.0001)
     model.compile(
         loss="mse", optimizer=optimizer, metrics=["mse"],
@@ -57,3 +66,16 @@ def train(model, batch_size=32):
         epochs=1,
     )
     logger.info("Done.")
+
+
+def _scale_dataset(
+    scaling_image: preprocessing.MinMaxScaling,
+    scaling_target: preprocessing.MinMaxScaling,
+    dataset: tf.data.Dataset,
+):
+    return dataset.map(
+        lambda image, target_ghi: (
+            scaling_image.normalize(image),
+            scaling_target.normalize(target_ghi),
+        )
+    )

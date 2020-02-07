@@ -164,7 +164,7 @@ class DataLoader(object):
                 self.config.crop_size,
             )
 
-            return tf.convert_to_tensor(self._scale_image(image), dtype=tf.float32)
+            return tf.convert_to_tensor(image, dtype=tf.float32)
         except Exception as e:
             if self.config.error_strategy != ErrorStrategy.ignore:
                 raise e
@@ -184,7 +184,7 @@ class DataLoader(object):
 
     def _target_value(self, target):
         if target is not None:
-            return self._scale_target(target)
+            return target
 
         if self.config.error_strategy == ErrorStrategy.ignore:
             return 0
@@ -197,12 +197,6 @@ class DataLoader(object):
             return original_path
 
         return str(Path(self.config.local_path + "/" + Path(original_path).name))
-
-    def _scale_image(self, image):
-        return image / 255
-
-    def _scale_target(self, target_value, scaling_value):
-        return target_value / scaling_value
 
 
 def create_dataset(
