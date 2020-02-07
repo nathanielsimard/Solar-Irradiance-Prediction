@@ -184,7 +184,7 @@ class DataLoader(object):
 
     def _target_value(self, target):
         if target is not None:
-            return target
+            return self._scale_target(target)
 
         if self.config.error_strategy == ErrorStrategy.ignore:
             return 0
@@ -200,6 +200,9 @@ class DataLoader(object):
 
     def _scale_image(self, image):
         return image / 255
+
+    def _scale_target(self, target_value):
+        return target_value / 600
 
 
 def create_dataset(
