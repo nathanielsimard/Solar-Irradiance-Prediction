@@ -46,10 +46,13 @@ def train(model, batch_size=32, epochs=10):
     scaling_image = preprocessing.MinMaxScaling(0, 255)
     scaling_target = preprocessing.MinMaxScaling(-6, 1200)
 
+    logger.info("Scaling train set.")
     train_set = _scale_dataset(scaling_image, scaling_target, train_set)
+    logger.info("Scaling valid set.")
     valid_set = _scale_dataset(scaling_image, scaling_target, valid_set)
 
     optimizer = SGD(0.0001)
+    logger.info("Compiling model.")
     model.compile(
         loss="mse", optimizer=optimizer, metrics=["mse"],
     )
@@ -59,6 +62,7 @@ def train(model, batch_size=32, epochs=10):
     )
     tensorboard_callback = TensorBoard(log_dir=log_directory, histogram_freq=1)
 
+    logger.info("Fit model.")
     model.fit_generator(
         train_set.batch(batch_size),
         validation_data=valid_set.batch(batch_size),
