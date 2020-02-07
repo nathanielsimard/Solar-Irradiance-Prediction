@@ -55,7 +55,7 @@ class TargetGHIIntegrationTest(unittest.TestCase):
 
         metadata_loader = metadata.MetadataLoader(file_name=CATALOG_PATH)
         self.dataset = dataloader.create_dataset(
-            metadata_loader.load(A_STATION, A_STATION_COORDINATE), config=config
+            lambda: metadata_loader.load(A_STATION, A_STATION_COORDINATE), config=config
         )
 
     def test_find_minmax_value(self):

@@ -1,6 +1,6 @@
 from enum import Enum, IntEnum
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 import tensorflow as tf
@@ -103,7 +103,7 @@ class DataLoader(object):
 
     def __init__(
         self,
-        metadata: Iterable[Metadata],
+        metadata: Callable[[], Iterable[Metadata]],
         image_reader: image.ImageReader,
         config: Config = Config(),
     ):
@@ -127,7 +127,7 @@ class DataLoader(object):
             Each index of the element corresponds to one feature in the configuration.
             The order is kept.
         """
-        for metadata in self.metadata:
+        for metadata in self.metadata():
             logger.debug(str(metadata))
 
             try:
@@ -201,7 +201,8 @@ class DataLoader(object):
 
 
 def create_dataset(
-    metadata: Iterable[Metadata], config: Union[Dict[str, Any], Config] = Config()
+    metadata: Callable[[], Iterable[Metadata]],
+    config: Union[Dict[str, Any], Config] = Config(),
 ) -> tf.data.Dataset:
     """Create a tensorflow Dataset base on the metadata and dataloader's config.
 
@@ -214,7 +215,6 @@ def create_dataset(
 
     features_type = tuple(len(config.features) * [tf.float32])
     image_reader = image.ImageReader(channels=config.channels)
-    metadata = list(metadata)  # Enable Dataset to be iterated multiple times.
     dataloader = DataLoader(metadata, image_reader, config=config)
 
     return tf.data.Dataset.from_generator(dataloader.generator, features_type)

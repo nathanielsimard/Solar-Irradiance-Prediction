@@ -17,17 +17,17 @@ class TrainIntegrationTest(unittest.TestCase):
 
         metadata = train.metadata_station(metadata_loader, datetimes)
 
-        for m in metadata:
+        for m in metadata():
             self.assertTrue(isinstance(m, Metadata))
             break
 
-    def test_itarate_multiple_times(self):
+    def test_iterate_multiple_times(self):
         config = train.default_config()
         config.error_strategy = dataloader.ErrorStrategy.ignore
         config.features = [dataloader.Feature.target_ghi]
         metadata_loader = metadata.MetadataLoader(file_name=CATALOG_PATH)
         dataset = dataloader.create_dataset(
-            metadata_loader.load(A_STATION, A_STATION_COORDINATE), config=config
+            lambda: metadata_loader.load(A_STATION, A_STATION_COORDINATE), config=config
         )
 
         first_run_data = 0

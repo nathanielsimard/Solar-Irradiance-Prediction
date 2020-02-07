@@ -1,5 +1,5 @@
 import itertools
-from typing import Iterator, Tuple
+from typing import Callable, Iterator, Tuple
 
 import tensorflow as tf
 
@@ -80,17 +80,21 @@ def load_data(
 
 def metadata_station(
     metadata_loader, datetimes, night_time=False, skip_missing=True
-) -> Iterator[Metadata]:
+) -> Callable[[], Iterator[Metadata]]:
     """Create metadata for all stations."""
-    generators = []
-    for station, coordinate in STATION_COORDINATES.items():
-        generators.append(
-            metadata_loader.load(
-                station,
-                coordinate,
-                night_time=night_time,
-                target_datetimes=datetimes,
-                skip_missing=skip_missing,
+
+    def gen():
+        generators = []
+        for station, coordinate in STATION_COORDINATES.items():
+            generators.append(
+                metadata_loader.load(
+                    station,
+                    coordinate,
+                    night_time=night_time,
+                    target_datetimes=datetimes,
+                    skip_missing=skip_missing,
+                )
             )
-        )
-    return itertools.chain(*generators)
+        return itertools.chain(*generators)
+
+    return gen
