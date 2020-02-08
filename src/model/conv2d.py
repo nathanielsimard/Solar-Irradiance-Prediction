@@ -3,8 +3,7 @@ from datetime import datetime
 import tensorflow as tf
 from tensorflow.keras import Sequential
 from tensorflow.keras.callbacks import TensorBoard
-from tensorflow.keras.layers import (Activation, Conv2D, Dense, Flatten,
-                                     MaxPooling2D)
+from tensorflow.keras.layers import Activation, Conv2D, Dense, Flatten, MaxPooling2D
 from tensorflow.keras.optimizers import SGD
 
 from src import logging

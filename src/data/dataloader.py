@@ -81,6 +81,7 @@ class Config:
             crop_size: Image sized needed.
             features: List of features needed.
             channels: List of channels needed.
+            image_cache_dir: Where the crop images will be cached.
         """
         self.local_path = local_path
         self.error_strategy = error_strategy

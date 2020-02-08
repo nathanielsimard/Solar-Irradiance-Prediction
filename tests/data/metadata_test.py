@@ -4,8 +4,7 @@ import unittest
 from datetime import datetime
 from typing import Any, Generator
 
-from src.data.metadata import (Coordinates, MetadataLoader, Station,
-                               UnableToLoadMetadata)
+from src.data.metadata import Coordinates, MetadataLoader, Station, UnableToLoadMetadata
 
 CATALOG_PATH = "tests/data/samples/catalog-test.pkl"
 

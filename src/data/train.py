@@ -22,6 +22,7 @@ STATION_COORDINATES = {
 
 
 def default_cache_dir():
+    """Use SCRATCH directory on helios, tmp otherwise."""
     try:
         return os.environ["SCRATCH"]
     except KeyError:
