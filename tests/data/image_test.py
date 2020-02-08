@@ -2,13 +2,8 @@ import unittest
 
 import numpy as np
 
-from src.data.image import (
-    CorruptedImage,
-    ImageReader,
-    InvalidImageChannel,
-    InvalidImageOffSet,
-    InvalidImagePath,
-)
+from src.data.image import (CorruptedImage, ImageReader, InvalidImageChannel,
+                            InvalidImageOffSet, InvalidImagePath)
 from src.data.metadata import Coordinates
 
 ANY_COORDINATES = Coordinates(10, 10, 10)

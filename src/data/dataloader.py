@@ -71,6 +71,7 @@ class Config:
         crop_size: Tuple[int, int] = (64, 64),
         features: List[Feature] = [Feature.image, Feature.target_ghi],
         channels: List[str] = ["ch1"],
+        image_cache_dir="/tmp",
     ):
         """All configurations are optional with default values.
 
@@ -86,6 +87,7 @@ class Config:
         self.crop_size = crop_size
         self.features = features
         self.channels = channels
+        self.image_cache_dir = image_cache_dir
 
 
 class MetadataFeatureIndex(IntEnum):
@@ -214,7 +216,9 @@ def create_dataset(
         config = parse_config(config)
 
     features_type = tuple(len(config.features) * [tf.float32])
-    image_reader = image.ImageReader(channels=config.channels)
+    image_reader = image.ImageReader(
+        channels=config.channels, cache_dir=config.image_cache_dir
+    )
     dataloader = DataLoader(metadata, image_reader, config=config)
 
     return tf.data.Dataset.from_generator(dataloader.generator, features_type)

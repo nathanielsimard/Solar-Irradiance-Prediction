@@ -1,10 +1,15 @@
+import os
+import pickle
 from typing import Optional, Tuple
 
 import h5py
 import numpy as np
 
+from src import logging
 from src.data import metadata
 from src.data.utils import fetch_hdf5_sample, viz_hdf5_imagery
+
+logger = logging.create_logger(__name__)
 
 
 class InvalidImageOffSet(Exception):
@@ -34,14 +39,15 @@ class CorruptedImage(Exception):
 class ImageReader(object):
     """Read the images. Compression format is handle automaticly."""
 
-    def __init__(self, channels=["ch1"]):
+    def __init__(self, channels=["ch1"], cache_dir="/tmp"):
         """Default channel for image reading is ch1.
 
         Args:
             channels: The channels to read from the file.
-
+            cache_dir: Directory where cached image will be.
         """
         self.channels = channels
+        self.cache_dir = cache_dir
 
     def read(
         self,
@@ -65,6 +71,15 @@ class ImageReader(object):
         Raises:
             InvalidImageChannel, InvalidImageOffSet, InvalidImagePath, CorruptedImage:
         """
+        cached_file = self._chache_file(
+            image_path, image_offset, coordinates, output_size
+        )
+
+        try:
+            return self._load_cache_images(cached_file)
+        except FileNotFoundError:
+            logger.debug("Image not in cache")
+
         try:
             with h5py.File(image_path, "r") as file_reader:
                 images = self._read_images(image_offset, file_reader)
@@ -72,7 +87,10 @@ class ImageReader(object):
                     images, image_offset, coordinates, file_reader, output_size
                 )
 
-                return np.dstack(images)
+                images = np.dstack(images)
+                self._cache_images(images, cached_file)
+                return images
+
         except OSError as e:
             raise InvalidImagePath(e)
 
@@ -115,7 +133,35 @@ class ImageReader(object):
         norm_min = file_reader[channel].attrs.get("orig_min", None)
         norm_max = file_reader[channel].attrs.get("orig_max", None)
 
-        return ((sample - norm_min) / (norm_max - norm_min)) * 255
+        scaled = ((sample - norm_min) / (norm_max - norm_min)) * 255
+        return scaled.astype(np.uint8)
+
+    def _cache_images(self, images, file_name):
+        with open(file_name, "wb") as file:
+            pickle.dump(images, file)
+
+    def _load_cache_images(self, file_name) -> np.ndarray:
+        with open(file_name, "rb") as file:
+            return pickle.load(file)
+
+    def _chache_file(
+        self,
+        image_path: str,
+        image_offset: int,
+        coordinates: metadata.Coordinates,
+        output_size: Optional[Tuple[int, int]],
+    ) -> str:
+        name = os.path.basename(image_path)
+        dir_name = (
+            self.cache_dir
+            + f"/{name}"
+            + f"/{image_offset}"
+            + f"/{coordinates}"
+            + f"/{self.channels}"
+        )
+        file = dir_name + f"/{output_size}.pkl"
+        os.makedirs(dir_name, exist_ok=True)
+        return file
 
     def visualize(
         self, image_path: str, channel="ch1",

@@ -20,9 +20,14 @@ IMAGE_PATH_2 = "tests/data/samples/2015.11.02.0800.h5"
 
 
 def create_dataset(image_paths, channels, output_size, offsets, coordinates):
-    metadata = _metadata_iterable(image_paths, offsets, coordinates)
+    def metadata():
+        return _metadata_iterable(image_paths, offsets, coordinates)
+
     config = dataloader.Config(
-        crop_size=output_size, channels=channels, features=[dataloader.Feature.image]
+        crop_size=output_size,
+        channels=channels,
+        features=[dataloader.Feature.image],
+        image_cache_dir="/tmp",
     )
 
     return dataloader.create_dataset(metadata, config=config)
