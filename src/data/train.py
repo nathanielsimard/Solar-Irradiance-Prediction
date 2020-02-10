@@ -1,11 +1,15 @@
 import itertools
 import os
 from typing import Callable, Iterator, Tuple
+from datetime import datetime
 
 import tensorflow as tf
 
+# from tensorflow.keras import optimizers, losses
+from tensorflow.keras.callbacks import TensorBoard
+
 from src import logging
-from src.data import dataloader, split
+from src.data import dataloader, split, preprocessing
 from src.data.metadata import Coordinates, Metadata, MetadataLoader, Station
 
 logger = logging.create_logger(__name__)
@@ -19,6 +23,47 @@ STATION_COORDINATES = {
     Station.PSU: Coordinates(40.72012, -77.93085, 376),
     Station.SXF: Coordinates(43.73403, -96.62328, 473),
 }
+
+
+class Training:
+    def __init__(self, optimizer, model: tf.keras.Model, loss_fn: str):
+        self.optim = optimizer
+        self.loss_fn = loss_fn
+        self.model = model
+
+    def train(self, batch_size=128, epochs=10):
+        logger.info("Training" + str(self.model) + "model.")
+        train_set, valid_set, _ = load_data(enable_tf_caching=False)
+
+        scaling_image = preprocessing.MinMaxScaling(
+            preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
+        )
+        scaling_target = preprocessing.MinMaxScaling(
+            preprocessing.TARGET_GHI_MIN, preprocessing.TARGET_GHI_MAX
+        )
+        logger.info("Scaling train set.")
+        train_set = _scale_dataset(scaling_image, scaling_target, train_set)
+        logger.info("Scaling valid set.")
+        valid_set = _scale_dataset(scaling_image, scaling_target, valid_set)
+        logger.info("Compiling model.")
+        self.model.compile(
+            loss=self.loss, optimizer=self.optim, metrics=[self.loss],
+        )
+        log_directory = "/project/cq-training-1/project1/teams/team10/tensorboard/run-" + datetime.now().strftime(
+            "%Y-%m-%d_%Hh%Mm%Ss"
+        )
+        tensorboard_callback = TensorBoard(
+            log_dir=log_directory, update_freq="epoch", profile_batch=0
+        )
+        logger.info("Fit model.")
+
+        self.model.fit_generator(
+            train_set.batch(batch_size),
+            validation_data=valid_set.batch(batch_size),
+            callbacks=[tensorboard_callback],
+            epochs=epochs,
+        )
+        logger.info("Done.")
 
 
 def default_cache_dir():
@@ -107,3 +152,16 @@ def metadata_station(
         return itertools.chain(*generators)
 
     return gen
+
+
+def _scale_dataset(
+    scaling_image: preprocessing.MinMaxScaling,
+    scaling_target: preprocessing.MinMaxScaling,
+    dataset: tf.data.Dataset,
+):
+    return dataset.map(
+        lambda image, target_ghi: (
+            scaling_image.normalize(image),
+            scaling_target.normalize(target_ghi),
+        )
+    )
