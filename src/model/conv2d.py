@@ -36,7 +36,7 @@ class CNN2D(Model):
         """Name of the model."""
         return "Conv2D"
 
-    def call(self, x, training: bool):
+    def __call__(self, x, training: bool):
         """Performs the forward pass in the neural network.
 
         Can use a different pass with the optional training boolean if
