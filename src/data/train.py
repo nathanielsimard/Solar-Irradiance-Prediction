@@ -5,8 +5,6 @@ from datetime import datetime
 
 import tensorflow as tf
 
-# from tensorflow.keras import optimizers, losses
-
 from src import logging
 from src.data import dataloader, split, preprocessing
 from src.data.metadata import Coordinates, Metadata, MetadataLoader, Station
@@ -122,22 +120,22 @@ class Training:
 
         logger.info("Done.")
 
-        @tf.function
-        def _train_step(self, train_inputs, train_targets, training: bool):
-            with tf.GradientTape() as tape:
-                outputs = self.model(train_inputs, training)
-                loss = self.loss_fn(train_targets, outputs)
-            gradients = tape.gradient(loss, self.model.trainable_variables)
-            self.optim.apply_gradients(zip(gradients, self.model.trainable_variables))
+    @tf.function
+    def _train_step(self, train_inputs, train_targets, training: bool):
+        with tf.GradientTape() as tape:
+            outputs = self.model(train_inputs, training)
+            loss = self.loss_fn(train_targets, outputs)
+        gradients = tape.gradient(loss, self.model.trainable_variables)
+        self.optim.apply_gradients(zip(gradients, self.model.trainable_variables))
 
-            self.train_loss(loss)
+        self.train_loss(loss)
 
-        @tf.function
-        def _valid_step(self, valid_inputs, valid_targets, training: bool):
-            outputs = self.model(valid_inputs, training)
-            loss = self.loss_fn(valid_targets, outputs)
+    @tf.function
+    def _valid_step(self, valid_inputs, valid_targets, training: bool):
+        outputs = self.model(valid_inputs, training)
+        loss = self.loss_fn(valid_targets, outputs)
 
-            self.valid_loss(loss)
+        self.valid_loss(loss)
 
 
 def default_cache_dir():
