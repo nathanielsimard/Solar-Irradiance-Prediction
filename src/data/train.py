@@ -1,4 +1,5 @@
 import itertools
+import os
 from typing import Callable, Iterator, Tuple
 
 import tensorflow as tf
@@ -20,11 +21,20 @@ STATION_COORDINATES = {
 }
 
 
+def default_cache_dir():
+    """Use SCRATCH directory on helios, tmp otherwise."""
+    try:
+        return os.environ["SCRATCH"]
+    except KeyError:
+        return "/tmp"
+
+
 def default_config():
     """Default training configurations."""
     return dataloader.Config(
         error_strategy=dataloader.ErrorStrategy.skip,
         crop_size=(64, 64),
+        image_cache_dir=default_cache_dir(),
         features=[dataloader.Feature.image, dataloader.Feature.target_ghi],
         channels=["ch1", "ch2", "ch3", "ch4", "ch6"],
     )
@@ -32,12 +42,11 @@ def default_config():
 
 def load_data(
     file_name="/project/cq-training-1/project1/data/catalog.helios.public.20100101-20160101.pkl",
-    batch_size=64,
     night_time=False,
     skip_missing=True,
     config=default_config(),
     enable_tf_caching=False,
-    cache_file="/project/cq-training-1/project1/teams/team10/cached/cached",
+    cache_file=default_cache_dir(),
 ) -> Tuple[tf.data.Dataset, tf.data.Dataset, tf.data.Dataset]:
     """Load train, valid and test datasets.
 
