@@ -54,7 +54,7 @@ class Training:
 
         logger.info(model.summary())
 
-    def train(self, batch_size=128, epochs=10, valid_batch_size=256, caching=False):
+    def training(self, batch_size=128, epochs=10, valid_batch_size=256, caching=False):
         """Performs the training of the model in minibatch.
 
         Params:

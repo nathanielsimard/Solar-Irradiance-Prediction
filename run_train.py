@@ -11,7 +11,7 @@ def main():
     training_session = train.Training(
         optimizer=optimizer, model=model, loss_fn=loss_obj
     )
-    training_session.train()
+    training_session.training()
 
 
 if __name__ == "__main__":
