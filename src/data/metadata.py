@@ -2,7 +2,7 @@ import pickle
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Iterable, List, Optional
+from typing import Iterable, List, Optional, Dict, Any
 
 import pandas as pd
 
@@ -127,26 +127,30 @@ class MetadataLoader:
         catalog = self._filter_night(catalog, station, night_time)
 
         target_timestamps = self._target_timestamps(catalog, target_datetimes)
+        catalog = catalog.drop_duplicates()
+        catalog_dict = catalog.to_dict("index")
 
         for i, target_timestamp in enumerate(target_timestamps):
-            if skip_missing:  # During training, we will just ignore missing values.
-                if target_timestamp not in catalog.index:
-                    # TODO: Log missing point.
-                    continue
+            try:
+                row = catalog_dict[target_timestamp]
+            except KeyError as e:
+                if not skip_missing:
+                    raise UnableToLoadMetadata(e)
+
             yield self._build_metadata(
-                catalog,
+                catalog_dict,
                 station,
                 coordinates,
                 image_column,
                 image_offset_column,
-                pd.Timestamp(target_timestamp),
-                catalog.loc[[target_timestamp]].iloc[0],
+                target_timestamp,
+                row,
                 compression,
             )
 
     def _find_future_value(
         self,
-        catalog: pd.DataFrame,
+        rows: Dict[pd.Timestamp, Dict[str, Any]],
         station: Station,
         time: pd.Timestamp,
         hour: int,
@@ -156,7 +160,7 @@ class MetadataLoader:
         # for different data types. This is why I removed the type here. Hope you won't mind ;)
         index = time + pd.to_timedelta(hour, unit="h")
         try:
-            return catalog.loc[index][f"{station.name}_" + variable]
+            return rows[index][f"{station.name}_" + variable]
         except KeyError:
             return None
 
@@ -192,17 +196,15 @@ class MetadataLoader:
 
     def _build_metadata(
         self,
-        catalog: pd.DataFrame,
+        rows: Dict[pd.Timestamp, Dict[str, Any]],
         station: Station,
         coordinates: Coordinates,
         image_column: str,
         image_offset_column: str,
         timestamp: pd.Timestamp,
-        row: pd.Series,
+        row: Dict[str, Any],
         compression: str,
     ) -> Metadata:
-        if not isinstance(row, pd.Series):
-            raise ValueError("Not a series!")
         image_path = row[image_column]
         if image_offset_column is not None:
             image_offset = row[image_offset_column]
@@ -211,24 +213,24 @@ class MetadataLoader:
 
         target_ghi = row[f"{station.name}_GHI"]
         target_ghi_1h = self._find_future_value(
-            catalog, station, timestamp, 1, variable="GHI"
+            rows, station, timestamp, 1, variable="GHI"
         )
         target_ghi_3h = self._find_future_value(
-            catalog, station, timestamp, 3, variable="GHI"
+            rows, station, timestamp, 3, variable="GHI"
         )
         target_ghi_6h = self._find_future_value(
-            catalog, station, timestamp, 6, variable="GHI"
+            rows, station, timestamp, 6, variable="GHI"
         )
 
         target_cloudiness = row[f"{station.name}_CLOUDINESS"]
         target_cloudiness_1h = self._find_future_value(
-            catalog, station, timestamp, 1, variable="CLOUDINESS"
+            rows, station, timestamp, 1, variable="CLOUDINESS"
         )
         target_cloudiness_3h = self._find_future_value(
-            catalog, station, timestamp, 3, variable="CLOUDINESS"
+            rows, station, timestamp, 3, variable="CLOUDINESS"
         )
         target_cloudiness_6h = self._find_future_value(
-            catalog, station, timestamp, 6, variable="CLOUDINESS"
+            rows, station, timestamp, 6, variable="CLOUDINESS"
         )
 
         datetime = timestamp.to_pydatetime()
