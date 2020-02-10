@@ -39,7 +39,8 @@ class CNN2D(Model):
     def call(self, x, training: bool):
         """Performs the forward pass in the neural network.
 
-        Can use a different pass with the optional training boolean if some operations need to be skipped at evaluation(e.g. Dropout)
+        Can use a different pass with the optional training boolean if
+        some operations need to be skipped at evaluation(e.g. Dropout)
         """
         x = self.conv1(x)
         x = self.mp1(x)  # Same here...
