@@ -6,7 +6,8 @@ from datetime import datetime
 import tensorflow as tf
 
 from src import logging
-from src.data import dataloader, split, preprocessing
+from src.data import dataloader, split
+from src.data import preprocessing
 from src.data.metadata import Coordinates, Metadata, MetadataLoader, Station
 
 logger = logging.create_logger(__name__)
@@ -34,6 +35,17 @@ VALID_LOG_DIR = (
 )
 MODEL_SAVE_DIR = "/project/cq-training-1/project1/teams/team10/models"
 CHECKPOINT_TIMESTAMP = 5
+
+
+def default_config():
+    """Default training configurations."""
+    return dataloader.Config(
+        error_strategy=dataloader.ErrorStrategy.skip,
+        crop_size=(64, 64),
+        image_cache_dir=default_cache_dir(),
+        features=[dataloader.Feature.image, dataloader.Feature.target_ghi],
+        channels=["ch1", "ch2", "ch3", "ch4", "ch6"],
+    )
 
 
 class Training:
@@ -144,17 +156,6 @@ def default_cache_dir():
         return os.environ["SCRATCH"]
     except KeyError:
         return "/tmp"
-
-
-def default_config():
-    """Default training configurations."""
-    return dataloader.Config(
-        error_strategy=dataloader.ErrorStrategy.skip,
-        crop_size=(64, 64),
-        image_cache_dir=default_cache_dir(),
-        features=[dataloader.Feature.image, dataloader.Feature.target_ghi],
-        channels=["ch1", "ch2", "ch3", "ch4", "ch6"],
-    )
 
 
 def load_data(
