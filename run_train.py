@@ -1,9 +1,17 @@
 from src.model import conv2d
+from src.data import train
+from tensorflow.keras import optimizers, losses
 
 
 def main():
-    model = conv2d.create_model()
-    conv2d.train(model)
+    """Executable."""
+    model = conv2d.CNN2D()
+    optimizer = optimizers.SGD(0.0001)
+    loss_obj = losses.MeanSquaredError()
+    training_session = train.Training(
+        optimizer=optimizer, model=model, loss_fn=loss_obj
+    )
+    training_session.train()
 
 
 if __name__ == "__main__":
