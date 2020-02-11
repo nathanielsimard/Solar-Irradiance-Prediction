@@ -10,7 +10,7 @@ from src import logging
 from src.data import image
 from src.data.image import InvalidImageChannel, InvalidImageOffSet, CorruptedImage
 from src.data.metadata import Metadata
-
+from src import env
 logger = logging.create_logger(__name__)
 
 
@@ -141,7 +141,9 @@ class DataLoader(object):
                         for feature in self.config.features
                     ]
                 )
-
+            except AttributeError as e:
+                # This is clearly unhandled! We want a crash here!
+                raise e
             except Exception as e:
                 if self.config.error_strategy == ErrorStrategy.stop:
                     logger.error(f"Error while generating data, stopping : {e}")
@@ -221,11 +223,31 @@ def create_dataset(
 
     features_type = tuple(len(config.features) * [tf.float32])
     image_reader = image.ImageReader(
-        channels=config.channels, cache_dir=config.image_cache_dir
+        channels=config.channels, cache_dir=env.get_image_reader_cache_directory()
     )
     dataloader = DataLoader(metadata, image_reader, config=config)
 
     return tf.data.Dataset.from_generator(dataloader.generator, features_type)
+
+
+def create_generator(
+    metadata: Callable[[], Iterable[Metadata]],
+    config: Union[Dict[str, Any], Config] = Config(),
+) -> tf.data.Dataset:
+    """Create a generator that will to the dataloader work. Will be used for debugging.
+    Might be scrapped later on.
+
+    Targets are optional in Metadata. If one is missing, set it to zero.
+    To load a batch of data, you can iterate over the tf.data.Dataset by batch.
+    >>>dataset=dataset.batch(batch_size)
+    """
+    if isinstance(config, Dict):
+        config = parse_config(config)
+
+    image_reader = image.ImageReader(
+        channels=config.channels, cache_dir=env.get_image_reader_cache_directory()
+    )
+    return DataLoader(metadata, image_reader, config=config).generator()
 
 
 def parse_config(config: Dict[str, Any] = {}) -> Config:
