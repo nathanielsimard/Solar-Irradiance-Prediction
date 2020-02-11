@@ -11,6 +11,7 @@ from src.data import image
 from src.data.image import InvalidImageChannel, InvalidImageOffSet, CorruptedImage
 from src.data.metadata import Metadata
 from src import env
+
 logger = logging.create_logger(__name__)
 
 
@@ -236,6 +237,7 @@ def create_generator(
     config: Union[Dict[str, Any], Config] = Config(),
 ) -> tf.data.Dataset:
     """Create a generator that will to the dataloader work. Will be used for debugging.
+
     Might be scrapped later on.
 
     Targets are optional in Metadata. If one is missing, set it to zero.

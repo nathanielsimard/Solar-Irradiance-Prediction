@@ -20,6 +20,21 @@ DEFAULT_LOCAL_DATA_PATH = "../project1_data"
 _local_data_path = DEFAULT_LOCAL_DATA_PATH
 
 
+def get_image_reader_cache_directory() -> str:
+    """Get the image reader cache directry.
+
+    This will be the location where the pickled images
+    will be put by the image reader.
+
+    Returns:
+        str -- [path where to put the pickled images]
+    """
+    if not run_local:
+        return "/tmp/"
+    else:
+        return "../image_reader_cache/"
+
+
 def get_tensorboard_log_directory() -> str:
     """Get the tensor board directory. By default, will give the path on the server.
 
