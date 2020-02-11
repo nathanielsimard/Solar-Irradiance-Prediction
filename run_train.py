@@ -22,7 +22,7 @@ def main():
     env.run_local = args.run_local
     model = conv2d.create_model()
     conv2d.logger.setLevel(logging.DEBUG)
-    conv2d.train(model, enable_tf_caching=args.enable_tf_caching)
+    conv2d.train(model, enable_tf_caching=args.enable_tf_caching, dry_run=args.dry_run)
 
 
 if __name__ == "__main__":

@@ -96,6 +96,56 @@ def load_data(
     return dataset_train, dataset_valid, dataset_test
 
 
+def load_data_and_create_generators(
+    file_name=None,
+    batch_size=64,
+    night_time=False,
+    skip_missing=True,
+    config=default_config(),
+    enable_tf_caching=False,
+    cache_file=None,
+):
+    """For debugging. Will be scrapped when not no longer relevant.
+
+    Return: (train_dataset generator, valid_dataset generator, test_dataset generator)
+    """
+    if file_name is None:
+        file_name = env.get_catalog_path()
+    if cache_file is None:
+        cache_file = env.get_tf_cache_file()
+    if env.run_local:
+        config.local_path = env.get_local_data_path() + "/hdf5v7_8bit"
+
+    train_datetimes, valid_datetimes, test_datetimes = split.load()
+
+    metadata_loader = MetadataLoader(file_name=file_name)
+    metadata_train = metadata_station(
+        metadata_loader,
+        train_datetimes,
+        night_time=night_time,
+        skip_missing=skip_missing,
+    )
+    metadata_valid = metadata_station(
+        metadata_loader,
+        valid_datetimes,
+        night_time=night_time,
+        skip_missing=skip_missing,
+    )
+    metadata_test = metadata_station(
+        metadata_loader,
+        test_datetimes,
+        night_time=night_time,
+        skip_missing=skip_missing,
+    )
+
+    dataset_train = dataloader.create_generator(metadata_train, config)
+    dataset_valid = dataloader.create_generator(metadata_valid, config)
+    dataset_test = dataloader.create_generator(metadata_test, config)
+
+    logger.info("Loaded datasets.")
+    return dataset_train, dataset_valid, dataset_test
+
+
 def metadata_station(
     metadata_loader, datetimes, night_time=False, skip_missing=True
 ) -> Callable[[], Iterator[Metadata]]:

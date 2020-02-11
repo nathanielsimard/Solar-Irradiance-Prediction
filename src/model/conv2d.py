@@ -7,7 +7,7 @@ from tensorflow.keras.optimizers import SGD
 from src import logging
 from src import env
 from src.data import preprocessing
-from src.data.train import load_data
+from src.data.train import load_data, load_data_and_create_generators
 
 logger = logging.create_logger(__name__)
 
@@ -68,12 +68,20 @@ def train(model, batch_size=32, epochs=10, enable_tf_caching=False, dry_run=Fals
     )
 
     logger.info("Fit model.")
-    model.fit_generator(
-        train_set.batch(batch_size),
-        validation_data=valid_set.batch(batch_size),
-        callbacks=[tensorboard_callback],
-        epochs=epochs,
-    )
+    if not dry_run:
+        model.fit_generator(
+            train_set.batch(batch_size),
+            validation_data=valid_set.batch(batch_size),
+            callbacks=[tensorboard_callback],
+            epochs=epochs,
+        )
+    else:
+        train_set, valid_set, train_set = load_data_and_create_generators(
+            enable_tf_caching=enable_tf_caching, file_name=env.get_catalog_path()
+        )
+        for sample in train_set:
+            print(sample)
+
     logger.info("Done.")
 
 
