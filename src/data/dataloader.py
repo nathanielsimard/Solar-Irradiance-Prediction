@@ -132,7 +132,7 @@ class DataLoader(object):
             The order is kept.
         """
         for metadata in self.metadata():
-            logger.debug(str(metadata))
+            logger.debug(metadata)
 
             try:
                 yield tuple(
@@ -152,13 +152,14 @@ class DataLoader(object):
                 logger.debug(f"Error while generating data, skipping : {e}")
 
     def _read_target(self, metadata: Metadata) -> tf.Tensor:
-        return tf.constant(
+        return tf.convert_to_tensor(
             [
                 self._target_value(metadata.target_ghi),
                 self._target_value(metadata.target_ghi_1h),
                 self._target_value(metadata.target_ghi_3h),
                 self._target_value(metadata.target_ghi_6h),
-            ]
+            ],
+            dtype=tf.float32,
         )
 
     def _read_image(self, metadata: Metadata) -> tf.Tensor:
@@ -196,7 +197,7 @@ class DataLoader(object):
             return target
 
         if self.config.error_strategy == ErrorStrategy.ignore:
-            return 0
+            return 0.0
 
         raise MissingTargetException()
 
