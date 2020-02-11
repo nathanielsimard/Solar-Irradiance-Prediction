@@ -16,6 +16,7 @@ from src.data.dataloader import (
     MissingTargetException,
     UnregognizedErrorStrategy,
     UnregognizedFeature,
+    CorruptedImage,
     parse_config,
 )
 from src.data.image import ImageReader
@@ -33,6 +34,8 @@ IMAGE_PATH = f"tests/data/samples/{IMAGE_NAME}"
 
 AN_EXCEPTION = UnregognizedErrorStrategy("Test exception")
 AN_EXCEPTION_TYPE = UnregognizedErrorStrategy
+
+AN_HANDLED_EXCEPTION = CorruptedImage("Fake corrupted image")
 
 
 class DataLoaderTest(unittest.TestCase):
@@ -128,7 +131,9 @@ class DataLoaderTest(unittest.TestCase):
     def test_givenIgnoreErrorStrategy_whenImageLoaderException_shouldReturnDummyImage(
         self,
     ):
-        self.image_reader.read = mock.Mock(side_effect=[AN_EXCEPTION, FAKE_IMAGE])
+        self.image_reader.read = mock.Mock(
+            side_effect=[AN_HANDLED_EXCEPTION, FAKE_IMAGE]
+        )
         channels = ["ch1", "ch2"]
         crop_size = [40, 40]
         num_channels = len(channels)

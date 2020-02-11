@@ -1,5 +1,3 @@
-from datetime import datetime
-
 import tensorflow as tf
 from tensorflow.keras import Sequential
 from tensorflow.keras.callbacks import TensorBoard
@@ -7,6 +5,7 @@ from tensorflow.keras.layers import Activation, Conv2D, Dense, Flatten, MaxPooli
 from tensorflow.keras.optimizers import SGD
 
 from src import logging
+from src import env
 from src.data import preprocessing
 from src.data.train import load_data
 
@@ -37,10 +36,12 @@ def create_model():
     return model
 
 
-def train(model, batch_size=128, epochs=10):
+def train(model, batch_size=32, epochs=10, enable_tf_caching=False, dry_run=False):
     """Train Conv2D model."""
     logger.info("Training Conv2D model.")
-    train_set, valid_set, _ = load_data(enable_tf_caching=False)
+    train_set, valid_set, _ = load_data(
+        enable_tf_caching=enable_tf_caching, file_name=env.get_catalog_path()
+    )
 
     scaling_image = preprocessing.MinMaxScaling(
         preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
@@ -60,11 +61,10 @@ def train(model, batch_size=128, epochs=10):
         loss="mse", optimizer=optimizer, metrics=["mse"],
     )
 
-    log_directory = "/project/cq-training-1/project1/teams/team10/tensorboard/run-" + datetime.now().strftime(
-        "%Y-%m-%d_%Hh%Mm%Ss"
-    )
     tensorboard_callback = TensorBoard(
-        log_dir=log_directory, update_freq="epoch", profile_batch=0
+        log_dir=env.get_tensorboard_log_directory(),
+        update_freq="batch",
+        profile_batch=0,
     )
 
     logger.info("Fit model.")

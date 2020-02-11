@@ -5,6 +5,7 @@ from typing import Callable, Iterator, Tuple
 import tensorflow as tf
 
 from src import logging
+import src.env as env
 from src.data import dataloader, split
 from src.data.metadata import Coordinates, Metadata, MetadataLoader, Station
 
@@ -41,17 +42,25 @@ def default_config():
 
 
 def load_data(
-    file_name="/project/cq-training-1/project1/data/catalog.helios.public.20100101-20160101.pkl",
+    file_name=None,
+    batch_size=64,
     night_time=False,
     skip_missing=True,
     config=default_config(),
     enable_tf_caching=False,
-    cache_file=default_cache_dir(),
+    cache_file=None,
 ) -> Tuple[tf.data.Dataset, tf.data.Dataset, tf.data.Dataset]:
     """Load train, valid and test datasets.
 
     Return: (train_dataset, valid_dataset, test_dataset)
     """
+    if file_name is None:
+        file_name = env.get_catalog_path()
+    if cache_file is None:
+        cache_file = env.get_tf_cache_file()
+    if env.run_local:
+        config.local_path = env.get_local_data_path() + "/hdf5v7_8bit"
+
     train_datetimes, valid_datetimes, test_datetimes = split.load()
 
     metadata_loader = MetadataLoader(file_name=file_name)

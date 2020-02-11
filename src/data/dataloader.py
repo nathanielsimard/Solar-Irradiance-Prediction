@@ -8,6 +8,7 @@ import tensorflow as tf
 import src.data.clearskydata as csd
 from src import logging
 from src.data import image
+from src.data.image import InvalidImageChannel, InvalidImageOffSet, CorruptedImage
 from src.data.metadata import Metadata
 
 logger = logging.create_logger(__name__)
@@ -169,13 +170,15 @@ class DataLoader(object):
             )
 
             return tf.convert_to_tensor(image, dtype=tf.float32)
-        except Exception as e:
+        # We should only catch here exceptions that are safe to ignore.
+        except (InvalidImageChannel, InvalidImageOffSet, CorruptedImage) as e:
             if self.config.error_strategy != ErrorStrategy.ignore:
                 raise e
-
             logger.debug(f"Error while generating data, ignoring : {e}")
             output_shape = list(self.config.crop_size) + [len(self.config.channels)]
             return tf.convert_to_tensor(np.zeros(output_shape))
+        except (Exception) as e:
+            raise e  # Some error require immediate attention!
 
     def _read_metadata(self, metadata: Metadata) -> tf.Tensor:
         meta = np.zeros(len(MetadataFeatureIndex))
