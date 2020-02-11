@@ -2,7 +2,7 @@ import pickle
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Iterable, List, Optional, Dict, Any
+from typing import Any, Dict, Iterable, List, Optional
 
 import pandas as pd
 
@@ -128,17 +128,18 @@ class MetadataLoader:
 
         target_timestamps = self._target_timestamps(catalog, target_datetimes)
         catalog = catalog.drop_duplicates()
-        catalog_dict = catalog.to_dict("index")
+        rows = catalog.to_dict("index")
 
         for i, target_timestamp in enumerate(target_timestamps):
             try:
-                row = catalog_dict[target_timestamp]
+                row = rows[target_timestamp]
             except KeyError as e:
-                if not skip_missing:
-                    raise UnableToLoadMetadata(e)
+                if skip_missing:
+                    continue
+                raise UnableToLoadMetadata(e)
 
             yield self._build_metadata(
-                catalog_dict,
+                rows,
                 station,
                 coordinates,
                 image_column,
