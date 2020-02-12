@@ -256,6 +256,19 @@ class DataLoaderTest(unittest.TestCase):
         for (image,) in self.dataloader.generator():
             self.assertEqual([2] + list(FAKE_IMAGE.shape), list(image.shape))
 
+    def test_givenMultipleImagesWithMissingImage_shouldCreateZerosImage(self):
+        self.image_reader.read = mock.Mock(side_effect=[FAKE_IMAGE, AN_EXCEPTION])
+
+        self.dataloader = DataLoader(
+            lambda: [self._metadata(image_paths=[IMAGE_PATH, IMAGE_PATH])],
+            self.image_reader,
+            config=Config(features=[Feature.image],),
+        )
+
+        (image,) = next(self.dataloader.generator())
+        self.assertTrue(np.array_equal(image[0], np.zeros(FAKE_IMAGE.shape)))
+        self.assertTrue(np.array_equal(image[1], FAKE_IMAGE))
+
     def assertCloseTo(self, value: float, target: float, epsilon: float = 0.001):
         self.assertAlmostEqual(value, target, delta=epsilon)
 

@@ -297,7 +297,9 @@ class MetadataLoader:
     ):
         image_paths = []
         image_offsets = []
-        for i in range(num_images):
+        # Iterate in reverse to add the oldest image first.
+        for i in range(num_images - 1, -1, -1):
+            print(i)
             index = timestamp - pd.to_timedelta(i * time_interval_min, unit="min")
             try:
                 image_paths.append(rows[index][image_column])

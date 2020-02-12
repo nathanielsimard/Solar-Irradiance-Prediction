@@ -320,7 +320,7 @@ class MetadataLoaderTest(unittest.TestCase):
         )
 
         for i in range(1, num_images + 1):
-            expected_offset = list(reversed(range(i))) + (num_images - i) * [0]
+            expected_offset = (num_images - i) * [0] + list(range(i))
             mt = next(metadata)
             self.assertEqual(expected_offset, mt.image_offsets)
 
@@ -336,8 +336,8 @@ class MetadataLoaderTest(unittest.TestCase):
         )
 
         for i in range(1, num_images + 1):
-            expected_path = i * [first_day_image_path] + (num_images - i) * [
-                "/unknow/path"
+            expected_path = (num_images - i) * ["/unknow/path"] + i * [
+                first_day_image_path
             ]
             mt = next(metadata)
             self.assertEqual(expected_path, mt.image_paths)
