@@ -45,8 +45,9 @@ Then run the script which will make the tensorboard available at `localhost:8008
 scripts/tensorboard.sh /path/to/tensorboard/file_dir 8008`.
 ```
 ## Important paths.
-/project/cq-training-1/project1/teams/team10 - Team bastpath
-/project/cq-training-1/project1/teams/team10/tensorboard - Tensorboard Log Directory
-/project/cq-training-1/project1/teams/team10/image_reader_cache - Directory where all the pickled images for the image reader cache are stored for the team.
-
+| Tables        | Are           |
+| ------------- |:-------------:|
+| /project/cq-training-1/project1/teams/team10                   | Team bastpath |
+| /project/cq-training-1/project1/teams/team10/tensorboard          | Tensorboard Log Directory      |
+| /project/cq-training-1/project1/teams/team10/image_reader_cache  | Directory where all the pickled images for the image reader cache are stored for the team.      |
 
