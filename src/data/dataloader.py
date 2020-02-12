@@ -63,7 +63,7 @@ class MissingTargetException(Exception):
         super().__init__(f"Target is missing.")
 
 
-class Config:
+class DataloaderConfig:
     """Configuration available to the dataloader."""
 
     def __init__(
@@ -110,7 +110,7 @@ class DataLoader(object):
         self,
         metadata: Callable[[], Iterable[Metadata]],
         image_reader: image.ImageReader,
-        config: Config = Config(),
+        config: DataloaderConfig = DataloaderConfig(),
     ):
         """Load the config with the image_reader from the metadata."""
         self.metadata = metadata
@@ -212,7 +212,7 @@ class DataLoader(object):
 
 def create_dataset(
     metadata: Callable[[], Iterable[Metadata]],
-    config: Union[Dict[str, Any], Config] = Config(),
+    config: Union[Dict[str, Any], DataloaderConfig] = DataloaderConfig(),
 ) -> tf.data.Dataset:
     """Create a tensorflow Dataset base on the metadata and dataloader's config.
 
@@ -234,7 +234,7 @@ def create_dataset(
 
 def create_generator(
     metadata: Callable[[], Iterable[Metadata]],
-    config: Union[Dict[str, Any], Config] = Config(),
+    config: Union[Dict[str, Any], DataloaderConfig] = DataloaderConfig(),
 ) -> tf.data.Dataset:
     """Create a generator that will to the dataloader work. Will be used for debugging.
 
@@ -253,7 +253,7 @@ def create_generator(
     return DataLoader(metadata, image_reader, config=config).generator()
 
 
-def parse_config(config: Dict[str, Any] = {}) -> Config:
+def parse_config(config: Dict[str, Any] = {}) -> DataloaderConfig:
     """Parse the user config.
 
     TODO: Describe what is going to be in the configuration.
@@ -289,7 +289,7 @@ def parse_config(config: Dict[str, Any] = {}) -> Config:
     crop_size = _read_config(config, "CROP_SIZE", (64, 64))
     channels = _read_config(config, "CHANNELS", ["ch1"])
 
-    return Config(
+    return DataloaderConfig(
         local_path=local_path,
         error_strategy=error_strategy,
         crop_size=crop_size,

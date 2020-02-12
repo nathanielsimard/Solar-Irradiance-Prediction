@@ -32,7 +32,7 @@ def default_cache_dir():
 
 def default_config():
     """Default training configurations."""
-    return dataloader.Config(
+    return dataloader.DataloaderConfig(
         error_strategy=dataloader.ErrorStrategy.skip,
         crop_size=(64, 64),
         image_cache_dir=default_cache_dir(),

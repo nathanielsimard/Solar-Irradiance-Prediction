@@ -13,6 +13,11 @@ from src.data.utils import fetch_hdf5_sample, viz_hdf5_imagery
 logger = logging.create_logger(__name__)
 
 
+class ImageNotCached(Exception):
+    """Exception raised when image is not cached but was supposed to be"""
+    pass
+
+
 class InvalidImageOffSet(Exception):
     """Exception raised when offset isn't valid."""
 
@@ -40,17 +45,19 @@ class CorruptedImage(Exception):
 class ImageReader(object):
     """Read the images. Compression format is handle automaticly."""
 
-    def __init__(self, channels=["ch1"], cache_dir=None, enable_caching=True):
+    def __init__(self, channels=["ch1"], cache_dir=None, enable_caching=True, force_caching=False):
         """Default channel for image reading is ch1.
 
         Args:
             channels: The channels to read from the file.
             cache_dir: Directory where cached image will be.
             enable_caching: Should we cache at all at this level.
+            force_caching: Will throw an exception if the image is not cached.
         """
         self.channels = channels
         self.cache_dir = cache_dir
         self.enable_caching = enable_caching
+        self.force_caching = force_caching
         if cache_dir is None:
             self.cache_dir = env.get_image_reader_cache_directory()
 
@@ -84,6 +91,9 @@ class ImageReader(object):
                 return self._load_cache_images(cached_file)
             except FileNotFoundError:
                 logger.debug("Image not in cache")
+                if self.force_caching:
+                    raise ImageNotCached(
+                        "Requested image not found in cached. Have you enabled 'force_caching' by mistake?")
 
         try:
             with h5py.File(image_path, "r") as file_reader:
