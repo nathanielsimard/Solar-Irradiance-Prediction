@@ -5,7 +5,7 @@ and to have easy maintenance when updating paths
 used for the project.
 
 """
-
+import os
 from datetime import datetime
 
 run_local = False  # By default, run on the server. Activating that flag will generate local paths
@@ -30,7 +30,11 @@ def get_image_reader_cache_directory() -> str:
         str -- [path where to put the pickled images]
     """
     if not run_local:
-        return "/tmp/"
+        if "SLURM_TMPDIR" in os.environ:
+            ssd_dir = os.environ["SLURM_TMPDIR"]
+            return ssd_dir + "/image_reader_cache/"
+        else:
+            return "/tmp/"
     else:
         return "../image_reader_cache/"
 
@@ -82,6 +86,7 @@ def get_tf_cache_file() -> str:
     Returns:
         [str] -- [Tensorflow main cache filename]
     """
+
     if not run_local:
         return "/project/cq-training-1/project1/teams/team10/cached/cached"
     else:
