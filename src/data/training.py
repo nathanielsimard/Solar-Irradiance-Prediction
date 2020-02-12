@@ -48,7 +48,6 @@ class Training:
             caching: if temporary caching is desired.
         """
         logger.info("Training" + str(self.model) + "model.")
-        logger.info(self.model.summary())
         train_set, valid_set, _ = load_data(enable_tf_caching=caching)
 
         scaling_image = preprocessing.MinMaxScaling(
