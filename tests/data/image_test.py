@@ -105,7 +105,7 @@ class ImageReaderTest(unittest.TestCase):
         )
         if os.path.exists(cache_file):
             os.remove(cache_file)
-        self.image_reader = ImageReader(force_caching=True)
+        self.image_reader = ImageReader(force_caching=True, cache_dir="/tmp/")
         self.assertRaises(
             ImageNotCached,
             lambda: self.image_reader.read(
