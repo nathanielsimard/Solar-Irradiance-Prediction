@@ -8,7 +8,12 @@ import tensorflow as tf
 import src.data.clearskydata as csd
 from src import logging
 from src.data import image
-from src.data.image import InvalidImageChannel, InvalidImageOffSet, CorruptedImage
+from src.data.image import (
+    InvalidImageChannel,
+    InvalidImageOffSet,
+    CorruptedImage,
+    ImageNotCached,
+)
 from src.data.metadata import Metadata
 from src import env
 
@@ -26,9 +31,9 @@ class Feature(Enum):
 class ErrorStrategy(Enum):
     """How error are handled by the dataloader."""
 
-    skip = "skip"
-    ignore = "ignore"
-    stop = "stop"
+    skip = "skip"  # Return a black image when data is mising
+    ignore = "ignore"  # Ignore the sample with missing data, and proceed to the next.
+    stop = "stop"  # Stop code execution.
 
 
 class UnregognizedFeature(Exception):
@@ -70,6 +75,7 @@ class DataloaderConfig:
         self,
         local_path: Optional[str] = None,
         error_strategy=ErrorStrategy.skip,
+        force_caching=False,
         crop_size: Tuple[int, int] = (64, 64),
         features: List[Feature] = [Feature.image, Feature.target_ghi],
         channels: List[str] = ["ch1"],
@@ -80,6 +86,7 @@ class DataloaderConfig:
         Args:
             local_path: Can overrite the root path of each images.
             error_strategy: How to handle errors.
+            force_caching: Option to skip non cached images.
             crop_size: Image sized needed.
             features: List of features needed.
             channels: List of channels needed.
@@ -90,6 +97,7 @@ class DataloaderConfig:
         self.crop_size = crop_size
         self.features = features
         self.channels = channels
+        self.force_caching = force_caching
         self.image_cache_dir = image_cache_dir
 
 
@@ -134,7 +142,6 @@ class DataLoader(object):
         """
         for metadata in self.metadata():
             logger.debug(metadata)
-
             try:
                 yield tuple(
                     [
@@ -145,11 +152,12 @@ class DataLoader(object):
             except AttributeError as e:
                 # This is clearly unhandled! We want a crash here!
                 raise e
+                # TODO: We should list the handled exceptions here, and do
+                # a stack trace if we encounter something really wrong.
             except Exception as e:
                 if self.config.error_strategy == ErrorStrategy.stop:
                     logger.error(f"Error while generating data, stopping : {e}")
                     raise e
-
                 logger.debug(f"Error while generating data, skipping : {e}")
 
     def _read_target(self, metadata: Metadata) -> tf.Tensor:
@@ -177,10 +185,14 @@ class DataLoader(object):
         # We should only catch here exceptions that are safe to ignore.
         except (InvalidImageChannel, InvalidImageOffSet, CorruptedImage) as e:
             if self.config.error_strategy != ErrorStrategy.ignore:
-                raise e
+                raise e  # Skip
             logger.debug(f"Error while generating data, ignoring : {e}")
             output_shape = list(self.config.crop_size) + [len(self.config.channels)]
             return tf.convert_to_tensor(np.zeros(output_shape))
+        except (ImageNotCached) as e:
+            if self.config.force_caching:
+                raise e  # Skip
+
         except (Exception) as e:
             raise e  # Some error require immediate attention!
 
@@ -225,7 +237,9 @@ def create_dataset(
 
     features_type = tuple(len(config.features) * [tf.float32])
     image_reader = image.ImageReader(
-        channels=config.channels, cache_dir=env.get_image_reader_cache_directory()
+        channels=config.channels,
+        cache_dir=env.get_image_reader_cache_directory(),
+        force_caching=config.force_caching,
     )
     dataloader = DataLoader(metadata, image_reader, config=config)
 
@@ -248,7 +262,9 @@ def create_generator(
         config = parse_config(config)
 
     image_reader = image.ImageReader(
-        channels=config.channels, cache_dir=env.get_image_reader_cache_directory()
+        channels=config.channels,
+        cache_dir=env.get_image_reader_cache_directory(),
+        force_caching=config.force_caching,
     )
     return DataLoader(metadata, image_reader, config=config).generator()
 

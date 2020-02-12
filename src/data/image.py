@@ -14,7 +14,8 @@ logger = logging.create_logger(__name__)
 
 
 class ImageNotCached(Exception):
-    """Exception raised when image is not cached but was supposed to be"""
+    """Exception raised when image is not cached but was supposed to be."""
+
     pass
 
 
@@ -45,7 +46,9 @@ class CorruptedImage(Exception):
 class ImageReader(object):
     """Read the images. Compression format is handle automaticly."""
 
-    def __init__(self, channels=["ch1"], cache_dir=None, enable_caching=True, force_caching=False):
+    def __init__(
+        self, channels=["ch1"], cache_dir=None, enable_caching=True, force_caching=False
+    ):
         """Default channel for image reading is ch1.
 
         Args:
@@ -93,7 +96,8 @@ class ImageReader(object):
                 logger.debug("Image not in cache")
                 if self.force_caching:
                     raise ImageNotCached(
-                        "Requested image not found in cached. Have you enabled 'force_caching' by mistake?")
+                        "Requested image not found in cache. Have you enabled 'force_caching' by mistake?"
+                    )
 
         try:
             with h5py.File(image_path, "r") as file_reader:

@@ -36,11 +36,20 @@ def create_model():
     return model
 
 
-def train(model, batch_size=32, epochs=10, enable_tf_caching=False, dry_run=False):
+def train(
+    model,
+    batch_size=32,
+    epochs=10,
+    enable_tf_caching=False,
+    dry_run=False,
+    skip_non_cached=False,
+):
     """Train Conv2D model."""
     logger.info("Training Conv2D model.")
     train_set, valid_set, _ = load_data(
-        enable_tf_caching=enable_tf_caching, file_name=env.get_catalog_path()
+        enable_tf_caching=enable_tf_caching,
+        file_name=env.get_catalog_path(),
+        skip_non_cached=skip_non_cached,
     )
 
     scaling_image = preprocessing.MinMaxScaling(
@@ -77,7 +86,9 @@ def train(model, batch_size=32, epochs=10, enable_tf_caching=False, dry_run=Fals
         )
     else:
         train_set, valid_set, train_set = load_data_and_create_generators(
-            enable_tf_caching=enable_tf_caching, file_name=env.get_catalog_path()
+            enable_tf_caching=enable_tf_caching,
+            file_name=env.get_catalog_path(),
+            skip_non_cached=skip_non_cached,
         )
         for sample in train_set:
             print(sample)

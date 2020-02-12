@@ -49,6 +49,7 @@ def load_data(
     config=default_config(),
     enable_tf_caching=False,
     cache_file=None,
+    skip_non_cached=False,
 ) -> Tuple[tf.data.Dataset, tf.data.Dataset, tf.data.Dataset]:
     """Load train, valid and test datasets.
 
@@ -60,6 +61,9 @@ def load_data(
         cache_file = env.get_tf_cache_file()
     if env.run_local:
         config.local_path = env.get_local_data_path() + "/hdf5v7_8bit"
+
+    # Both concepts are equivalent. If we force caching, we need to skip non cached images.
+    config.force_caching = skip_non_cached
 
     train_datetimes, valid_datetimes, test_datetimes = split.load()
 
@@ -104,6 +108,7 @@ def load_data_and_create_generators(
     config=default_config(),
     enable_tf_caching=False,
     cache_file=None,
+    skip_non_cached=False,
 ):
     """For debugging. Will be scrapped when not no longer relevant.
 
@@ -116,6 +121,8 @@ def load_data_and_create_generators(
     if env.run_local:
         config.local_path = env.get_local_data_path() + "/hdf5v7_8bit"
 
+        # Both concepts are equivalent. If we force caching, we need to skip non cached images.
+    config.force_caching = skip_non_cached
     train_datetimes, valid_datetimes, test_datetimes = split.load()
 
     metadata_loader = MetadataLoader(file_name=file_name)
