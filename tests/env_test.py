@@ -46,6 +46,7 @@ class EnvTest(unittest.TestCase):
         )
 
     def test_slurm_image_reader_directory(self):
+        env.run_local = False
         os.environ["SLURM_TMPDIR"] = "/test"
         self.assertEquals(
             env.get_image_reader_cache_directory(), "/test/image_reader_cache/"

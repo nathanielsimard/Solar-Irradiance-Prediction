@@ -86,7 +86,6 @@ def get_tf_cache_file() -> str:
     Returns:
         [str] -- [Tensorflow main cache filename]
     """
-
     if not run_local:
         return "/project/cq-training-1/project1/teams/team10/cached/cached"
     else:
