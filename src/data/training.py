@@ -41,11 +41,11 @@ class Training:
     def run(self, batch_size=128, epochs=10, valid_batch_size=256, caching=False):
         """Performs the training of the model in minibatch.
 
-        Params:
-        A batch_size parameter that determines the minibatch size
-        A number of epochs
-        A valid_batch_size. Should be as large as the GPU can handle.
-        A boolean caching variable if temporary caching is desired.
+        Agrs:
+            batch_size:  parameter that determines the minibatch size
+            epochs: a number of epochs
+            valid_batch_size: should be as large as the GPU can handle.
+            caching: if temporary caching is desired.
         """
         logger.info("Training" + str(self.model) + "model.")
         logger.info(self.model.summary())
@@ -68,12 +68,10 @@ class Training:
 
         logger.info("Fitting model.")
         for epoch in range(epochs):
-            i = 0
             logger.info("Training...")
-            for inputs, targets in train_set.batch(batch_size):
+            for i, (inputs, targets) in enumerate(train_set.batch(batch_size)):
                 self._train_step(inputs, targets, training=True)
-                i += 1
-                print("Batch #", i)
+                logger.info(f"Batch #{i+1}")
             with train_summary_writer.as_default():
                 tf.summary.scalar("train loss", self.train_loss.result(), step=epoch)
 
@@ -83,15 +81,10 @@ class Training:
             with valid_summary_writer.as_default():
                 tf.summary.scalar("valid loss", self.valid_loss.result(), step=epoch)
 
-            # From the Tensorflow documentation
-            template = (
-                "Epoch {}, Loss: {}, Accuracy: {}, Test Loss: {}, Test Accuracy: {}"
+            logger.info(
+                f"Epoch: {epoch + 1}, Train loss: {self.train_loss.result()}, Valid loss: {self.valid_loss.result()} "
             )
-            print(
-                template.format(
-                    epoch + 1, self.train_loss.result(), self.valid_loss.result(),
-                )
-            )
+
             # Reset the cumulative metrics after each epoch
             self.train_loss.reset_states()
             self.valid_loss.reset_states()
