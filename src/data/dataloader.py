@@ -161,15 +161,24 @@ class DataLoader(object):
 
     def _read_image(self, metadata: Metadata) -> tf.Tensor:
         try:
-            image_path = self._transform_image_path(metadata.image_path)
-            image = self.image_reader.read(
-                image_path,
-                metadata.image_offset,
-                metadata.coordinates,
-                self.config.crop_size,
-            )
+            images = [
+                self.image_reader.read(
+                    self._transform_image_path(image_path),
+                    image_offset,
+                    metadata.coordinates,
+                    self.config.crop_size,
+                )
+                for image_path, image_offset in zip(
+                    metadata.image_paths, metadata.image_offsets
+                )
+            ]
 
-            return tf.convert_to_tensor(image, dtype=tf.float32)
+            if len(images) > 1:
+                images = np.stack(images)
+            else:
+                images = images[0]
+
+            return tf.convert_to_tensor(images, dtype=tf.float32)
         except Exception as e:
             if self.config.error_strategy != ErrorStrategy.ignore:
                 raise e

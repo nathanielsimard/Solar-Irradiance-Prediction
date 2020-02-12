@@ -37,9 +37,9 @@ def _metadata_iterable(image_paths, offsets, coordinates):
     for image_path in image_paths:
         for offset in offsets:
             yield Metadata(
-                image_path,
+                [image_path],
                 "8bits",
-                offset,
+                [offset],
                 datetime.now(),
                 coordinates,
                 target_ghi=100,
