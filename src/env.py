@@ -39,6 +39,18 @@ def get_image_reader_cache_directory() -> str:
         return "../image_reader_cache/"
 
 
+def get_model_checkpoint_directory() -> str:
+    """Get the location where to save the model checkpoints
+
+    Returns:
+        [str] -- [path to the folder where to save the models at checkpoints]
+    """
+    if not run_local:
+        return "/project/cq-training-1/project1/teams/team10/models"
+    else:
+        return "models"
+
+
 def get_tensorboard_log_directory() -> str:
     """Get the tensor board directory. By default, will give the path on the server.
 

@@ -32,7 +32,7 @@ def main():
     loss_obj = losses.MeanSquaredError()
     training_session = Training(optimizer=optimizer, model=model, loss_fn=loss_obj)
     training_session.run(enable_tf_caching=args.enable_tf_caching,
-                         dry_run=args.dry_run, skip_non_cached=args.skip_non_cached,)
+                         dry_run=args.dry_run, skip_non_cached=args.skip_non_cached)
 
 
 if __name__ == "__main__":
