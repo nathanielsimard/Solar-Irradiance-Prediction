@@ -54,10 +54,11 @@ def load_data(
     """
     train_datetimes, valid_datetimes, test_datetimes = split.load()
     ratio_train_datetimes = int(len(train_datetimes) * config.ratio)
-    ratio_valid_datetimes = int(len(train_datetimes) * config.ratio)
+    ratio_valid_datetimes = int(len(valid_datetimes) * config.ratio)
 
-    train_datetimes = train_datetimes[:ratio_train_datetimes]
-    valid_datetimes = valid_datetimes[:ratio_valid_datetimes]
+    logger.info(f"Training dataset ratio {config.ratio}")
+    logger.info(f"Training dataset has {ratio_train_datetimes} datetimes")
+    logger.info(f"Training dataset has {len(STATION_COORDINATES)} stations")
 
     metadata_loader = MetadataLoader(file_name=file_name)
     metadata_train = metadata_station(
@@ -90,9 +91,9 @@ def load_data(
     dataset_test = dataloader.create_dataset(metadata_test, config)
 
     if enable_tf_caching:
-        dataset_train = dataset_train.cache(cache_file + "_train")
-        dataset_test = dataset_test.cache(cache_file + "_test")
-        dataset_valid = dataset_valid.cache(cache_file + "_valid")
+        dataset_train = dataset_train.cache(f"{cache_file}/train")
+        dataset_test = dataset_test.cache(f"{cache_file}/test")
+        dataset_valid = dataset_valid.cache(f"{cache_file}/valid")
 
     logger.info("Loaded datasets.")
     return dataset_train, dataset_valid, dataset_test

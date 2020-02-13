@@ -38,7 +38,7 @@ class SupervisedTraining:
         self.train_loss = tf.keras.metrics.Mean("train loss", dtype=tf.float32)
         self.valid_loss = tf.keras.metrics.Mean("valid loss", dtype=tf.float32)
 
-    def run(self, batch_size=128, epochs=10, valid_batch_size=256, caching=False):
+    def run(self, batch_size=128, epochs=10, valid_batch_size=256, caching=True):
         """Performs the training of the model in minibatch.
 
         Agrs:

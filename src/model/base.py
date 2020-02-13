@@ -14,13 +14,13 @@ class Model(tf.keras.Model, abc.ABC):
 
     def save(self, instance: str):
         file_name = f"{MODEL_BASE_DIR}/{self.title}/{instance}"
-        super().save(
+        super().save_weights(
             file_name, save_format="tf", overwrite=True,
         )
 
     def load(self, instance: str):
         file_name = f"{MODEL_BASE_DIR}/{self.title}/{instance}"
-        return super().load(file_name)
+        super().load_weights(file_name)
 
     @abc.abstractmethod
     def config(self, training=False) -> dataloader.Config:
