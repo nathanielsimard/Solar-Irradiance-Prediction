@@ -1,9 +1,10 @@
+from datetime import datetime
+
 import tensorflow as tf
 
 from src import logging
 from src.data.train import load_data
-from src.data import preprocessing
-from datetime import datetime
+from src.model.base import Model
 
 logger = logging.create_logger(__name__)
 
@@ -18,18 +19,17 @@ VALID_LOG_DIR = (
     + CURRENT_TIME
     + "/valid"
 )
-MODEL_SAVE_DIR = "/project/cq-training-1/project1/teams/team10/models"
 CHECKPOINT_TIMESTAMP = 5
 
 
-class Training:
-    """Training class."""
+class SupervisedTraining:
+    """Train a model in a supervised way.
+
+    It assumes that the data is labeled (inputs, targets).
+    """
 
     def __init__(
-        self,
-        optimizer: tf.keras.optimizers,  # an optimizer object
-        model: tf.keras.Model,  # a model object, should have a str method and a call method
-        loss_fn: tf.keras.losses,  # a loss object
+        self, optimizer: tf.keras.optimizers, model: Model, loss_fn: tf.keras.losses,
     ):
         """Initialize a training session."""
         self.optim = optimizer
@@ -47,19 +47,13 @@ class Training:
             valid_batch_size: should be as large as the GPU can handle.
             caching: if temporary caching is desired.
         """
-        logger.info("Training" + str(self.model) + "model.")
-        train_set, valid_set, _ = load_data(enable_tf_caching=caching)
+        logger.info(f"Starting supervised training with model {self.model.name}")
+        config = self.model.config(training=True)
+        train_set, valid_set, _ = load_data(enable_tf_caching=caching, config=config)
 
-        scaling_image = preprocessing.MinMaxScaling(
-            preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
-        )
-        scaling_target = preprocessing.MinMaxScaling(
-            preprocessing.TARGET_GHI_MIN, preprocessing.TARGET_GHI_MAX
-        )
-        logger.info("Scaling train set.")
-        train_set = _scale_dataset(scaling_image, scaling_target, train_set)
-        logger.info("Scaling valid set.")
-        valid_set = _scale_dataset(scaling_image, scaling_target, valid_set)
+        logger.info("Apply Preprocessing")
+        train_set = self.model.preprocess(train_set)
+        valid_set = self.model.preprocess(valid_set)
 
         logger.info("Creating loss logs")
         train_summary_writer = tf.summary.create_file_writer(TRAIN_LOG_DIR)
@@ -67,7 +61,7 @@ class Training:
 
         logger.info("Fitting model.")
         for epoch in range(epochs):
-            logger.info("Training...")
+            logger.info("SupervisedTraining...")
             for i, (inputs, targets) in enumerate(train_set.batch(batch_size)):
                 self._train_step(inputs, targets, training=True)
                 logger.info(f"Batch #{i+1}")
@@ -87,13 +81,10 @@ class Training:
             # Reset the cumulative metrics after each epoch
             self.train_loss.reset_states()
             self.valid_loss.reset_states()
+
             if epoch % CHECKPOINT_TIMESTAMP == 0:
                 logger.info("Checkpointing...")
-                self.model.save(
-                    filepath=MODEL_SAVE_DIR + str(self.model),
-                    save_format="tf",
-                    overwrite=True,
-                )
+                self.model.save(str(epoch))
 
         logger.info("Done.")
 
@@ -113,16 +104,3 @@ class Training:
         loss = self.loss_fn(valid_targets, outputs)
 
         self.valid_loss(loss)
-
-
-def _scale_dataset(
-    scaling_image: preprocessing.MinMaxScaling,
-    scaling_target: preprocessing.MinMaxScaling,
-    dataset: tf.data.Dataset,
-):
-    return dataset.map(
-        lambda image, target_ghi: (
-            scaling_image.normalize(image),
-            scaling_target.normalize(target_ghi),
-        )
-    )
