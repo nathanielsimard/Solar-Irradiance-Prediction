@@ -130,7 +130,7 @@ class SupervisedTraining:
         gradients = tape.gradient(loss, self.model.trainable_variables)
         self.optim.apply_gradients(zip(gradients, self.model.trainable_variables))
 
-        self.train_loss(loss)
+        self.metrics["train"](loss)
 
     @tf.function
     def _calculate_loss(self, valid_inputs, valid_targets, training: bool):
