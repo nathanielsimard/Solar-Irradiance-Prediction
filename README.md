@@ -1,6 +1,15 @@
 # Solar-Irradiance-Prediction
 
+<div align="center">
+    <img src="./assets/image-3d-ch1.gif" style="height:100px"></img>
+    <img src="./assets/image-3d-ch2.gif" style="height:100px"></img>
+    <img src="./assets/image-3d-ch3.gif" style="height:100px"></img>
+    <img src="./assets/image-3d-ch4.gif" style="height:100px"></img>
+    <img src="./assets/image-3d-ch6.gif" style="height:100px"></img>
+</div>
+
 IFT6759 - Project 1 - Solar Irradiance Prediction 
+
 
 ## Setup
 
