@@ -61,6 +61,7 @@ class CNN2D(base.Model):
     def config(self, training=False) -> dataloader.Config:
         config = default_config()
         config.num_images = 1
+        config.ratio = 0.01
         config.features = [dataloader.Feature.image, dataloader.Feature.target_ghi]
 
         if training:

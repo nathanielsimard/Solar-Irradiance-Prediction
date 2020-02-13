@@ -53,6 +53,11 @@ def load_data(
     Return: (train_dataset, valid_dataset, test_dataset)
     """
     train_datetimes, valid_datetimes, test_datetimes = split.load()
+    ratio_train_datetimes = int(len(train_datetimes) * config.ratio)
+    ratio_valid_datetimes = int(len(train_datetimes) * config.ratio)
+
+    train_datetimes = train_datetimes[:ratio_train_datetimes]
+    valid_datetimes = valid_datetimes[:ratio_valid_datetimes]
 
     metadata_loader = MetadataLoader(file_name=file_name)
     metadata_train = metadata_station(
