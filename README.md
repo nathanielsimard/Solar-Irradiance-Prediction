@@ -25,8 +25,8 @@ All the images have dimension 650x1500
 
 ### Stations Pixel Location (Mauvaise localisation?)
 - BND: X = 688, Y = 188
-- TBL: X = 371, Y = 18p
-p DRA: X = 169, Y = 252
+- TBL: X = 371, Y = 186
+- DRA: X = 169, Y = 252
 - FPK: X = 374, Y = 33
 - GWN: X = 660, Y = 296
 - PSU: X = 883, Y = 174
