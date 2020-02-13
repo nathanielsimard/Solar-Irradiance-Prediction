@@ -58,18 +58,24 @@ def load_data(
     metadata_train = metadata_station(
         metadata_loader,
         train_datetimes,
+        config.num_images,
+        config.time_interval_min,
         night_time=night_time,
         skip_missing=skip_missing,
     )
     metadata_valid = metadata_station(
         metadata_loader,
         valid_datetimes,
+        config.num_images,
+        config.time_interval_min,
         night_time=night_time,
         skip_missing=skip_missing,
     )
     metadata_test = metadata_station(
         metadata_loader,
         test_datetimes,
+        config.num_images,
+        config.time_interval_min,
         night_time=night_time,
         skip_missing=skip_missing,
     )
@@ -88,7 +94,12 @@ def load_data(
 
 
 def metadata_station(
-    metadata_loader, datetimes, night_time=False, skip_missing=True
+    metadata_loader,
+    datetimes,
+    num_images,
+    time_interval_min,
+    night_time=False,
+    skip_missing=True,
 ) -> Callable[[], Iterator[Metadata]]:
     """Create metadata for all stations."""
 
@@ -102,6 +113,8 @@ def metadata_station(
                     night_time=night_time,
                     target_datetimes=datetimes,
                     skip_missing=skip_missing,
+                    num_images=num_images,
+                    time_interval_min=time_interval_min,
                 )
             )
         return itertools.chain(*generators)

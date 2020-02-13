@@ -72,6 +72,8 @@ class Config:
         features: List[Feature] = [Feature.image, Feature.target_ghi],
         channels: List[str] = ["ch1"],
         image_cache_dir="/tmp",
+        num_images=1,
+        time_interval_min=15,
     ):
         """All configurations are optional with default values.
 
@@ -82,6 +84,10 @@ class Config:
             features: List of features needed.
             channels: List of channels needed.
             image_cache_dir: Where the crop images will be cached.
+            num_images: Total number of images.
+                If more than 1, images from the past are goin to be included.
+            time_interval_min: Number of minutes between images.
+                If num_images is 1, this has no effets.
         """
         self.local_path = local_path
         self.error_strategy = error_strategy
@@ -89,6 +95,8 @@ class Config:
         self.features = features
         self.channels = channels
         self.image_cache_dir = image_cache_dir
+        self.num_images = num_images
+        self.time_interval_min = time_interval_min
 
 
 class MetadataFeatureIndex(IntEnum):
