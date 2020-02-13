@@ -1,6 +1,6 @@
 <div align="center"><img src="./assets/image-3d-big-ch1.gif"></img></div>
 
-<h1 align="center">Solar-Irradiance-Prediction</h1>
+<h1 align="center">Solar Irradiance Prediction</h1>
 
 <p align="center">
     <a href="https://travis-ci.com/psf/black"><img alt="CI Status" src="https://github.com/nathanielsimard/Solar-Irradiance-Prediction/workflows/CI/badge.svg"></a>
