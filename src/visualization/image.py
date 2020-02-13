@@ -1,10 +1,13 @@
 from matplotlib import pyplot as plt
 
+from src import logging
 from src.data.dataloader import Feature
 from src.data.train import default_config, load_data
 
+logger = logging.create_logger(__name__)
 
-def plot3d(channel="ch6"):
+
+def plot3d(channel="ch1"):
     config = default_config()
     config.features = [Feature.image]
     config.channels = [channel]
@@ -13,21 +16,18 @@ def plot3d(channel="ch6"):
     config.num_images = 7
 
     train, _, _ = load_data(config=config)
-    time_wait = config.num_images * int(config.time_interval_min/15)
 
-    for i, (image,) in enumerate(train.batch(1)):
-        i += 1
-        if i > time_wait:
-            images = image
-            break
+    images = next(train.batch(1))
 
-    print(images.shape)
+    logger.info(images.shape)
     for i, img in enumerate(images[0]):
-        print(img.shape)
+        logger.info(img.shape)
+
         plt.cla()
         plt.clf()
-        plt.axis('off')
-        imgg = img[:,:,0]
-        print(imgg.shape)
+        plt.axis("off")
+        imgg = img[:, :, 0]
+
+        logger.info(imgg.shape)
         plt.imshow(imgg, cmap="gray")
         plt.savefig(f"image-3D/{i}.png")

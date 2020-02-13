@@ -72,7 +72,7 @@ class Config:
         features: List[Feature] = [Feature.image, Feature.target_ghi],
         channels: List[str] = ["ch1"],
         image_cache_dir="/tmp",
-        num_images=5,
+        num_images=1,
         time_interval_min=15,
     ):
         """All configurations are optional with default values.
