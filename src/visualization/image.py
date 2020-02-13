@@ -4,9 +4,10 @@ from src.data.dataloader import Feature
 from src.data.train import default_config, load_data
 
 
-def plot3d(image_path, offset, channel="ch1"):
+def plot3d(channel="ch1"):
     config = default_config()
     config.features = [Feature.image]
+    config.channels = [channel]
 
     dataset = load_data(config=config)
     i = 0
