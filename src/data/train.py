@@ -60,6 +60,9 @@ def load_data(
     logger.info(f"Training dataset has {ratio_train_datetimes} datetimes")
     logger.info(f"Training dataset has {len(STATION_COORDINATES)} stations")
 
+    train_datetimes = train_datetimes[:ratio_train_datetimes]
+    valid_datetimes = valid_datetimes[:ratio_valid_datetimes]
+
     metadata_loader = MetadataLoader(file_name=file_name)
     metadata_train = metadata_station(
         metadata_loader,
