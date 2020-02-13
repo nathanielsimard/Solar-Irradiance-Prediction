@@ -40,7 +40,7 @@ def get_image_reader_cache_directory() -> str:
 
 
 def get_model_checkpoint_directory() -> str:
-    """Get the location where to save the model checkpoints
+    """Get the location where to save the model checkpoints.
 
     Returns:
         [str] -- [path to the folder where to save the models at checkpoints]

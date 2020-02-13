@@ -31,8 +31,15 @@ class Training:
         self.MODEL_SAVE_DIR = env.get_model_checkpoint_directory()
         self.CHECKPOINT_TIMESTAMP = 5
 
-    def run(self, batch_size=128, epochs=10, valid_batch_size=256, enable_tf_caching=False,
-            dry_run=False, skip_non_cached=False):
+    def run(
+        self,
+        batch_size=128,
+        epochs=10,
+        valid_batch_size=256,
+        enable_tf_caching=False,
+        dry_run=False,
+        skip_non_cached=False,
+    ):
         """Performs the training of the model in minibatch.
 
         Agrs:
@@ -42,7 +49,9 @@ class Training:
             caching: if temporary caching is desired.
         """
         logger.info("Training" + str(self.model) + "model.")
-        train_set, valid_set, _ = load_data(enable_tf_caching=enable_tf_caching, skip_non_cached=skip_non_cached)
+        train_set, valid_set, _ = load_data(
+            enable_tf_caching=enable_tf_caching, skip_non_cached=skip_non_cached
+        )
 
         scaling_image = preprocessing.MinMaxScaling(
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
@@ -57,10 +66,17 @@ class Training:
 
         if dry_run:
             # Only test the generators, for debugging weird behavior and corner cases.
-            train_generator, valid_generator, test_generator = load_data_and_create_generators(
-                enable_tf_caching=enable_tf_caching, skip_non_cached=skip_non_cached)
+            (
+                train_generator,
+                valid_generator,
+                test_generator,
+            ) = load_data_and_create_generators(
+                enable_tf_caching=enable_tf_caching, skip_non_cached=skip_non_cached
+            )
             for sample in train_generator:
-                print(sample)  # Just make sure that we can get a single sample out of the dry-run
+                print(
+                    sample
+                )  # Just make sure that we can get a single sample out of the dry-run
                 break
 
         logger.info("Creating loss logs")
@@ -74,7 +90,9 @@ class Training:
             for i, (inputs, targets) in enumerate(train_set.batch(batch_size)):
                 self._train_step(inputs, targets, training=True)
                 sps = batch_size / (time.time() - begin)
-                logger.info(f"Batch #{i+1}, size={batch_size}, samples per seconds={sps}")
+                logger.info(
+                    f"Batch #{i+1}, size={batch_size}, samples per seconds={sps}"
+                )
                 begin = time.time()
             with train_summary_writer.as_default():
                 tf.summary.scalar("train loss", self.train_loss.result(), step=epoch)
