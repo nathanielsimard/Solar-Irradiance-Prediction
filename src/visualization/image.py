@@ -15,9 +15,9 @@ def plot3d(channel="ch1"):
     config.time_interval_min = 60
     config.num_images = 7
 
-    train, _, _ = load_data(config=config)
+    train_dataset, _, _ = load_data(config=config)
 
-    images = next(train.batch(1))
+    images = _first_image(train_dataset)
 
     logger.info(images.shape)
     for i, img in enumerate(images[0]):
@@ -31,3 +31,8 @@ def plot3d(channel="ch1"):
         logger.info(imgg.shape)
         plt.imshow(imgg, cmap="gray")
         plt.savefig(f"image-3D/{i}.png")
+
+
+def _first_image(dataset):
+    for (image,) in dataset.batch(1):
+        return image
