@@ -84,6 +84,10 @@ class Config:
             features: List of features needed.
             channels: List of channels needed.
             image_cache_dir: Where the crop images will be cached.
+            num_images: Total number of images.
+                If more than 1, images from the past are goin to be included.
+            time_interval_min: Number of minutes between images.
+                If num_images is 1, this has no effets.
         """
         self.local_path = local_path
         self.error_strategy = error_strategy

@@ -94,7 +94,12 @@ def load_data(
 
 
 def metadata_station(
-    metadata_loader, datetimes, num_images, time_interval_min,night_time=False, skip_missing=True
+    metadata_loader,
+    datetimes,
+    num_images,
+    time_interval_min,
+    night_time=False,
+    skip_missing=True,
 ) -> Callable[[], Iterator[Metadata]]:
     """Create metadata for all stations."""
 
