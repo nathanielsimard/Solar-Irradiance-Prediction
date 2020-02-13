@@ -56,7 +56,12 @@ class CNN2D(base.Model):
         x = self.mp3(x)
         x = self.flatten(x)
         x = self.d1(x)
-        return self.d2(x)
+        x = self.d2(x)
+
+        if training:
+            return x
+        else:
+            return self.scaling_target.original(x)
 
     def config(self, training=False) -> dataloader.Config:
         config = default_config()
@@ -71,14 +76,18 @@ class CNN2D(base.Model):
 
         return config
 
-    def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
+    def preprocess(self, dataset: tf.data.Dataset, training=False) -> tf.data.Dataset:
         return dataset.map(
             lambda image, target_ghi: (
                 self.scaling_image.normalize(image),
-                self._preprocess_target(target_ghi),
+                self._preprocess_target(target_ghi, training),
             )
         )
 
-    def _preprocess_target(self, target_ghi: tf.Tensor) -> tf.Tensor:
+    def _preprocess_target(self, target_ghi: tf.Tensor, training: bool) -> tf.Tensor:
         current_target_only = target_ghi[0:1]
-        return self.scaling_target.normalize(current_target_only)
+        if training:
+            return self.scaling_target.normalize(current_target_only)
+
+        return current_target_only
+

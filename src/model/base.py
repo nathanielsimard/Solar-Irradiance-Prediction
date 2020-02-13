@@ -26,5 +26,5 @@ class Model(tf.keras.Model, abc.ABC):
     def config(self, training=False) -> dataloader.Config:
         pass
 
-    def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
+    def preprocess(self, dataset: tf.data.Dataset, training=False) -> tf.data.Dataset:
         return dataset
