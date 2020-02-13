@@ -1,7 +1,12 @@
-# Solar-Irradiance-Prediction
-![CI](https://github.com/nathanielsimard/Solar-Irradiance-Prediction/workflows/CI/badge.svg)
-
 <div align="center"><img src="./assets/image-3d-big-ch1.gif"></img></div>
+
+<h1 align="center">Solar-Irradiance-Prediction</h1>
+
+<p align="center">
+    <a href="https://travis-ci.com/psf/black"><img alt="CI Status" src="https://github.com/nathanielsimard/Solar-Irradiance-Prediction/workflows/CI/badge.svg"></a>
+    <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
+</p>
+
 
 ## Setup
 
