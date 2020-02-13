@@ -68,15 +68,16 @@ class Training:
         valid_summary_writer = tf.summary.create_file_writer(self.VALID_LOG_DIR)
 
         logger.info("Fitting model.")
+        begin = time.time()
         for epoch in range(epochs):
             logger.info("Training...")
             for i, (inputs, targets) in enumerate(train_set.batch(batch_size)):
-                begin = time.time()
-                self._train_step(inputs.gpu(), targets.gpu(), training=True)
+                self._train_step(inputs, targets, training=True)
                 sps = batch_size / (time.time() - begin)
-                logger.info(f"Batch #{i+1} size={batch_size} samples per seconds={sps}")
-            # with train_summary_writer.as_default():
-            #    tf.summary.scalar("train loss", self.train_loss.result(), step=epoch)
+                logger.info(f"Batch #{i+1}, size={batch_size}, samples per seconds={sps}")
+                begin = time.time()
+            with train_summary_writer.as_default():
+                tf.summary.scalar("train loss", self.train_loss.result(), step=epoch)
 
             logger.info("Evaluating validation loss")
             for inputs, targets in valid_set.batch(valid_batch_size):
