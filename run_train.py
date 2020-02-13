@@ -7,10 +7,13 @@ from src.training import SupervisedTraining
 def main():
     """Executable."""
     model = conv2d.CNN2D()
-    optimizer = optimizers.SGD(0.0001)
+    optimizer = optimizers.Adam(0.001)
     loss_obj = losses.MeanSquaredError()
+    def rmse(pred, target):
+        return loss_obj(pred, target) ** 0.5
+
     training_session = SupervisedTraining(
-        optimizer=optimizer, model=model, loss_fn=loss_obj
+        optimizer=optimizer, model=model, loss_fn=rmse
     )
     training_session.run()
 

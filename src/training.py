@@ -52,7 +52,7 @@ class SupervisedTraining:
             "test": tf.summary.create_file_writer(TEST_LOG_DIR),
         }
 
-    def run(self, batch_size=128, epochs=10, valid_batch_size=256, caching=True):
+    def run(self, batch_size=128, epochs=100, valid_batch_size=256, caching=True):
         """Performs the training of the model in minibatch.
 
         Agrs:
@@ -68,9 +68,9 @@ class SupervisedTraining:
         )
 
         logger.info("Apply Preprocessing")
-        train_set = self.model.preprocess(train_set, training=True)
-        valid_set = self.model.preprocess(valid_set, training=True)
-        test_set = self.model.preprocess(valid_set, training=False)
+        train_set = self.model.preprocess(train_set)
+        valid_set = self.model.preprocess(valid_set)
+        test_set = self.model.preprocess(valid_set)
 
         logger.info("Creating loss logs")
 
@@ -132,7 +132,8 @@ class SupervisedTraining:
 
         self.metrics["train"](loss)
 
-    @tf.function
     def _calculate_loss(self, valid_inputs, valid_targets, training: bool):
         outputs = self.model(valid_inputs, training)
+        print(outputs[5])
+        print(valid_targets[5])
         return self.loss_fn(valid_targets, outputs)

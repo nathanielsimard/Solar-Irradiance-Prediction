@@ -1,6 +1,7 @@
 import tensorflow as tf
 from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
 
+from tensorflow.keras.models import Sequential
 from src import logging
 from src.data import dataloader, preprocessing
 from src.data.train import default_config
@@ -20,27 +21,17 @@ class CNN2D(base.Model):
         self.scaling_image = preprocessing.MinMaxScaling(
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
         )
-        self.scaling_target = preprocessing.MinMaxScaling(
-            preprocessing.TARGET_GHI_MIN, preprocessing.TARGET_GHI_MAX
-        )
 
-        # Check if necessary
-        input_shape = (64, 64, 5)
-        self.conv1 = Conv2D(
-            64, kernel_size=(5, 5), input_shape=input_shape, activation="relu"
-        )
-        self.mp1 = MaxPooling2D(pool_size=(2, 2))
-
-        self.conv2 = Conv2D(128, kernel_size=(5, 5), activation="relu")
-        self.mp2 = MaxPooling2D(pool_size=(2, 2))
-
-        self.conv3 = Conv2D(128, kernel_size=(3, 3), activation="relu")
-        self.mp3 = MaxPooling2D(pool_size=(2, 2))
+        self.conv1 = self._convolution_step((5,5), 64)
+        self.conv2 = self._convolution_step((3,3), 128)
+        self.conv3 = self._convolution_step((3,3), 256)
 
         self.flatten = Flatten()
 
-        self.d1 = Dense(256, activation="relu")
-        self.d2 = Dense(4)
+        self.d1 = Dense(1048, activation="relu")
+        self.d2 = Dense(512, activation="relu")
+        self.d3 = Dense(256, activation="relu")
+        self.d4 = Dense(1)
 
     def call(self, x, training: bool):
         """Performs the forward pass in the neural network.
@@ -49,19 +40,25 @@ class CNN2D(base.Model):
         some operations need to be skipped at evaluation(e.g. Dropout)
         """
         x = self.conv1(x)
-        x = self.mp1(x)
         x = self.conv2(x)
-        x = self.mp2(x)
         x = self.conv3(x)
-        x = self.mp3(x)
+
         x = self.flatten(x)
+
         x = self.d1(x)
         x = self.d2(x)
+        x = self.d3(x)
+        x = self.d4(x)
 
-        if training:
-            return x
-        else:
-            return self.scaling_target.original(x)
+        return x
+
+    def _convolution_step(self, kernel_size, channels):
+        conv2d_1 = Conv2D(channels, kernel_size=kernel_size, activation="relu")
+        conv2d_2 = Conv2D(channels, kernel_size=kernel_size, activation="relu")
+        conv2d_3 = Conv2D(channels, kernel_size=kernel_size, activation="relu")
+        max_pool = MaxPooling2D(pool_size=(2, 2))
+
+        return Sequential([conv2d_1, conv2d_2, conv2d_3, max_pool])
 
     def config(self, training=False) -> dataloader.Config:
         config = default_config()
@@ -76,18 +73,14 @@ class CNN2D(base.Model):
 
         return config
 
-    def preprocess(self, dataset: tf.data.Dataset, training=False) -> tf.data.Dataset:
+    def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         return dataset.map(
             lambda image, target_ghi: (
                 self.scaling_image.normalize(image),
-                self._preprocess_target(target_ghi, training),
+                self._preprocess_target(target_ghi),
             )
         )
 
-    def _preprocess_target(self, target_ghi: tf.Tensor, training: bool) -> tf.Tensor:
-        current_target_only = target_ghi[0:1]
-        if training:
-            return self.scaling_target.normalize(current_target_only)
-
-        return current_target_only
+    def _preprocess_target(self, target_ghi: tf.Tensor) -> tf.Tensor:
+        return target_ghi[0:1]
 
