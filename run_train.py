@@ -9,6 +9,7 @@ def main():
     model = conv2d.CNN2D()
     optimizer = optimizers.Adam(0.001)
     loss_obj = losses.MeanSquaredError()
+
     def rmse(pred, target):
         return loss_obj(pred, target) ** 0.5
 
