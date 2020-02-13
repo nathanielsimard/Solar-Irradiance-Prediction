@@ -47,7 +47,7 @@ class SupervisedTraining:
             valid_batch_size: should be as large as the GPU can handle.
             caching: if temporary caching is desired.
         """
-        logger.info(f"Starting supervised training with model {self.model.name}")
+        logger.info(f"Starting supervised training with model {self.model.title}")
         config = self.model.config(training=True)
         train_set, valid_set, _ = load_data(enable_tf_caching=caching, config=config)
 
