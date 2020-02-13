@@ -116,7 +116,7 @@ class SupervisedTraining:
         writer = self.writer[name]
 
         for inputs, targets in dataset.batch(batch_size):
-            loss = self._calculate_loss(inputs, targets, metric, training=False)
+            loss = self._calculate_loss(inputs, targets, training=False)
             metric(loss)
 
         with writer.as_default():
