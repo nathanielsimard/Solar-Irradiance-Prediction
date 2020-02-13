@@ -205,7 +205,8 @@ class DataLoader(object):
                     self.config.crop_size,
                 )
                 images.append(image)
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Error while generating past images, ignoring : {e}")
                 images.append(np.zeros(shape))
 
         return images
