@@ -32,6 +32,7 @@ class Training:
         self.CHECKPOINT_TIMESTAMP = 5
 
     def checkpoint(self):
+        """Saves a checkpoint when checkpoints are enabled."""
         if self.enable_checkpoint:
             self.model.save(
                 filepath=self.MODEL_SAVE_DIR + str(self.model),
@@ -47,7 +48,7 @@ class Training:
         enable_tf_caching=False,
         dry_run=False,
         skip_non_cached=False,
-        enable_checkpoint=True
+        enable_checkpoint=True,
     ):
         """Performs the training of the model in minibatch.
 

@@ -26,9 +26,7 @@ def main():
     )
 
     parser.add_argument(
-        "--no_checkpoint",
-        help="Will not save any checkpoints",
-        action="store_true",
+        "--no_checkpoint", help="Will not save any checkpoints", action="store_true",
     )
     args = parser.parse_args()
     env.run_local = args.run_local
@@ -41,7 +39,7 @@ def main():
         enable_tf_caching=args.enable_tf_caching,
         dry_run=args.dry_run,
         skip_non_cached=args.skip_non_cached,
-        enable_checkpoint=not args.no_checkpoint
+        enable_checkpoint=not args.no_checkpoint,
     )
 
 
