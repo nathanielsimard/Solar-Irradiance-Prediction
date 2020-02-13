@@ -161,15 +161,31 @@ class DataLoader(object):
 
     def _read_image(self, metadata: Metadata) -> tf.Tensor:
         try:
-            image_path = self._transform_image_path(metadata.image_path)
-            image = self.image_reader.read(
-                image_path,
-                metadata.image_offset,
+            current_image_path = metadata.image_paths[-1]
+            current_image_offset = metadata.image_offsets[-1]
+            past_image_paths = metadata.image_paths[:-1]
+            past_image_offsets = metadata.image_offsets[:-1]
+
+            current_image = self.image_reader.read(
+                self._transform_image_path(current_image_path),
+                current_image_offset,
                 metadata.coordinates,
                 self.config.crop_size,
             )
 
-            return tf.convert_to_tensor(image, dtype=tf.float32)
+            past_images = self._read_past_images(
+                past_image_paths,
+                past_image_offsets,
+                metadata.coordinates,
+                current_image.shape,
+            )
+
+            if len(past_images) > 0:
+                images = np.stack(past_images + [current_image])
+            else:
+                images = current_image
+
+            return tf.convert_to_tensor(images, dtype=tf.float32)
         except Exception as e:
             if self.config.error_strategy != ErrorStrategy.ignore:
                 raise e
@@ -177,6 +193,23 @@ class DataLoader(object):
             logger.debug(f"Error while generating data, ignoring : {e}")
             output_shape = list(self.config.crop_size) + [len(self.config.channels)]
             return tf.convert_to_tensor(np.zeros(output_shape))
+
+    def _read_past_images(self, image_paths, image_offsets, coordinates, shape):
+        images = []
+        for image_path, image_offset in zip(image_paths, image_offsets):
+            try:
+                image = self.image_reader.read(
+                    self._transform_image_path(image_path),
+                    image_offset,
+                    coordinates,
+                    self.config.crop_size,
+                )
+                images.append(image)
+            except Exception as e:
+                logger.debug(f"Error while generating past images, ignoring : {e}")
+                images.append(np.zeros(shape))
+
+        return images
 
     def _read_metadata(self, metadata: Metadata) -> tf.Tensor:
         meta = np.zeros(len(MetadataFeatureIndex))

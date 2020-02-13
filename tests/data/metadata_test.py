@@ -1,10 +1,10 @@
 import pickle
-import time
 import unittest
 from datetime import datetime
 from typing import Any, Generator
 
-from src.data.metadata import Coordinates, MetadataLoader, Station, UnableToLoadMetadata
+from src.data.metadata import (Coordinates, MetadataLoader, Station,
+                               UnableToLoadMetadata)
 
 CATALOG_PATH = "tests/data/samples/catalog-test.pkl"
 
@@ -46,7 +46,7 @@ class MetadataLoaderTest(unittest.TestCase):
 
         metadata = loader.load(A_STATION, A_STATION_COORDINATE, compression=None)
 
-        first_image_path = next(metadata).image_path
+        first_image_path = next(metadata).image_paths[0]
         self.assertTrue("netcdf" in first_image_path)
 
     def test_load_metadata_image_path_with_8bit_compression(self):
@@ -54,7 +54,7 @@ class MetadataLoaderTest(unittest.TestCase):
 
         metadata = loader.load(A_STATION, A_STATION_COORDINATE, compression="8bit")
 
-        first_image_path = next(metadata).image_path
+        first_image_path = next(metadata).image_paths[0]
         self.assertTrue("8bit" in first_image_path)
 
     def test_load_metadata_image_path_with_16bit_compression(self):
@@ -62,7 +62,7 @@ class MetadataLoaderTest(unittest.TestCase):
 
         metadata = loader.load(A_STATION, A_STATION_COORDINATE, compression="16bit")
 
-        first_image_path = next(metadata).image_path
+        first_image_path = next(metadata).image_paths[0]
         self.assertTrue("16bit" in first_image_path)
 
     def test_load_metadata_image_offset_with_8bit_compression(self):
@@ -71,7 +71,7 @@ class MetadataLoaderTest(unittest.TestCase):
         metadata = loader.load(
             A_STATION, A_STATION_COORDINATE, compression="8bit", night_time=False
         )
-        actual = next(metadata).image_offset
+        actual = next(metadata).image_offsets[0]
         self.assertAlmostEqual(actual, 22)
         self.assertIsInstance(actual, int)
 
@@ -81,7 +81,7 @@ class MetadataLoaderTest(unittest.TestCase):
         metadata = loader.load(
             A_STATION, A_STATION_COORDINATE, compression="16bit", night_time=False
         )
-        actual = next(metadata).image_offset
+        actual = next(metadata).image_offsets[0]
         self.assertAlmostEqual(actual, 22)
 
     def test_load_metadata_image_offset_with_no_compression(self):
@@ -89,7 +89,7 @@ class MetadataLoaderTest(unittest.TestCase):
         metadata = loader.load(
             A_STATION, A_STATION_COORDINATE, compression=None, night_time=False
         )
-        actual = next(metadata).image_offset
+        actual = next(metadata).image_offsets[0]
         self.assertAlmostEqual(actual, 0)
 
     def test_load_metadata_datatime(self):
@@ -109,22 +109,6 @@ class MetadataLoaderTest(unittest.TestCase):
 
         actual_target: Any = next(metadata).target_ghi
         self.assertAlmostEqual(target, actual_target)
-
-    @unittest.skip("Will probably fail on computers slower than i5-8600k")
-    def test_load_metadata_generator_throughput(self):
-        loader = MetadataLoader(CATALOG_PATH)
-        station_with_target = Station.BND
-        metadata = loader.load(station_with_target, A_STATION_COORDINATE)
-        start_time = time.time()
-        i = 0
-        for md in metadata:
-            i = i + 1
-        delta = time.time() - start_time
-        samples_per_second = i / delta
-        # Reference value on on i5 8600k. Quite slow!
-        # But not the bottleneck. Will need improvement though!
-        self.assertGreater(samples_per_second, 300)
-        self.assertLess(delta, 6.5)
 
     def test_load_metadata_target_ghi_1hour(self):
         loader = MetadataLoader(CATALOG_PATH)
@@ -253,8 +237,8 @@ class MetadataLoaderTest(unittest.TestCase):
         )
         i = 0
         for datapoint in metadata:
-            self.assertIsInstance(datapoint.image_offset, int)
-            self.assertEqual(datapoint.image_offset, target_offsets[i])
+            self.assertIsInstance(datapoint.image_offsets[0], int)
+            self.assertEqual(datapoint.image_offsets[0], target_offsets[i])
             i = i + 1
         self.assertEqual(len(target_datetimes), i)
 
@@ -304,7 +288,7 @@ class MetadataLoaderTest(unittest.TestCase):
         actual_target_6h: Any = next(metadata).target_ghi_6h
         self.assertAlmostEqual(target_6h, actual_target_6h)
 
-    def testGivenTargetDatetimes_whenLoad_shouldLoadMetadataInOrder(self):
+    def test_givenTargetDatetimes_whenLoad_shouldLoadMetadataInOrder(self):
         loader = MetadataLoader(CATALOG_PATH)
 
         metadata = loader.load(
@@ -314,7 +298,7 @@ class MetadataLoaderTest(unittest.TestCase):
         for md, expected_datetime in zip(metadata, SOME_TARGET_DATETIMES):
             self.assertEqual(md.datetime, expected_datetime)
 
-    def testGivenTargetDatetimes_whenLoad_shouldLoadSameAmountOfMetadata(self):
+    def test_givenTargetDatetimes_whenLoad_shouldLoadSameAmountOfMetadata(self):
         loader = MetadataLoader(CATALOG_PATH)
 
         metadata = loader.load(
@@ -322,6 +306,41 @@ class MetadataLoaderTest(unittest.TestCase):
         )
 
         self.assertEqual(self._num_metadata(metadata), len(SOME_TARGET_DATETIMES))
+
+    def test_givenNumImagesAndTimeInterval_whenLoad_shouldReturnCorrectOffsets(self):
+        loader = MetadataLoader(CATALOG_PATH)
+        num_images = 5
+        time_interval_min = 15
+
+        metadata = loader.load(
+            Station.BND,
+            A_STATION_COORDINATE,
+            num_images=num_images,
+            time_interval_min=time_interval_min,
+        )
+
+        for i in range(1, num_images + 1):
+            expected_offset = (num_images - i) * [0] + list(range(i))
+            mt = next(metadata)
+            self.assertEqual(expected_offset, mt.image_offsets)
+
+    def test_givenNumImagesAndTimeInterval_whenLoad_shouldReturnCorrectPaths(self):
+        loader = MetadataLoader(CATALOG_PATH)
+        num_images = 5
+        first_day_image_path = (
+            "/project/cq-training-1/project1/data/hdf5v7_8bit/2010.01.01.0800.h5"
+        )
+
+        metadata = loader.load(
+            Station.BND, A_STATION_COORDINATE, num_images=num_images,
+        )
+
+        for i in range(1, num_images + 1):
+            expected_path = (num_images - i) * ["/unknow/path"] + i * [
+                first_day_image_path
+            ]
+            mt = next(metadata)
+            self.assertEqual(expected_path, mt.image_paths)
 
     def _next_target(self, metadata: Generator):
         return next(metadata).target

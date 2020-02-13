@@ -40,26 +40,41 @@ class UnableToLoadMetadata(Exception):
 
 @dataclass
 class Metadata:
-    """Metadata containing the information necessary to train some models."""
+    """Metadata containing the information necessary to train some models.
 
-    image_path: str  # full path on helios
-    image_compression: str  # "8bit", "16bit" or "None"
-    image_offset: int  # Indice de l'image dans le fichier hd5
-    datetime: datetime  # UTC datetime
+    Attributes:
+        image_paths: Full path on helios
+        image_compression: "8bit", "16bit" or "None"
+        image_offsets: Indice de l'image dans le fichier hd5
+        datetime: UTC datetime
+        coordinates: Coordinates
+        target_ghi: GHI, non normalized, watts/m2
+        target_ghi_1h: Same, T+1h
+        target_ghi_3h: Same, T+3h
+        target_ghi_6h: Same, T+6h
+        target_cloudiness: "night", #"cloudy", "clear", "variable" or "slightly cloudy"
+        target_cloudiness_1h: Same, T+1h
+        target_cloudiness_3h: Same, T+3h
+        target_cloudiness_6h: Same, T+6h
+    """
+
+    image_paths: List[str]
+    image_compression: str
+    image_offsets: List[int]
+    datetime: datetime
     coordinates: Coordinates
-    target_ghi: Optional[float] = None  # GHI, non normalized, watts/m2
-    target_ghi_1h: Optional[float] = None  # Same, T+1h
-    target_ghi_3h: Optional[float] = None  # Same, T+3h
-    target_ghi_6h: Optional[float] = None  # Same, T+6h
-    # Cloudiness category. ("night", #"cloudy", "clear", "variable", "slightly cloudy")
+    target_ghi: Optional[float] = None
+    target_ghi_1h: Optional[float] = None
+    target_ghi_3h: Optional[float] = None
+    target_ghi_6h: Optional[float] = None
     target_cloudiness: Optional[str] = None
-    target_cloudiness_1h: Optional[str] = None  # Same, T+1h
-    target_cloudiness_3h: Optional[str] = None  # Same, T+3h
-    target_cloudiness_6h: Optional[str] = None  # Same, T+6h
+    target_cloudiness_1h: Optional[str] = None
+    target_cloudiness_3h: Optional[str] = None
+    target_cloudiness_6h: Optional[str] = None
 
     def __str__(self):
         """Converts metadata to string for logging. Not all info is output."""
-        return f"{self.image_path}, {self.image_offset}, {self.datetime}, {self.coordinates}"
+        return f"{self.image_paths}, {self.image_offsets}, {self.datetime}, {self.coordinates}"
 
 
 class MetadataLoader:
@@ -100,17 +115,29 @@ class MetadataLoader:
         coordinates: Coordinates,
         compression="8bit",
         night_time=True,
-        skip_missing=False,
+        skip_missing=True,
         target_datetimes: Optional[List[datetime]] = None,
+        num_images=1,
+        time_interval_min=15,
     ) -> Iterable[Metadata]:
         """Load the metadata from the catalog.
 
-        :param station: The station which impact which target, target_1h,
-            target_3h and target_6h that will be included in the metadata.
-        :param compression: If the image_path point to a compressed image.
-            Possible values are [None, 8bit, 16bit] (Default 8bit)
-        :param night_time: If the night time must be included.
-            The night time is calculated depending of the station.
+        Args:
+            station: The station which impact which target, target_1h,
+                target_3h and target_6h that will be included in the metadata.
+            coordinates: Coordinates of the given station.
+            compression: If the image_path point to a compressed image.
+                Possible values are [None, 8bit, 16bit] (Default 8bit)
+            night_time: If the night time must be included.
+                The night time is calculated depending of the station.
+            skip_missing: If False, it will raise an exception when
+                trying to generate metadata for an unknow datetime.
+            target_datetimes: The target time to fetch metadata.
+                If none is probided, all datetimes are considered.
+            num_images: Number of images to return. If more than
+                1 is probided, image from the past with time interval
+                are going to be added to image_paths.
+            time_interval_min: Time interval between images in minutes.
 
         :return: A generator of metadata which drops all rows missing a picture.
         """
@@ -147,6 +174,8 @@ class MetadataLoader:
                 target_timestamp,
                 row,
                 compression,
+                num_images,
+                time_interval_min,
             )
 
     def _find_future_value(
@@ -205,12 +234,17 @@ class MetadataLoader:
         timestamp: pd.Timestamp,
         row: Dict[str, Any],
         compression: str,
+        num_images: int,
+        time_interval_min: int,
     ) -> Metadata:
-        image_path = row[image_column]
-        if image_offset_column is not None:
-            image_offset = row[image_offset_column]
-        else:
-            image_offset = 0  # No offset for ncdf files. We just output 0 everytime.
+        image_paths, image_offsets = self._find_additional_image_paths(
+            rows,
+            image_column,
+            image_offset_column,
+            timestamp,
+            num_images,
+            time_interval_min,
+        )
 
         target_ghi = row[f"{station.name}_GHI"]
         target_ghi_1h = self._find_future_value(
@@ -237,10 +271,10 @@ class MetadataLoader:
         datetime = timestamp.to_pydatetime()
 
         return Metadata(
-            image_path=image_path,
+            image_paths=image_paths,
             datetime=datetime,
             image_compression=compression,
-            image_offset=image_offset,
+            image_offsets=image_offsets,
             coordinates=coordinates,
             target_ghi=target_ghi,
             target_ghi_1h=target_ghi_1h,
@@ -251,6 +285,37 @@ class MetadataLoader:
             target_cloudiness_3h=target_cloudiness_3h,
             target_cloudiness_6h=target_cloudiness_6h,
         )
+
+    def _find_additional_image_paths(
+        self,
+        rows,
+        image_column,
+        image_offset_column,
+        timestamp,
+        num_images,
+        time_interval_min,
+    ):
+        image_paths = []
+        image_offsets = []
+        # Iterate in reverse to add the oldest images first.
+        for i in range(num_images - 1, -1, -1):
+            index = timestamp - pd.to_timedelta(i * time_interval_min, unit="min")
+            try:
+                image_paths.append(rows[index][image_column])
+                if image_offset_column is not None:
+                    image_offsets.append(rows[index][image_offset_column])
+                else:
+                    image_offsets.append(0)
+            except KeyError:
+                image_paths.append("/unknow/path")  # Will be handle by the dataloader
+                image_offsets.append(0)
+
+        return image_paths, image_offsets
+
+    def _find_image_path(
+        self, rows: Dict[pd.Timestamp, Any], num_images, time_interval_min
+    ):
+        pass
 
     def _target_timestamps(
         self, catalog: pd.DataFrame, target_datetimes: Optional[List[datetime]]
