@@ -51,3 +51,4 @@ class EnvTest(unittest.TestCase):
         self.assertEquals(
             env.get_image_reader_cache_directory(), "/test/image_reader_cache/"
         )
+        del os.environ["SLURM_TMPDIR"]
