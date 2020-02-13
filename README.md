@@ -1,15 +1,7 @@
 # Solar-Irradiance-Prediction
+![CI](https://github.com/nathanielsimard/Solar-Irradiance-Prediction/workflows/CI/badge.svg)
 
-<div align="center">
-    <img src="./assets/image-3d-ch1.gif" style="height:100px"></img>
-    <img src="./assets/image-3d-ch2.gif" style="height:100px"></img>
-    <img src="./assets/image-3d-ch3.gif" style="height:100px"></img>
-    <img src="./assets/image-3d-ch4.gif" style="height:100px"></img>
-    <img src="./assets/image-3d-ch6.gif" style="height:100px"></img>
-</div>
-
-IFT6759 - Project 1 - Solar Irradiance Prediction 
-
+<div align="center"><img src="./assets/image-3d-big-ch1.gif"></img></div>
 
 ## Setup
 
@@ -33,8 +25,8 @@ All the images have dimension 650x1500
 
 ### Stations Pixel Location (Mauvaise localisation?)
 - BND: X = 688, Y = 188
-- TBL: X = 371, Y = 186
-- DRA: X = 169, Y = 252
+- TBL: X = 371, Y = 18p
+p DRA: X = 169, Y = 252
 - FPK: X = 374, Y = 33
 - GWN: X = 660, Y = 296
 - PSU: X = 883, Y = 174
@@ -53,4 +45,25 @@ Then run the script which will make the tensorboard available at `localhost:8008
 ```bash
 scripts/tensorboard.sh /path/to/tensorboard/file_dir 8008`.
 ```
+
+## Samples
+
+Each gif has 10 images with 30 minute intervals between them on all channels.
+
+<div align="center">
+    <img src="./assets/image-3d-1-ch1.gif" style="height:110px"></img>
+    <img src="./assets/image-3d-1-ch2.gif" style="height:110px"></img>
+    <img src="./assets/image-3d-1-ch3.gif" style="height:110px"></img>
+    <img src="./assets/image-3d-1-ch4.gif" style="height:110px"></img>
+    <img src="./assets/image-3d-1-ch6.gif" style="height:110px"></img>
+</div>
+
+<div align="center">
+    <img src="./assets/image-3d-2-ch1.gif" style="height:110px"></img>
+    <img src="./assets/image-3d-2-ch2.gif" style="height:110px"></img>
+    <img src="./assets/image-3d-2-ch3.gif" style="height:110px"></img>
+    <img src="./assets/image-3d-2-ch4.gif" style="height:110px"></img>
+    <img src="./assets/image-3d-2-ch6.gif" style="height:110px"></img>
+</div>
+
 

@@ -34,7 +34,7 @@ def plot3d():
             plt.savefig(name)
 
             image_names.append(name)
-        make_gif("assets/image-3d-{channel}.gif", image_names)
+        make_gif(f"assets/image-3d-{channel}.gif", image_names)
 
 
 def make_gif(file_name: str, image_names: List[str]):
