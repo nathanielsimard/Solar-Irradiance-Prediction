@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import List
+from src.visualization import image
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -123,4 +124,5 @@ def visualize():
 
 
 if __name__ == "__main__":
-    visualize()
+    image.plot3d()
+

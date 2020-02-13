@@ -72,6 +72,8 @@ class Config:
         features: List[Feature] = [Feature.image, Feature.target_ghi],
         channels: List[str] = ["ch1"],
         image_cache_dir="/tmp",
+        num_images=5,
+        time_interval_min=15,
     ):
         """All configurations are optional with default values.
 
@@ -89,6 +91,8 @@ class Config:
         self.features = features
         self.channels = channels
         self.image_cache_dir = image_cache_dir
+        self.num_images = num_images
+        self.time_interval_min = time_interval_min
 
 
 class MetadataFeatureIndex(IntEnum):
