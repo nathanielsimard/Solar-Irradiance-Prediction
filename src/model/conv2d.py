@@ -1,109 +1,52 @@
-import tensorflow as tf
-from tensorflow.keras import Sequential
-from tensorflow.keras.callbacks import TensorBoard
-from tensorflow.keras.layers import Activation, Conv2D, Dense, Flatten, MaxPooling2D
-from tensorflow.keras.optimizers import SGD
-
+from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
+from tensorflow.keras import Model
 from src import logging
-from src import env
-from src.data import preprocessing
-from src.data.train import load_data, load_data_and_create_generators
+
+# from tensorflow.keras.activations import relu
 
 logger = logging.create_logger(__name__)
 
 
-def create_model():
+class CNN2D(Model):
     """Create Conv2D model."""
-    input_shape = (64, 64, 5)
-    model = Sequential(
-        [
-            Conv2D(64, kernel_size=(5, 5), input_shape=input_shape),
-            Activation("relu"),
-            MaxPooling2D(pool_size=(2, 2)),
-            Conv2D(128, kernel_size=(5, 5)),
-            Activation("relu"),
-            MaxPooling2D(pool_size=(2, 2)),
-            Conv2D(128, kernel_size=(3, 3)),
-            Activation("relu"),
-            MaxPooling2D(pool_size=(2, 2)),
-            Flatten(),
-            Dense(256),
-            Activation("relu"),
-            Dense(4),
-        ]
-    )
-    logger.info(model.summary())
-    return model
 
-
-def train(
-    model,
-    batch_size=32,
-    epochs=10,
-    enable_tf_caching=False,
-    dry_run=False,
-    skip_non_cached=False,
-):
-    """Train Conv2D model."""
-    logger.info("Training Conv2D model.")
-    train_set, valid_set, _ = load_data(
-        enable_tf_caching=enable_tf_caching,
-        file_name=env.get_catalog_path(),
-        skip_non_cached=skip_non_cached,
-    )
-
-    scaling_image = preprocessing.MinMaxScaling(
-        preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
-    )
-    scaling_target = preprocessing.MinMaxScaling(
-        preprocessing.TARGET_GHI_MIN, preprocessing.TARGET_GHI_MAX
-    )
-
-    logger.info("Scaling train set.")
-    train_set = _scale_dataset(scaling_image, scaling_target, train_set)
-    logger.info("Scaling valid set.")
-    valid_set = _scale_dataset(scaling_image, scaling_target, valid_set)
-
-    optimizer = SGD(0.0001)
-    logger.info("Compiling model.")
-    model.compile(
-        loss="mse", optimizer=optimizer, metrics=["mse"],
-    )
-
-    tensorboard_callback = TensorBoard(
-        log_dir=env.get_tensorboard_log_directory(),
-        update_freq="batch",
-        profile_batch=0,
-    )
-
-    logger.info("Fit model.")
-    if not dry_run:
-        model.fit_generator(
-            train_set.batch(batch_size),
-            validation_data=valid_set.batch(batch_size),
-            callbacks=[tensorboard_callback],
-            epochs=epochs,
+    def __init__(self):
+        """Initialize the architecture."""
+        super(CNN2D, self).__init__()
+        input_shape = (64, 64, 5)
+        self.conv1 = Conv2D(
+            64, kernel_size=(5, 5), input_shape=input_shape, activation="relu"
         )
-    else:
-        train_set, valid_set, train_set = load_data_and_create_generators(
-            enable_tf_caching=enable_tf_caching,
-            file_name=env.get_catalog_path(),
-            skip_non_cached=skip_non_cached,
-        )
-        for sample in train_set:
-            print(sample)
+        self.mp1 = MaxPooling2D(
+            pool_size=(2, 2)
+        )  # not sure if it goes there, it does not in PyTorch...
 
-    logger.info("Done.")
+        self.conv2 = Conv2D(128, kernel_size=(5, 5), activation="relu")
+        self.mp2 = MaxPooling2D(pool_size=(2, 2))
 
+        self.conv3 = Conv2D(128, kernel_size=(3, 3), activation="relu")
+        self.mp3 = MaxPooling2D(pool_size=(2, 2))
 
-def _scale_dataset(
-    scaling_image: preprocessing.MinMaxScaling,
-    scaling_target: preprocessing.MinMaxScaling,
-    dataset: tf.data.Dataset,
-):
-    return dataset.map(
-        lambda image, target_ghi: (
-            scaling_image.normalize(image),
-            scaling_target.normalize(target_ghi),
-        )
-    )
+        self.flatten = Flatten()
+        self.d1 = Dense(256, activation="relu")
+        self.d2 = Dense(4)
+
+    def __str__(self):
+        """Name of the model."""
+        return "Conv2D"
+
+    def __call__(self, x, training: bool):
+        """Performs the forward pass in the neural network.
+
+        Can use a different pass with the optional training boolean if
+        some operations need to be skipped at evaluation(e.g. Dropout)
+        """
+        x = self.conv1(x)
+        x = self.mp1(x)  # Same here...
+        x = self.conv2(x)
+        x = self.mp2(x)
+        x = self.conv3(x)
+        x = self.mp3(x)
+        x = self.flatten(x)
+        x = self.d1(x)
+        return self.d2(x)
