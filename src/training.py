@@ -76,7 +76,7 @@ class SupervisedTraining:
 
         logger.info("Fitting model.")
         for epoch in range(epochs):
-            logger.info("SupervisedTraining...")
+            logger.info("Supervised training...")
 
             for i, (inputs, targets) in enumerate(train_set.batch(batch_size)):
                 logger.info(f"Batch #{i+1}")
@@ -132,8 +132,7 @@ class SupervisedTraining:
 
         self.metrics["train"](loss)
 
+    @tf.function
     def _calculate_loss(self, valid_inputs, valid_targets, training: bool):
         outputs = self.model(valid_inputs, training)
-        print(outputs[5])
-        print(valid_targets[5])
         return self.loss_fn(valid_targets, outputs)

@@ -8,6 +8,8 @@ MODEL_BASE_DIR = "/project/cq-training-1/project1/teams/team10/models"
 
 
 class Model(tf.keras.Model, abc.ABC):
+    """All models will inherit from this class."""
+
     def __init__(self, title: str):
         super().__init__()
         self.title = title

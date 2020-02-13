@@ -22,9 +22,9 @@ class CNN2D(base.Model):
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
         )
 
-        self.conv1 = self._convolution_step((5,5), 64)
-        self.conv2 = self._convolution_step((3,3), 128)
-        self.conv3 = self._convolution_step((3,3), 256)
+        self.conv1 = self._convolution_step((5, 5), 64)
+        self.conv2 = self._convolution_step((3, 3), 128)
+        self.conv3 = self._convolution_step((3, 3), 256)
 
         self.flatten = Flatten()
 
@@ -83,4 +83,3 @@ class CNN2D(base.Model):
 
     def _preprocess_target(self, target_ghi: tf.Tensor) -> tf.Tensor:
         return target_ghi[0:1]
-
