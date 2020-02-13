@@ -31,6 +31,14 @@ class Training:
         self.MODEL_SAVE_DIR = env.get_model_checkpoint_directory()
         self.CHECKPOINT_TIMESTAMP = 5
 
+    def checkpoint(self):
+        if self.enable_checkpoint:
+            self.model.save(
+                filepath=self.MODEL_SAVE_DIR + str(self.model),
+                save_format="tf",
+                overwrite=True,
+            )
+
     def run(
         self,
         batch_size=128,
@@ -39,6 +47,7 @@ class Training:
         enable_tf_caching=False,
         dry_run=False,
         skip_non_cached=False,
+        enable_checkpoint=True
     ):
         """Performs the training of the model in minibatch.
 
@@ -48,6 +57,7 @@ class Training:
             valid_batch_size: should be as large as the GPU can handle.
             caching: if temporary caching is desired.
         """
+        self.enable_checkpoint = enable_checkpoint
         logger.info("Training" + str(self.model) + "model.")
         train_set, valid_set, _ = load_data(
             enable_tf_caching=enable_tf_caching, skip_non_cached=skip_non_cached
@@ -85,6 +95,7 @@ class Training:
 
         logger.info("Fitting model.")
         begin = time.time()
+        self.checkpoint()  # Fail early!
         for epoch in range(epochs):
             logger.info("Training...")
             for i, (inputs, targets) in enumerate(train_set.batch(batch_size)):
@@ -112,11 +123,12 @@ class Training:
             self.valid_loss.reset_states()
             if epoch % self.CHECKPOINT_TIMESTAMP == 0:
                 logger.info("Checkpointing...")
-                self.model.save(
-                    filepath=self.MODEL_SAVE_DIR + str(self.model),
-                    save_format="tf",
-                    overwrite=True,
-                )
+                self.checkpoint()
+                # self.model.save(
+                #    filepath=self.MODEL_SAVE_DIR + str(self.model),
+                #    save_format="tf",
+                #    overwrite=True,
+                # )
 
         logger.info("Done.")
 
