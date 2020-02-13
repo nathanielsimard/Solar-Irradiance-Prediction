@@ -62,19 +62,19 @@ scripts/tensorboard.sh /path/to/tensorboard/file_dir 8008`.
 Each gif has 10 images with 30 minute intervals between them on all channels.
 
 <div align="center">
-    <img src="./assets/image-3d-1-ch1.gif" style="height:110px"></img>
-    <img src="./assets/image-3d-1-ch2.gif" style="height:110px"></img>
-    <img src="./assets/image-3d-1-ch3.gif" style="height:110px"></img>
-    <img src="./assets/image-3d-1-ch4.gif" style="height:110px"></img>
-    <img src="./assets/image-3d-1-ch6.gif" style="height:110px"></img>
+    <img src="./assets/image-3d-1-ch1.gif" width=110></img>
+    <img src="./assets/image-3d-1-ch2.gif" width=110></img>
+    <img src="./assets/image-3d-1-ch3.gif" width=110></img>
+    <img src="./assets/image-3d-1-ch4.gif" width=110></img>
+    <img src="./assets/image-3d-1-ch6.gif" width=110></img>
 </div>
 
 <div align="center">
-    <img src="./assets/image-3d-2-ch1.gif" style="height:110px"></img>
-    <img src="./assets/image-3d-2-ch2.gif" style="height:110px"></img>
-    <img src="./assets/image-3d-2-ch3.gif" style="height:110px"></img>
-    <img src="./assets/image-3d-2-ch4.gif" style="height:110px"></img>
-    <img src="./assets/image-3d-2-ch6.gif" style="height:110px"></img>
+    <img src="./assets/image-3d-2-ch1.gif" width=110></img>
+    <img src="./assets/image-3d-2-ch2.gif" width=110></img>
+    <img src="./assets/image-3d-2-ch3.gif" width=110></img>
+    <img src="./assets/image-3d-2-ch4.gif" width=110></img>
+    <img src="./assets/image-3d-2-ch6.gif" width=110></img>
 </div>
 
 
