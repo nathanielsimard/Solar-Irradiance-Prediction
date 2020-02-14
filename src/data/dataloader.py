@@ -74,6 +74,7 @@ class Config:
         image_cache_dir="/tmp",
         num_images=1,
         time_interval_min=15,
+        ratio=1,
     ):
         """All configurations are optional with default values.
 
@@ -88,6 +89,7 @@ class Config:
                 If more than 1, images from the past are goin to be included.
             time_interval_min: Number of minutes between images.
                 If num_images is 1, this has no effets.
+            ratio: proportion of the data we want.
         """
         self.local_path = local_path
         self.error_strategy = error_strategy
@@ -97,6 +99,7 @@ class Config:
         self.image_cache_dir = image_cache_dir
         self.num_images = num_images
         self.time_interval_min = time_interval_min
+        self.ratio = ratio
 
 
 class MetadataFeatureIndex(IntEnum):

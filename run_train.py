@@ -1,14 +1,21 @@
+from tensorflow.keras import losses, optimizers
+
 from src.model import conv2d
-from src.data.training import Training
-from tensorflow.keras import optimizers, losses
+from src.training import SupervisedTraining
 
 
 def main():
     """Executable."""
     model = conv2d.CNN2D()
-    optimizer = optimizers.SGD(0.0001)
+    optimizer = optimizers.Adam(0.001)
     loss_obj = losses.MeanSquaredError()
-    training_session = Training(optimizer=optimizer, model=model, loss_fn=loss_obj)
+
+    def rmse(pred, target):
+        return loss_obj(pred, target) ** 0.5
+
+    training_session = SupervisedTraining(
+        optimizer=optimizer, model=model, loss_fn=rmse
+    )
     training_session.run()
 
 
