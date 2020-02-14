@@ -249,7 +249,7 @@ class DataLoader(object):
 
         In order to use it, the configuration must say the we use this reader.
 
-        It will yield a single vector containing all values side by side for 
+        It will yield a single vector containing all values side by side for
         this sample. (T, T+1, T+3, T+6 )
         """
         meta[0 : len(clearsky_values)] = clearsky_values
