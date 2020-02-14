@@ -74,6 +74,7 @@ class CNN2D(base.Model):
         return config
 
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
+        """Applies the preprocessing to the inputs and the targets."""
         return dataset.map(
             lambda image, target_ghi: (
                 self.scaling_image.normalize(image),
