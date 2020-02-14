@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 
 from src.data import dataloader
 from src.data.metadata import Coordinates, Metadata
+from src.visualization import training
 
 BND_COORDINATES = Coordinates(40.05192, -88.37309, 230)
 TBL_COORDINATES = Coordinates(40.12498, -105.23680, 1689)
@@ -37,9 +38,9 @@ def _metadata_iterable(image_paths, offsets, coordinates):
     for image_path in image_paths:
         for offset in offsets:
             yield Metadata(
-                image_path,
+                [image_path],
                 "8bits",
-                offset,
+                [offset],
                 datetime.now(),
                 coordinates,
                 target_ghi=100,
@@ -123,4 +124,4 @@ def visualize():
 
 
 if __name__ == "__main__":
-    visualize()
+    training.plot_learning_curve("Conv2D-100")

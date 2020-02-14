@@ -1,25 +1,18 @@
 import unittest
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 from unittest import mock
 
 import numpy as np
 
 import src.data.config as cf
 import tests.data.config_test as config_test
-from src.data.dataloader import (
-    DataloaderConfig,
-    DataLoader,
-    ErrorStrategy,
-    Feature,
-    MetadataFeatureIndex,
-    MissingTargetException,
-    UnregognizedErrorStrategy,
-    UnregognizedFeature,
-    CorruptedImage,
-    parse_config,
-)
-from src.data.image import ImageReader, ImageNotCached
+from src.data.dataloader import (CorruptedImage, DataLoader, DataloaderConfig,
+                                 ErrorStrategy, Feature, MetadataFeatureIndex,
+                                 MissingTargetException,
+                                 UnregognizedErrorStrategy,
+                                 UnregognizedFeature, parse_config)
+from src.data.image import ImageNotCached, ImageReader
 from src.data.metadata import Coordinates, Metadata
 
 ANY_COMPRESSION = "8bits"
@@ -274,21 +267,46 @@ class DataLoaderTest(unittest.TestCase):
         for data in self.dataloader.generator():
             self.assertEqual(len(data), len(features))
 
+    def test_givenMultipleImages_shouldHaveOneMoreDimension(self):
+        self.image_reader.read = mock.Mock(return_value=FAKE_IMAGE)
+
+        self.dataloader = DataLoader(
+            lambda: [self._metadata(image_paths=[IMAGE_PATH, IMAGE_PATH])],
+            self.image_reader,
+            config=DataloaderConfig(features=[Feature.image],),
+        )
+
+        for (image,) in self.dataloader.generator():
+            self.assertEqual([2] + list(FAKE_IMAGE.shape), list(image.shape))
+
+    def test_givenMultipleImagesWithMissingImage_shouldCreateZerosImage(self):
+        self.image_reader.read = mock.Mock(side_effect=[FAKE_IMAGE, AN_EXCEPTION])
+
+        self.dataloader = DataLoader(
+            lambda: [self._metadata(image_paths=[IMAGE_PATH, IMAGE_PATH])],
+            self.image_reader,
+            config=DataloaderConfig(features=[Feature.image],),
+        )
+
+        (image,) = next(self.dataloader.generator())
+        self.assertTrue(np.array_equal(image[0], np.zeros(FAKE_IMAGE.shape)))
+        self.assertTrue(np.array_equal(image[1], FAKE_IMAGE))
+
     def assertCloseTo(self, value: float, target: float, epsilon: float = 0.001):
         self.assertAlmostEqual(value, target, delta=epsilon)
 
     def _metadata(
         self,
-        image_path: str = IMAGE_PATH,
+        image_paths: List[str] = [IMAGE_PATH],
         target_ghi: Optional[float] = 100,
         target_ghi_1h: Optional[float] = 100,
         target_ghi_3h: Optional[float] = 100,
         target_ghi_6h: Optional[float] = 100,
     ):
         return Metadata(
-            image_path,
+            image_paths,
             ANY_COMPRESSION,
-            ANY_IMAGE_OFFSET,
+            len(image_paths) * [ANY_IMAGE_OFFSET],
             ANY_DATETIME,
             ANY_COORDINATES,
             target_ghi=target_ghi,

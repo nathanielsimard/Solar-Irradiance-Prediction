@@ -66,23 +66,38 @@ def load_data(
     config.force_caching = skip_non_cached
 
     train_datetimes, valid_datetimes, test_datetimes = split.load()
+    ratio_train_datetimes = int(len(train_datetimes) * config.ratio)
+    ratio_valid_datetimes = int(len(valid_datetimes) * config.ratio)
+
+    logger.info(f"Training dataset ratio {config.ratio}")
+    logger.info(f"Training dataset has {ratio_train_datetimes} datetimes")
+    logger.info(f"Training dataset has {len(STATION_COORDINATES)} stations")
+
+    train_datetimes = train_datetimes[:ratio_train_datetimes]
+    valid_datetimes = valid_datetimes[:ratio_valid_datetimes]
 
     metadata_loader = MetadataLoader(file_name=file_name)
     metadata_train = metadata_station(
         metadata_loader,
         train_datetimes,
+        config.num_images,
+        config.time_interval_min,
         night_time=night_time,
         skip_missing=skip_missing,
     )
     metadata_valid = metadata_station(
         metadata_loader,
         valid_datetimes,
+        config.num_images,
+        config.time_interval_min,
         night_time=night_time,
         skip_missing=skip_missing,
     )
     metadata_test = metadata_station(
         metadata_loader,
         test_datetimes,
+        config.num_images,
+        config.time_interval_min,
         night_time=night_time,
         skip_missing=skip_missing,
     )
@@ -92,9 +107,9 @@ def load_data(
     dataset_test = dataloader.create_dataset(metadata_test, config)
 
     if enable_tf_caching:
-        dataset_train = dataset_train.cache(cache_file + "_train")
-        dataset_test = dataset_test.cache(cache_file + "_test")
-        dataset_valid = dataset_valid.cache(cache_file + "_valid")
+        dataset_train = dataset_train.cache(f"{cache_file}/train")
+        dataset_test = dataset_test.cache(f"{cache_file}/test")
+        dataset_valid = dataset_valid.cache(f"{cache_file}/valid")
 
     logger.info("Loaded datasets.")
     return dataset_train, dataset_valid, dataset_test
@@ -154,7 +169,12 @@ def load_data_and_create_generators(
 
 
 def metadata_station(
-    metadata_loader, datetimes, night_time=False, skip_missing=True
+    metadata_loader,
+    datetimes,
+    num_images,
+    time_interval_min,
+    night_time=False,
+    skip_missing=True,
 ) -> Callable[[], Iterator[Metadata]]:
     """Create metadata for all stations."""
 
@@ -168,6 +188,8 @@ def metadata_station(
                     night_time=night_time,
                     target_datetimes=datetimes,
                     skip_missing=skip_missing,
+                    num_images=num_images,
+                    time_interval_min=time_interval_min,
                 )
             )
         return itertools.chain(*generators)
