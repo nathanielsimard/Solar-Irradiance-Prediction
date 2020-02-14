@@ -1,4 +1,5 @@
 from datetime import datetime
+import pickle
 
 import tensorflow as tf
 
@@ -27,7 +28,24 @@ TEST_LOG_DIR = (
 CHECKPOINT_TIMESTAMP = 5
 
 
-class SupervisedTraining:
+class History(object):
+    def __init__(self):
+        self.logs = {"train": [], "valid": [], "test": []}
+
+    def record(self, name, value):
+        self.logs[name].append(value)
+
+    def save(self, file_name):
+        with open(file_name, "wb") as file:
+            pickle.dump(self, file)
+
+    @staticmethod
+    def load(file_name):
+        with open(file_name, "rb") as file:
+            return pickle.load(file)
+
+
+class SupervisedTraining(object):
     """Train a model in a supervised way.
 
     It assumes that the data is labeled (inputs, targets).
@@ -51,6 +69,8 @@ class SupervisedTraining:
             "valid": tf.summary.create_file_writer(VALID_LOG_DIR),
             "test": tf.summary.create_file_writer(TEST_LOG_DIR),
         }
+
+        self.history = History()
 
     def run(self, batch_size=128, epochs=100, valid_batch_size=256, caching=True):
         """Performs the training of the model in minibatch.
@@ -93,6 +113,8 @@ class SupervisedTraining:
             self._update_progress(epoch)
 
         self._evaluate("test", epoch, test_set, valid_batch_size)
+
+        self.history.save(f"{self.model.title}-{epochs}")
         logger.info("Done.")
 
     def _update_progress(self, epoch):
@@ -108,6 +130,7 @@ class SupervisedTraining:
             tf.summary.scalar("train", train_metric.result(), step=epoch)
 
         # Reset the cumulative metrics after each epoch
+        self.history.record("train", train_metric.result())
         train_metric.reset_states()
         valid_metric.reset_states()
 
@@ -121,6 +144,8 @@ class SupervisedTraining:
 
         with writer.as_default():
             tf.summary.scalar(name, metric.result(), step=epoch)
+
+        self.history.record(name, metric.result())
 
     @tf.function
     def _train_step(self, train_inputs, train_targets, training: bool):
