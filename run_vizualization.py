@@ -124,4 +124,4 @@ def visualize():
 
 
 if __name__ == "__main__":
-    training.plot_learning_curve("Conv2D-100")
+    training.plot_learning_curve("Conv3D-100")

@@ -53,12 +53,12 @@ class CNN3D(base.Model):
         return x
 
     def _convolution_step(self, kernel_size, channels):
-        conv2d_1 = Conv3D(channels, kernel_size=kernel_size, activation="relu")
-        conv2d_2 = Conv3D(channels, kernel_size=kernel_size, activation="relu")
-        conv2d_3 = Conv3D(channels, kernel_size=kernel_size, activation="relu")
+        conv3d_1 = Conv3D(channels, kernel_size=kernel_size, activation="relu")
+        conv3d_2 = Conv3D(channels, kernel_size=kernel_size, activation="relu")
+        conv3d_3 = Conv3D(channels, kernel_size=kernel_size, activation="relu")
         max_pool = MaxPooling3D(pool_size=(2, 2, 2))
 
-        return Sequential([conv2d_1, conv2d_2, conv2d_3, max_pool])
+        return Sequential([conv3d_1, conv3d_2, conv3d_3, max_pool])
 
     def config(self, training=False) -> dataloader.Config:
         """Configuration."""
