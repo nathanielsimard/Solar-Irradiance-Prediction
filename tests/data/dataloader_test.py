@@ -8,8 +8,9 @@ import numpy as np
 import src.data.config as cf
 import tests.data.config_test as config_test
 from src.data.dataloader import (
-    Config,
+    CorruptedImage,
     DataLoader,
+    DataloaderConfig,
     ErrorStrategy,
     Feature,
     MetadataFeatureIndex,
@@ -18,7 +19,7 @@ from src.data.dataloader import (
     UnregognizedFeature,
     parse_config,
 )
-from src.data.image import ImageReader
+from src.data.image import ImageNotCached, ImageReader
 from src.data.metadata import Coordinates, Metadata
 
 ANY_COMPRESSION = "8bits"
@@ -33,6 +34,8 @@ IMAGE_PATH = f"tests/data/samples/{IMAGE_NAME}"
 
 AN_EXCEPTION = UnregognizedErrorStrategy("Test exception")
 AN_EXCEPTION_TYPE = UnregognizedErrorStrategy
+
+AN_HANDLED_EXCEPTION = CorruptedImage("Fake corrupted image")
 
 
 class DataLoaderTest(unittest.TestCase):
@@ -75,7 +78,9 @@ class DataLoaderTest(unittest.TestCase):
 
     def test_givenNoLocalPath_shouldUseOriginalPath(self):
         self.dataloader = DataLoader(
-            lambda: [self._metadata()], self.image_reader, Config(local_path=None),
+            lambda: [self._metadata()],
+            self.image_reader,
+            DataloaderConfig(local_path=None),
         )
 
         dataset = self.dataloader.generator()
@@ -90,7 +95,7 @@ class DataLoaderTest(unittest.TestCase):
         self.dataloader = DataLoader(
             lambda: [self._metadata()],
             self.image_reader,
-            Config(local_path=local_path),
+            DataloaderConfig(local_path=local_path),
         )
 
         dataset = self.dataloader.generator()
@@ -109,7 +114,19 @@ class DataLoaderTest(unittest.TestCase):
         self.dataloader = DataLoader(
             lambda: [self._metadata(), self._metadata()],
             self.image_reader,
-            Config(error_strategy=ErrorStrategy.skip),
+            DataloaderConfig(error_strategy=ErrorStrategy.skip),
+        )
+        items = list(self.dataloader.generator())
+
+        self.assertEqual(1, len(items))
+
+    def test_givenSkipErrorStrategy_whenImageCacheMiss_shouldSkipToNextItem(self,):
+        self.image_reader.read = mock.Mock(side_effect=[ImageNotCached, FAKE_IMAGE])
+
+        self.dataloader = DataLoader(
+            lambda: [self._metadata(), self._metadata()],
+            self.image_reader,
+            DataloaderConfig(error_strategy=ErrorStrategy.skip, force_caching=True),
         )
         items = list(self.dataloader.generator())
 
@@ -121,14 +138,16 @@ class DataLoaderTest(unittest.TestCase):
         self.dataloader = DataLoader(
             lambda: [self._metadata(), self._metadata()],
             self.image_reader,
-            Config(error_strategy=ErrorStrategy.stop),
+            DataloaderConfig(error_strategy=ErrorStrategy.stop),
         )
         self.assertRaises(AN_EXCEPTION_TYPE, lambda: list(self.dataloader.generator()))
 
     def test_givenIgnoreErrorStrategy_whenImageLoaderException_shouldReturnDummyImage(
         self,
     ):
-        self.image_reader.read = mock.Mock(side_effect=[AN_EXCEPTION, FAKE_IMAGE])
+        self.image_reader.read = mock.Mock(
+            side_effect=[AN_HANDLED_EXCEPTION, FAKE_IMAGE]
+        )
         channels = ["ch1", "ch2"]
         crop_size = [40, 40]
         num_channels = len(channels)
@@ -137,7 +156,7 @@ class DataLoaderTest(unittest.TestCase):
         self.dataloader = DataLoader(
             lambda: [self._metadata(), self._metadata()],
             self.image_reader,
-            Config(
+            DataloaderConfig(
                 error_strategy=ErrorStrategy.ignore,
                 crop_size=crop_size,
                 channels=channels,
@@ -154,7 +173,7 @@ class DataLoaderTest(unittest.TestCase):
         self.dataloader = DataLoader(
             lambda: [self._metadata(target_ghi_1h=None), self._metadata()],
             self.image_reader,
-            Config(error_strategy=ErrorStrategy.skip),
+            DataloaderConfig(error_strategy=ErrorStrategy.skip),
         )
         items = list(self.dataloader.generator())
 
@@ -164,7 +183,7 @@ class DataLoaderTest(unittest.TestCase):
         self.dataloader = DataLoader(
             lambda: [self._metadata(), self._metadata(target_ghi_3h=None)],
             self.image_reader,
-            Config(error_strategy=ErrorStrategy.stop),
+            DataloaderConfig(error_strategy=ErrorStrategy.stop),
         )
         self.assertRaises(
             MissingTargetException, lambda: list(self.dataloader.generator())
@@ -174,7 +193,7 @@ class DataLoaderTest(unittest.TestCase):
         self.dataloader = DataLoader(
             lambda: [self._metadata(target_ghi=None)],
             self.image_reader,
-            Config(error_strategy=ErrorStrategy.ignore,),
+            DataloaderConfig(error_strategy=ErrorStrategy.ignore,),
         )
 
         for image, targets in self.dataloader.generator():
@@ -227,7 +246,9 @@ class DataLoaderTest(unittest.TestCase):
         )
 
         self.dataloader = DataLoader(
-            lambda: [metadata], self.image_reader, Config(features=[Feature.metadata]),
+            lambda: [metadata],
+            self.image_reader,
+            DataloaderConfig(features=[Feature.metadata]),
         )
 
         for (meta,) in self.dataloader.generator():
@@ -245,7 +266,9 @@ class DataLoaderTest(unittest.TestCase):
         ]
 
         self.dataloader = DataLoader(
-            lambda: [self._metadata()], self.image_reader, Config(features=features),
+            lambda: [self._metadata()],
+            self.image_reader,
+            DataloaderConfig(features=features),
         )
 
         for data in self.dataloader.generator():
@@ -257,7 +280,7 @@ class DataLoaderTest(unittest.TestCase):
         self.dataloader = DataLoader(
             lambda: [self._metadata(image_paths=[IMAGE_PATH, IMAGE_PATH])],
             self.image_reader,
-            config=Config(features=[Feature.image],),
+            config=DataloaderConfig(features=[Feature.image],),
         )
 
         for (image,) in self.dataloader.generator():
@@ -269,7 +292,7 @@ class DataLoaderTest(unittest.TestCase):
         self.dataloader = DataLoader(
             lambda: [self._metadata(image_paths=[IMAGE_PATH, IMAGE_PATH])],
             self.image_reader,
-            config=Config(features=[Feature.image],),
+            config=DataloaderConfig(features=[Feature.image],),
         )
 
         (image,) = next(self.dataloader.generator())

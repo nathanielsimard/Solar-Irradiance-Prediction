@@ -1,5 +1,5 @@
 import unittest
-
+import os
 import numpy as np
 
 from src.data.image import (
@@ -8,6 +8,7 @@ from src.data.image import (
     InvalidImageChannel,
     InvalidImageOffSet,
     InvalidImagePath,
+    ImageNotCached,
 )
 from src.data.metadata import Coordinates
 
@@ -95,3 +96,19 @@ class ImageReaderTest(unittest.TestCase):
 
         image_shape_without_channel = image.shape[:2]
         self.assertEqual(output_size, image_shape_without_channel)
+
+    def test_cache_miss_exception(self):
+        output_size = (64, 64)
+        # Make sure cached is clear
+        cache_file = (
+            "/tmp//2015.11.01.0800.h5/0/(40.05192, -88.37309, 230)/['ch1']/(64, 64).pkl"
+        )
+        if os.path.exists(cache_file):
+            os.remove(cache_file)
+        self.image_reader = ImageReader(force_caching=True, cache_dir="/tmp/")
+        self.assertRaises(
+            ImageNotCached,
+            lambda: self.image_reader.read(
+                IMAGE_PATH, OFFSET, COORDINATES, output_size=output_size
+            ),
+        )

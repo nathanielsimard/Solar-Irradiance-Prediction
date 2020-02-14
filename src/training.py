@@ -1,5 +1,5 @@
-from datetime import datetime
 import pickle
+from datetime import datetime
 
 import tensorflow as tf
 
@@ -78,7 +78,15 @@ class SupervisedTraining(object):
 
         self.history = History()
 
-    def run(self, batch_size=128, epochs=100, valid_batch_size=256, caching=True):
+    def run(
+        self,
+        batch_size=128,
+        epochs=10,
+        valid_batch_size=256,
+        enable_tf_caching=False,
+        skip_non_cached=False,
+        enable_checkpoint=True,
+    ):
         """Performs the training of the model in minibatch.
 
         Agrs:
@@ -90,7 +98,9 @@ class SupervisedTraining(object):
         logger.info(f"Starting supervised training with model {self.model.title}")
         config = self.model.config(training=True)
         train_set, valid_set, test_set = load_data(
-            enable_tf_caching=caching, config=config
+            enable_tf_caching=enable_tf_caching,
+            config=config,
+            skip_non_cached=skip_non_cached,
         )
 
         logger.info("Apply Preprocessing")
@@ -112,7 +122,7 @@ class SupervisedTraining(object):
             logger.info("Evaluating validation loss")
             self._evaluate("valid", epoch, valid_set, valid_batch_size)
 
-            if epoch % CHECKPOINT_TIMESTAMP == 0:
+            if enable_checkpoint and epoch % CHECKPOINT_TIMESTAMP == 0:
                 logger.info("Checkpointing...")
                 self.model.save(str(epoch))
 

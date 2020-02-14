@@ -1,12 +1,13 @@
+import time
 import unittest
 from datetime import datetime
 
 import tensorflow as tf
-import time
+
 import src.data.clearskydata as csd
+import tests.data.config_test as config_test
 from src.data.config import read_configuration_file
 from src.data.metadata import Station
-import tests.data.config_test as config_test
 
 DUMMY_TRAIN_CFG_PATH = "tests/data/samples/dummy_train_cfg.json"
 
@@ -63,7 +64,7 @@ class ClearSkyDataTest(unittest.TestCase):
         target_datetime = datetime(2010, 6, 19, 22, 15)
         config = read_configuration_file(config_test.DUMMY_TEST_CFG_PATH)
         key = cs._generate_cache_key(config.stations[Station.BND], target_datetime)
-        self.assertEquals(key, "40.0519;-88.3731;230.00;2010-06-19 22:15:00")
+        self.assertEqual(key, "40.0519;-88.3731;230.00;2010-06-19 22:15:00")
 
     @unittest.skip("Not essential")
     def test_clearsky_prediction_uncached_performance(self):

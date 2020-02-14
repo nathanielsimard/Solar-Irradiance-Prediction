@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
-
 from tensorflow.keras.models import Sequential
+
 from src import logging
 from src.data import dataloader, preprocessing
 from src.data.train import default_config
