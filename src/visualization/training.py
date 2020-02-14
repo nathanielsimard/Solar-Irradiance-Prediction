@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 
 
 def plot_learning_curve(file_name):
+    """Plot the valid and train loss curves."""
     history = History.load(file_name)
 
     plt.cla()

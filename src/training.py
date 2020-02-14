@@ -29,18 +29,24 @@ CHECKPOINT_TIMESTAMP = 5
 
 
 class History(object):
+    """Keeps track of the different losses."""
+
     def __init__(self):
+        """Initialize dictionaries."""
         self.logs = {"train": [], "valid": [], "test": []}
 
     def record(self, name, value):
+        """Stores value in the corresponding log."""
         self.logs[name].append(value)
 
     def save(self, file_name):
+        """Save file."""
         with open(file_name, "wb") as file:
             pickle.dump(self, file)
 
     @staticmethod
     def load(file_name):
+        """Load file."""
         with open(file_name, "rb") as file:
             return pickle.load(file)
 

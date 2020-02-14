@@ -61,6 +61,7 @@ class CNN2D(base.Model):
         return Sequential([conv2d_1, conv2d_2, conv2d_3, max_pool])
 
     def config(self, training=False) -> dataloader.Config:
+        """Configuration."""
         config = default_config()
         config.num_images = 1
         config.ratio = 0.01
