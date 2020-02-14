@@ -79,9 +79,8 @@ class ImageReader(object):
             image = self._load_cache_images(cached_file)
             logger.debug(f"Image in cache {cached_file}")
             return image
-        except FileNotFoundError as e:
+        except FileNotFoundError:
             logger.debug(f"Image not in cache {cached_file}")
-            raise e
 
         try:
             with h5py.File(image_path, "r") as file_reader:
