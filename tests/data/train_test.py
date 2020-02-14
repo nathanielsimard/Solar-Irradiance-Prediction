@@ -7,6 +7,8 @@ CATALOG_PATH = "tests/data/samples/catalog-test.pkl"
 
 A_STATION = metadata.Station.BND
 A_STATION_COORDINATE = metadata.Coordinates(40.05192, -88.37309, 230)
+NUM_IMAGES = 1
+IMAGE_INTERVAL_MIN = 15
 
 
 class TrainIntegrationTest(unittest.TestCase):
@@ -15,7 +17,9 @@ class TrainIntegrationTest(unittest.TestCase):
         timestamps = metadata_loader.catalog.index.tolist()
         datetimes = [timestamp.to_pydatetime() for timestamp in timestamps]
 
-        metadata = train.metadata_station(metadata_loader, datetimes)
+        metadata = train.metadata_station(
+            metadata_loader, datetimes, 1, IMAGE_INTERVAL_MIN
+        )
 
         for m in metadata():
             self.assertTrue(isinstance(m, Metadata))

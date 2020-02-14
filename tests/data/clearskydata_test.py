@@ -1,12 +1,13 @@
+import time
 import unittest
 from datetime import datetime
 
 import tensorflow as tf
-import time
+
 import src.data.clearskydata as csd
+import tests.data.config_test as config_test
 from src.data.config import read_configuration_file
 from src.data.metadata import Station
-import tests.data.config_test as config_test
 
 DUMMY_TRAIN_CFG_PATH = "tests/data/samples/dummy_train_cfg.json"
 

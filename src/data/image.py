@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 import h5py
 import numpy as np
 
-from src import logging
+from src import env, logging
 from src.data import metadata
 from src import env
 from src.data.utils import fetch_hdf5_sample, viz_hdf5_imagery

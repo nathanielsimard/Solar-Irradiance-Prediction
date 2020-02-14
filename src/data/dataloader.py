@@ -6,16 +6,15 @@ import numpy as np
 import tensorflow as tf
 
 import src.data.clearskydata as csd
-from src import logging
+from src import env, logging
 from src.data import image
 from src.data.image import (
-    InvalidImageChannel,
-    InvalidImageOffSet,
     CorruptedImage,
     ImageNotCached,
+    InvalidImageChannel,
+    InvalidImageOffSet,
 )
 from src.data.metadata import Metadata
-from src import env
 
 logger = logging.create_logger(__name__)
 
@@ -80,6 +79,9 @@ class DataloaderConfig:
         features: List[Feature] = [Feature.image, Feature.target_ghi],
         channels: List[str] = ["ch1"],
         image_cache_dir="/tmp",
+        num_images=1,
+        time_interval_min=15,
+        ratio=1,
     ):
         """All configurations are optional with default values.
 
@@ -91,6 +93,11 @@ class DataloaderConfig:
             features: List of features needed.
             channels: List of channels needed.
             image_cache_dir: Where the crop images will be cached.
+            num_images: Total number of images.
+                If more than 1, images from the past are goin to be included.
+            time_interval_min: Number of minutes between images.
+                If num_images is 1, this has no effets.
+            ratio: proportion of the data we want.
         """
         self.local_path = local_path
         self.error_strategy = error_strategy
@@ -99,6 +106,9 @@ class DataloaderConfig:
         self.channels = channels
         self.force_caching = force_caching
         self.image_cache_dir = image_cache_dir
+        self.num_images = num_images
+        self.time_interval_min = time_interval_min
+        self.ratio = ratio
 
 
 class MetadataFeatureIndex(IntEnum):
@@ -125,7 +135,6 @@ class DataLoader(object):
         self.metadata = metadata
         self.image_reader = image_reader
         self.config = config
-        #self.csd = csd.Clearsky()
         self.csd = clearsky_data
         self._readers = {
             Feature.image: self._read_image,
@@ -174,15 +183,31 @@ class DataLoader(object):
 
     def _read_image(self, metadata: Metadata) -> tf.Tensor:
         try:
-            image_path = self._transform_image_path(metadata.image_path)
-            image = self.image_reader.read(
-                image_path,
-                metadata.image_offset,
+            current_image_path = metadata.image_paths[-1]
+            current_image_offset = metadata.image_offsets[-1]
+            past_image_paths = metadata.image_paths[:-1]
+            past_image_offsets = metadata.image_offsets[:-1]
+
+            current_image = self.image_reader.read(
+                self._transform_image_path(current_image_path),
+                current_image_offset,
                 metadata.coordinates,
                 self.config.crop_size,
             )
 
-            return tf.convert_to_tensor(image, dtype=tf.float32)
+            past_images = self._read_past_images(
+                past_image_paths,
+                past_image_offsets,
+                metadata.coordinates,
+                current_image.shape,
+            )
+
+            if len(past_images) > 0:
+                images = np.stack(past_images + [current_image])
+            else:
+                images = current_image
+
+            return tf.convert_to_tensor(images, dtype=tf.float32)
         # We should only catch here exceptions that are safe to ignore.
         except (InvalidImageChannel, InvalidImageOffSet, CorruptedImage) as e:
             if self.config.error_strategy != ErrorStrategy.ignore:
@@ -196,6 +221,23 @@ class DataLoader(object):
 
         except (Exception) as e:
             raise e  # Some error require immediate attention!
+
+    def _read_past_images(self, image_paths, image_offsets, coordinates, shape):
+        images = []
+        for image_path, image_offset in zip(image_paths, image_offsets):
+            try:
+                image = self.image_reader.read(
+                    self._transform_image_path(image_path),
+                    image_offset,
+                    coordinates,
+                    self.config.crop_size,
+                )
+                images.append(image)
+            except Exception as e:
+                logger.debug(f"Error while generating past images, ignoring : {e}")
+                images.append(np.zeros(shape))
+
+        return images
 
     def _read_metadata(self, metadata: Metadata) -> tf.Tensor:
         meta = np.zeros(len(MetadataFeatureIndex))

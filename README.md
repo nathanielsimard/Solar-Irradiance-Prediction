@@ -1,6 +1,12 @@
-# Solar-Irradiance-Prediction
+<div align="center"><img src="./assets/image-3d-big-ch1.gif"></img></div>
 
-IFT6759 - Project 1 - Solar Irradiance Prediction 
+<h1 align="center">Solar Irradiance Prediction</h1>
+
+<p align="center">
+    <a href="https://travis-ci.com/psf/black"><img alt="CI Status" src="https://github.com/nathanielsimard/Solar-Irradiance-Prediction/workflows/CI/badge.svg"></a>
+    <a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
+</p>
+
 
 ## Setup
 
@@ -50,4 +56,25 @@ scripts/tensorboard.sh /path/to/tensorboard/file_dir 8008`.
 | /project/cq-training-1/project1/teams/team10                   | Team bastpath |
 | /project/cq-training-1/project1/teams/team10/tensorboard          | Tensorboard Log Directory      |
 | /project/cq-training-1/project1/teams/team10/image_reader_cache  | Directory where all the pickled images for the image reader cache are stored for the team.      |
+
+## Samples
+
+Each gif has 10 images with 30 minute intervals between them on all channels.
+
+<div align="center">
+    <img src="./assets/image-3d-1-ch1.gif" width=110></img>
+    <img src="./assets/image-3d-1-ch2.gif" width=110></img>
+    <img src="./assets/image-3d-1-ch3.gif" width=110></img>
+    <img src="./assets/image-3d-1-ch4.gif" width=110></img>
+    <img src="./assets/image-3d-1-ch6.gif" width=110></img>
+</div>
+
+<div align="center">
+    <img src="./assets/image-3d-2-ch1.gif" width=110></img>
+    <img src="./assets/image-3d-2-ch2.gif" width=110></img>
+    <img src="./assets/image-3d-2-ch3.gif" width=110></img>
+    <img src="./assets/image-3d-2-ch4.gif" width=110></img>
+    <img src="./assets/image-3d-2-ch6.gif" width=110></img>
+</div>
+
 

@@ -1,12 +1,13 @@
-from src.model import conv2d
-from src.data.training import Training
-from tensorflow.keras import optimizers, losses
-from src import env
 import argparse
+
+from tensorflow.keras import losses, optimizers
+
+from src import dry_run, env
+from src.model import conv2d
+from src.training import SupervisedTraining
 
 
 def main():
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--enable_tf_caching", help="Enable tensorflow caching.", action="store_true"
@@ -31,13 +32,22 @@ def main():
     args = parser.parse_args()
     env.run_local = args.run_local
 
+    if args.dry_run:
+        dry_run.run(args.enable_tf_caching, args.skip_non_cached)
+        return
+
     model = conv2d.CNN2D()
-    optimizer = optimizers.SGD(0.0001)
+    optimizer = optimizers.Adam(0.001)
     loss_obj = losses.MeanSquaredError()
-    training_session = Training(optimizer=optimizer, model=model, loss_fn=loss_obj)
+
+    def rmse(pred, target):
+        return loss_obj(pred, target) ** 0.5
+
+    training_session = SupervisedTraining(
+        optimizer=optimizer, model=model, loss_fn=rmse
+    )
     training_session.run(
         enable_tf_caching=args.enable_tf_caching,
-        dry_run=args.dry_run,
         skip_non_cached=args.skip_non_cached,
         enable_checkpoint=not args.no_checkpoint,
     )
