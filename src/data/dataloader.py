@@ -119,13 +119,14 @@ class DataLoader(object):
         metadata: Callable[[], Iterable[Metadata]],
         image_reader: image.ImageReader,
         config: DataloaderConfig = DataloaderConfig(),
+        clearsky_data : csd.Clearsky = csd.Clearsky()
     ):
         """Load the config with the image_reader from the metadata."""
         self.metadata = metadata
         self.image_reader = image_reader
         self.config = config
-        self.csd = csd.Clearsky()
-
+        #self.csd = csd.Clearsky()
+        self.csd = clearsky_data
         self._readers = {
             Feature.image: self._read_image,
             Feature.target_ghi: self._read_target,

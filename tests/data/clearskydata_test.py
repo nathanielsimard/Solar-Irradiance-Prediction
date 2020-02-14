@@ -62,7 +62,7 @@ class ClearSkyDataTest(unittest.TestCase):
         cs = csd.Clearsky()
         target_datetime = datetime(2010, 6, 19, 22, 15)
         config = read_configuration_file(config_test.DUMMY_TEST_CFG_PATH)
-        key = cs._generate_cache_key(config.stations[Station.BND], target_datetime)
+        key = cs._generate_cache_key(target_datetime, config.stations[Station.BND])
         self.assertEquals(key, "40.0519;-88.3731;230.00;2010-06-19 22:15:00")
 
     @unittest.skip("Not essential")

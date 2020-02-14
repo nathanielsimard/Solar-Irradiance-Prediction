@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 import shelve
+from src.data.config import Station, Coordinates
+from typing import Any, Dict, List, Tuple
 
 from pvlib.location import Location
 
@@ -38,18 +40,54 @@ class Clearsky:
 
     """
 
-    def __init__(self, clear_cache=False, enable_caching=False):
+    def __init__(self, clear_cache=False, enable_caching=False, target_datetimes=None,
+                 stations: Dict[Station, Coordinates] = None):
         """Constructor for the cached clearsky.
 
         Keyword Arguments:
             clear_cache {bool} -- [Force to clear the cache] (default: {False})
+            enable_caching {bool} -- [Enables caching] (default: {False})
+            enable_caching {bool} -- [Enables caching] (default: {False})
+
         """
         self.cache = {}  # Crude caching
+        if target_datetimes is not None:
+            self._batch_compute_ghi(target_datetimes, stations)
+            if stations is None:
+                raise ValueError("A dictionary of all the station must be provided along the target datetimes.")
+
         self.enable_caching = enable_caching
         if enable_caching:
             self.cache = shelve.open("clearsky.cache")
             if clear_cache:
                 self.cache.clear()
+
+    def _batch_compute_ghi(self, target_datetimes, stations: Dict[Station, Coordinates]):
+        for station in stations:
+            coordinates = station.coordinates
+            location = Location(
+                latitude=coordinates.latitude,
+                longitude=coordinates.longitude,
+                altitude=coordinates.altitude,
+            )
+            # Get all clearsky values for the station at once.
+            clearsky_values = location.get_clearsky(pd.DatetimeIndex(target_datetimes))
+            # Prepare a cache key
+            clearsky_values["cache_key"] = clearsky_values.index.to_series().apply(
+                self._generate_cache_key, args=[coordinates])
+            # Add them to cache.
+            clearsky_values.apply(self._load_values_to_cache, axis=1)
+
+        pass
+
+    def _load_values_to_cache(self, row: pd.Series):
+        """Will load a value from a clearsky prediction
+        dataframe to the internal cache.
+
+        Arguments:
+            row {[pd.Series]} -- [A row of the pvlib output, with an added cache_key column]
+        """
+        self.cache[row["cache_key"]] = row["ghi"]
 
     def __del__(self):
         """Delete the objects and close the cache."""
@@ -61,7 +99,7 @@ class Clearsky:
         if self.enable_caching:
             self.cache.clear()
 
-    def _generate_cache_key(self, coordinates, timestamp):
+    def _generate_cache_key(self, timestamp, coordinates):
         ts_str = str(timestamp)
         return f"{coordinates.latitude:.4f};{coordinates.longitude:.4f};{coordinates.altitude:.2f};{ts_str}"
 
@@ -77,7 +115,7 @@ class Clearsky:
         Returns:
             np.array:-- A numpy array with the computed values at T, T+1, T+3 and T+6 hours.
         """
-        cache_key = self._generate_cache_key(coordinates, timestamp)
+        cache_key = self._generate_cache_key(timestamp, coordinates)
         if cache_key not in self.cache or not self.enable_caching:
             location = Location(
                 latitude=coordinates.latitude,
