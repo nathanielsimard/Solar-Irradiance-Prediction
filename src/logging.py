@@ -3,10 +3,11 @@ import os
 import sys
 
 try:
-    if os.environ["DEBUG"] == "1":
-        LEVEL = logging.DEBUG
-    else:
-        LEVEL = logging.INFO
+    LEVEL = logging.INFO
+    if "DEBUG" in os.environ:
+        if os.environ["DEBUG"] == "1":
+            LEVEL = logging.DEBUG
+
 except KeyError:
     LEVEL = logging.INFO
 

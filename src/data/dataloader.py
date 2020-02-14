@@ -6,8 +6,14 @@ import numpy as np
 import tensorflow as tf
 
 import src.data.clearskydata as csd
-from src import logging
+from src import env, logging
 from src.data import image
+from src.data.image import (
+    CorruptedImage,
+    ImageNotCached,
+    InvalidImageChannel,
+    InvalidImageOffSet,
+)
 from src.data.metadata import Metadata
 
 logger = logging.create_logger(__name__)
@@ -24,9 +30,9 @@ class Feature(Enum):
 class ErrorStrategy(Enum):
     """How error are handled by the dataloader."""
 
-    skip = "skip"
-    ignore = "ignore"
-    stop = "stop"
+    skip = "skip"  # Return a black image when data is mising
+    ignore = "ignore"  # Ignore the sample with missing data, and proceed to the next.
+    stop = "stop"  # Stop code execution.
 
 
 class UnregognizedFeature(Exception):
@@ -61,13 +67,14 @@ class MissingTargetException(Exception):
         super().__init__(f"Target is missing.")
 
 
-class Config:
+class DataloaderConfig:
     """Configuration available to the dataloader."""
 
     def __init__(
         self,
         local_path: Optional[str] = None,
         error_strategy=ErrorStrategy.skip,
+        force_caching=False,
         crop_size: Tuple[int, int] = (64, 64),
         features: List[Feature] = [Feature.image, Feature.target_ghi],
         channels: List[str] = ["ch1"],
@@ -81,6 +88,7 @@ class Config:
         Args:
             local_path: Can overrite the root path of each images.
             error_strategy: How to handle errors.
+            force_caching: Option to skip non cached images.
             crop_size: Image sized needed.
             features: List of features needed.
             channels: List of channels needed.
@@ -96,6 +104,7 @@ class Config:
         self.crop_size = crop_size
         self.features = features
         self.channels = channels
+        self.force_caching = force_caching
         self.image_cache_dir = image_cache_dir
         self.num_images = num_images
         self.time_interval_min = time_interval_min
@@ -119,7 +128,7 @@ class DataLoader(object):
         self,
         metadata: Callable[[], Iterable[Metadata]],
         image_reader: image.ImageReader,
-        config: Config = Config(),
+        config: DataloaderConfig = DataloaderConfig(),
     ):
         """Load the config with the image_reader from the metadata."""
         self.metadata = metadata
@@ -143,7 +152,6 @@ class DataLoader(object):
         """
         for metadata in self.metadata():
             logger.debug(metadata)
-
             try:
                 yield tuple(
                     [
@@ -151,12 +159,15 @@ class DataLoader(object):
                         for feature in self.config.features
                     ]
                 )
-
+            except AttributeError as e:
+                # This is clearly unhandled! We want a crash here!
+                raise e
+                # TODO: We should list the handled exceptions here, and do
+                # a stack trace if we encounter something really wrong.
             except Exception as e:
                 if self.config.error_strategy == ErrorStrategy.stop:
                     logger.error(f"Error while generating data, stopping : {e}")
                     raise e
-
                 logger.debug(f"Error while generating data, skipping : {e}")
 
     def _read_target(self, metadata: Metadata) -> tf.Tensor:
@@ -197,13 +208,19 @@ class DataLoader(object):
                 images = current_image
 
             return tf.convert_to_tensor(images, dtype=tf.float32)
-        except Exception as e:
+        # We should only catch here exceptions that are safe to ignore.
+        except (InvalidImageChannel, InvalidImageOffSet, CorruptedImage) as e:
             if self.config.error_strategy != ErrorStrategy.ignore:
-                raise e
-
+                raise e  # Skip
             logger.debug(f"Error while generating data, ignoring : {e}")
             output_shape = list(self.config.crop_size) + [len(self.config.channels)]
             return tf.convert_to_tensor(np.zeros(output_shape))
+        except (ImageNotCached) as e:
+            if self.config.force_caching:
+                raise e  # Skip
+
+        except (Exception) as e:
+            raise e  # Some error require immediate attention!
 
     def _read_past_images(self, image_paths, image_offsets, coordinates, shape):
         images = []
@@ -250,7 +267,7 @@ class DataLoader(object):
 
 def create_dataset(
     metadata: Callable[[], Iterable[Metadata]],
-    config: Union[Dict[str, Any], Config] = Config(),
+    config: Union[Dict[str, Any], DataloaderConfig] = DataloaderConfig(),
 ) -> tf.data.Dataset:
     """Create a tensorflow Dataset base on the metadata and dataloader's config.
 
@@ -263,14 +280,39 @@ def create_dataset(
 
     features_type = tuple(len(config.features) * [tf.float32])
     image_reader = image.ImageReader(
-        channels=config.channels, cache_dir=config.image_cache_dir
+        channels=config.channels,
+        cache_dir=env.get_image_reader_cache_directory(),
+        force_caching=config.force_caching,
     )
     dataloader = DataLoader(metadata, image_reader, config=config)
 
     return tf.data.Dataset.from_generator(dataloader.generator, features_type)
 
 
-def parse_config(config: Dict[str, Any] = {}) -> Config:
+def create_generator(
+    metadata: Callable[[], Iterable[Metadata]],
+    config: Union[Dict[str, Any], DataloaderConfig] = DataloaderConfig(),
+) -> tf.data.Dataset:
+    """Create a generator that will to the dataloader work. Will be used for debugging.
+
+    Might be scrapped later on.
+
+    Targets are optional in Metadata. If one is missing, set it to zero.
+    To load a batch of data, you can iterate over the tf.data.Dataset by batch.
+    >>>dataset=dataset.batch(batch_size)
+    """
+    if isinstance(config, Dict):
+        config = parse_config(config)
+
+    image_reader = image.ImageReader(
+        channels=config.channels,
+        cache_dir=env.get_image_reader_cache_directory(),
+        force_caching=config.force_caching,
+    )
+    return DataLoader(metadata, image_reader, config=config).generator()
+
+
+def parse_config(config: Dict[str, Any] = {}) -> DataloaderConfig:
     """Parse the user config.
 
     TODO: Describe what is going to be in the configuration.
@@ -306,7 +348,7 @@ def parse_config(config: Dict[str, Any] = {}) -> Config:
     crop_size = _read_config(config, "CROP_SIZE", (64, 64))
     channels = _read_config(config, "CHANNELS", ["ch1"])
 
-    return Config(
+    return DataloaderConfig(
         local_path=local_path,
         error_strategy=error_strategy,
         crop_size=crop_size,

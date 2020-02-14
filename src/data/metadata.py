@@ -96,6 +96,11 @@ class MetadataLoader:
             Those parameters are mutually exclusive and should not be provided at the same time.
 
         """
+        if (
+            not isinstance(file_name, str) and file_name is not None
+        ):  # Calling this with a bool (I made the mistake)
+            # make the code hang, impossible to break. No Exception raised. Just a silent hang.
+            raise ValueError("File name provided must be a string!")
         self.catalog = None
         self.file_name = file_name
         if dataframe is not None:

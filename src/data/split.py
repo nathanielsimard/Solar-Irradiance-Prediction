@@ -3,12 +3,11 @@ import pickle
 import random
 from datetime import datetime
 from typing import Iterator, List, Tuple
+from src import env
 
 TRAIN_SET_FILE_NAME = "train_set.pkl"
 VALID_SET_FILE_NAME = "valid_set.pkl"
 TEST_SET_FILE_NAME = "test_set.pkl"
-
-SPLIT_PATH = "/project/cq-training-1/project1/teams/team10/split"
 
 
 def create_split(
@@ -34,17 +33,21 @@ def persist_split(
     train_set: List[datetime],
     valid_set: List[datetime],
     test_set: List[datetime],
-    dir_path=SPLIT_PATH,
+    dir_path: str = None,
 ) -> None:
     """Save the split in a pickle to always reuse the same split and avoid errors."""
+    if dir_path is None:
+        dir_path = env.get_split_path()
     os.makedirs(dir_path, exist_ok=True)
     _persist(dir_path, TRAIN_SET_FILE_NAME, train_set)
     _persist(dir_path, VALID_SET_FILE_NAME, valid_set)
     _persist(dir_path, TEST_SET_FILE_NAME, test_set)
 
 
-def load(dir_path=SPLIT_PATH):
+def load(dir_path=None):
     """Load the persisted train, valid and test set."""
+    if dir_path is None:
+        dir_path = env.get_split_path()
     train_set = _load(dir_path, TRAIN_SET_FILE_NAME)
     valid_set = _load(dir_path, VALID_SET_FILE_NAME)
     test_set = _load(dir_path, TEST_SET_FILE_NAME)

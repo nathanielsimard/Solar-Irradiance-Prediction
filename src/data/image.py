@@ -5,11 +5,17 @@ from typing import Optional, Tuple
 import h5py
 import numpy as np
 
-from src import logging
+from src import env, logging
 from src.data import metadata
 from src.data.utils import fetch_hdf5_sample, viz_hdf5_imagery
 
 logger = logging.create_logger(__name__)
+
+
+class ImageNotCached(Exception):
+    """Exception raised when image is not cached but was supposed to be."""
+
+    pass
 
 
 class InvalidImageOffSet(Exception):
@@ -39,15 +45,23 @@ class CorruptedImage(Exception):
 class ImageReader(object):
     """Read the images. Compression format is handle automaticly."""
 
-    def __init__(self, channels=["ch1"], cache_dir="/tmp"):
+    def __init__(
+        self, channels=["ch1"], cache_dir=None, enable_caching=True, force_caching=False
+    ):
         """Default channel for image reading is ch1.
 
         Args:
             channels: The channels to read from the file.
             cache_dir: Directory where cached image will be.
+            enable_caching: Should we cache at all at this level.
+            force_caching: Will throw an exception if the image is not cached.
         """
         self.channels = channels
         self.cache_dir = cache_dir
+        self.enable_caching = enable_caching
+        self.force_caching = force_caching
+        if cache_dir is None:
+            self.cache_dir = env.get_image_reader_cache_directory()
 
     def read(
         self,
@@ -71,16 +85,18 @@ class ImageReader(object):
         Raises:
             InvalidImageChannel, InvalidImageOffSet, InvalidImagePath, CorruptedImage:
         """
-        cached_file = self._chache_file(
-            image_path, image_offset, coordinates, output_size
-        )
-
-        try:
-            image = self._load_cache_images(cached_file)
-            logger.debug(f"Image in cache {cached_file}")
-            return image
-        except FileNotFoundError:
-            logger.debug(f"Image not in cache {cached_file}")
+        if self.enable_caching:
+            cached_file = self._chache_file(
+                image_path, image_offset, coordinates, output_size
+            )
+            try:
+                return self._load_cache_images(cached_file)
+            except FileNotFoundError:
+                logger.debug("Image not in cache")
+                if self.force_caching:
+                    raise ImageNotCached(
+                        "Requested image not found in cache. Have you enabled 'force_caching' by mistake?"
+                    )
 
         try:
             with h5py.File(image_path, "r") as file_reader:
@@ -90,7 +106,8 @@ class ImageReader(object):
                 )
 
                 images = np.dstack(images)
-                self._cache_images(images, cached_file)
+                if self.enable_caching:
+                    self._cache_images(images, cached_file)
                 return images
 
         except OSError as e:
