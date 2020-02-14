@@ -7,11 +7,18 @@ import numpy as np
 
 import src.data.config as cf
 import tests.data.config_test as config_test
-from src.data.dataloader import (CorruptedImage, DataLoader, DataloaderConfig,
-                                 ErrorStrategy, Feature, MetadataFeatureIndex,
-                                 MissingTargetException,
-                                 UnregognizedErrorStrategy,
-                                 UnregognizedFeature, parse_config)
+from src.data.dataloader import (
+    CorruptedImage,
+    DataLoader,
+    DataloaderConfig,
+    ErrorStrategy,
+    Feature,
+    MetadataFeatureIndex,
+    MissingTargetException,
+    UnregognizedErrorStrategy,
+    UnregognizedFeature,
+    parse_config,
+)
 from src.data.image import ImageNotCached, ImageReader
 from src.data.metadata import Coordinates, Metadata
 
