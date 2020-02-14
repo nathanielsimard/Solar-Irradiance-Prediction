@@ -28,7 +28,7 @@ class Model(tf.keras.Model, abc.ABC):
         super().load_weights(file_name)
 
     @abc.abstractmethod
-    def config(self, training=False) -> dataloader.Config:
+    def config(self, training=False) -> dataloader.DataloaderConfig:
         """Each model can have a config method."""
         pass
 
