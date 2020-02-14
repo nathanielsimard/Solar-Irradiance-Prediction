@@ -1,5 +1,4 @@
 import itertools
-import os
 from typing import Callable, Iterator, Tuple
 
 import tensorflow as tf
