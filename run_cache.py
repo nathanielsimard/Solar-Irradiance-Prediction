@@ -17,8 +17,9 @@ def cache(size, cache_dir):
     config.crop_size = size
 
     # Create image cache dir
-    config.image_cache_dir = cache_dir + "/image_cache_{size}"
+    config.image_cache_dir = cache_dir + f"/image_cache_{size}"
     config.image_cache_dir = config.image_cache_dir.replace("(", "")
+    config.image_cache_dir = config.image_cache_dir.replace(",", "")
     config.image_cache_dir = config.image_cache_dir.replace(")", "")
     config.image_cache_dir = config.image_cache_dir.replace(" ", "-")
 
@@ -43,10 +44,10 @@ def _create_cache(name, dataset):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--size-x", help="Image size in x direction", type=int,
+        "--size-x", help="Image size in x direction", type=int, required=True,
     )
     parser.add_argument(
-        "--size-y", help="Image size in y direction", type=int,
+        "--size-y", help="Image size in y direction", type=int, required=True,
     )
     parser.add_argument(
         "--cache-dir",
