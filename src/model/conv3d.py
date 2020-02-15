@@ -13,7 +13,7 @@ NAME = "Conv3D"
 
 
 class CNN3D(base.Model):
-    """Create Conv2D model."""
+    """Create Conv3D model."""
 
     def __init__(self, num_images=8):
         """Initialize the architecture."""
