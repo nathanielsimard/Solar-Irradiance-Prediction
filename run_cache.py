@@ -33,7 +33,7 @@ def cache(size, cache_dir):
     _create_cache("valid", dataset_valid)
     _create_cache("test", dataset_test)
 
-    os.system("tar -cf {config.image_cache_dir}.tar {config.image_cache_dir}")
+    os.system(f"tar -cf {config.image_cache_dir}.tar {config.image_cache_dir}")
 
 
 def _create_cache(name, dataset):
