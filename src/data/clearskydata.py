@@ -14,6 +14,11 @@ from src.data import metadata
 
 from src.data.metadata import Coordinates, Station
 
+from src import logging
+
+
+logger = logging.create_logger(__name__)
+
 
 class CSMDOffset(IntEnum):
     """Mapping for the metadata to the location in the tensor."""
@@ -75,8 +80,10 @@ class Clearsky:
                 raise ValueError(
                     "Must provided stations along with target datetimes for pre-computation"
                 )
+
             for station in stations:
-                coordinates = station.coordinates
+                logger.debug(f"Precomputing clearsky values for {station} located at {stations[station]}")
+                coordinates = stations[station]
                 location = Location(
                     latitude=coordinates.latitude,
                     longitude=coordinates.longitude,

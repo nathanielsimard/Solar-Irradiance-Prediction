@@ -8,6 +8,9 @@ import src.data.clearskydata as csd
 import tests.data.config_test as config_test
 from src.data.config import read_configuration_file
 from src.data.metadata import Station
+from src.data import config
+from src.data import metadata as meta
+import pandas as pd
 
 DUMMY_TRAIN_CFG_PATH = "tests/data/samples/dummy_train_cfg.json"
 
@@ -34,6 +37,16 @@ class ClearSkyDataTest(unittest.TestCase):
         """
         self.assertGreater(value, target - epsilon)
         self.assertLess(value, target + epsilon)
+
+    def test_precompute(self):
+        meta_config = config.read_configuration_file(
+            "tests/data/samples/train_config_raphael.json")
+        target_datetimes = pd.Series(meta_config.target_datetimes)
+        stations = meta_config.stations
+        clearsky = csd.Clearsky()
+        clearsky._precompute_clearsky_values(target_datetimes, stations)
+        self.assertCloseTo(clearsky.cache["40.0519;-88.3731;230.00;2015-01-04 19:15:00"], 414.271049)
+        self.assertCloseTo(clearsky.cache["40.0519;-88.3731;230.00;2014-07-10 00:15:00"], 98.633557)
 
     def test_clearsky_prediction(self):
         dataset = self._create_data_loader(
