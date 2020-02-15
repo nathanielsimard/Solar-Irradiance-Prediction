@@ -19,7 +19,6 @@ cd $SLURM_TMPDIR
 pwd
 echo tar -xf image_reader_cache.tar
 tar -xf image_reader_cache.tar
-mv image_reader_cache/* ./
 date
 #du -d 1 .
 cd $cwd
