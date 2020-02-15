@@ -72,9 +72,15 @@ class SupervisedTraining(object):
             "test": tf.keras.metrics.Mean("test loss", dtype=tf.float32),
         }
         self.writer = {
-            "train": tf.summary.create_file_writer(env.get_tensorboard_log_directory() + "/train/"),
-            "valid": tf.summary.create_file_writer(env.get_tensorboard_log_directory() + "/valid/"),
-            "test": tf.summary.create_file_writer(env.get_tensorboard_log_directory() + "/test/"),
+            "train": tf.summary.create_file_writer(
+                env.get_tensorboard_log_directory() + "/train/"
+            ),
+            "valid": tf.summary.create_file_writer(
+                env.get_tensorboard_log_directory() + "/valid/"
+            ),
+            "test": tf.summary.create_file_writer(
+                env.get_tensorboard_log_directory() + "/test/"
+            ),
         }
 
         self.history = History()

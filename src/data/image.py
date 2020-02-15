@@ -99,7 +99,7 @@ class ImageReader(object):
             except FileNotFoundError:
                 self.cache_miss += 1
                 logger.debug(f"Image {cached_file} not in cache")
-                if (self.cache_miss%100==0):
+                if self.cache_miss % 100 == 0:
                     logger.warning(f"{self.cache_hits} hits, {self.cache_miss} miss!")
                 if self.force_caching:
                     raise ImageNotCached(
