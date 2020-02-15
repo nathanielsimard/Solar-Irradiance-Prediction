@@ -64,8 +64,8 @@ class CNN2D(base.Model):
         """Configuration."""
         config = default_config()
         config.num_images = 1
-        config.ratio = 0.01
-        config.features = [dataloader.Feature.image, dataloader.Feature.target_ghi]
+        config.ratio = 1
+        config.features = [dataloader.Feature.target_ghi, dataloader.Feature.image]
 
         if training:
             config.error_strategy = dataloader.ErrorStrategy.skip
@@ -77,9 +77,9 @@ class CNN2D(base.Model):
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Applies the preprocessing to the inputs and the targets."""
         return dataset.map(
-            lambda image, target_ghi: (
-                self.scaling_image.normalize(image),
+            lambda target_ghi, image: (
                 self._preprocess_target(target_ghi),
+                self.scaling_image.normalize(image),
             ),
             num_parallel_calls=tf.data.experimental.AUTOTUNE,
         )

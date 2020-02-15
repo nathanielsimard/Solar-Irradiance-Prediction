@@ -135,7 +135,8 @@ def load_data_and_create_generators(
     if env.run_local:
         config.local_path = env.get_local_data_path() + "/hdf5v7_8bit"
 
-        # Both concepts are equivalent. If we force caching, we need to skip non cached images.
+    config.image_cache_dir = env.get_image_reader_cache_directory()
+    # Both concepts are equivalent. If we force caching, we need to skip non cached images.
     config.force_caching = skip_non_cached
     train_datetimes, valid_datetimes, test_datetimes = split.load()
 
@@ -143,18 +144,24 @@ def load_data_and_create_generators(
     metadata_train = metadata_station(
         metadata_loader,
         train_datetimes,
+        config.num_images,
+        config.time_interval_min,
         night_time=night_time,
         skip_missing=skip_missing,
     )
     metadata_valid = metadata_station(
         metadata_loader,
         valid_datetimes,
+        config.num_images,
+        config.time_interval_min,
         night_time=night_time,
         skip_missing=skip_missing,
     )
     metadata_test = metadata_station(
         metadata_loader,
         test_datetimes,
+        config.num_images,
+        config.time_interval_min,
         night_time=night_time,
         skip_missing=skip_missing,
     )

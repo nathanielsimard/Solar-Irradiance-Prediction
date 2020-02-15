@@ -135,6 +135,8 @@ class DataLoader(object):
         self.image_reader = image_reader
         self.config = config
         self.csd = csd.Clearsky()
+        self.ok = 0
+        self.skipped = 0
 
         self._readers = {
             Feature.image: self._read_image,
@@ -153,12 +155,13 @@ class DataLoader(object):
         for metadata in self.metadata():
             logger.debug(metadata)
             try:
-                yield tuple(
+                output = tuple(
                     [
                         self._readers[feature](metadata)
                         for feature in self.config.features
-                    ]
-                )
+                    ])
+                self.ok += 1
+                yield output
             except AttributeError as e:
                 # This is clearly unhandled! We want a crash here!
                 raise e
@@ -169,6 +172,9 @@ class DataLoader(object):
                     logger.error(f"Error while generating data, stopping : {e}")
                     raise e
                 logger.debug(f"Error while generating data, skipping : {e}")
+                self.skipped += 1
+                if (self.skipped % 100) == 0:
+                    logger.warning(f"{self.skipped} skipped, {self.ok} ok.")
 
     def _read_target(self, metadata: Metadata) -> tf.Tensor:
         return tf.convert_to_tensor(
@@ -194,13 +200,14 @@ class DataLoader(object):
                 metadata.coordinates,
                 self.config.crop_size,
             )
-
-            past_images = self._read_past_images(
-                past_image_paths,
-                past_image_offsets,
-                metadata.coordinates,
-                current_image.shape,
-            )
+            past_images = []
+            if self.config.num_images > 1:
+                past_images = self._read_past_images(
+                    past_image_paths,
+                    past_image_offsets,
+                    metadata.coordinates,
+                    current_image.shape,
+                )
 
             if len(past_images) > 0:
                 images = np.stack(past_images + [current_image])
@@ -223,6 +230,7 @@ class DataLoader(object):
             raise e  # Some error require immediate attention!
 
     def _read_past_images(self, image_paths, image_offsets, coordinates, shape):
+        logger.warning("Reading past images!")
         images = []
         for image_path, image_offset in zip(image_paths, image_offsets):
             try:

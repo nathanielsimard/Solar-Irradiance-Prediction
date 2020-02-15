@@ -121,8 +121,8 @@ class SupervisedTraining(object):
         for epoch in range(epochs):
             logger.info("Supervised training...")
 
-            for i, (inputs, targets) in enumerate(train_set.batch(batch_size)):
-                logger.info(f"Batch #{i+1}")
+            for i, (targets, inputs) in enumerate(train_set.batch(batch_size)):
+                logger.info(f"Batch #{i+1} {tf.shape(inputs)}")
 
                 self._train_step(inputs, targets, training=True)
 
