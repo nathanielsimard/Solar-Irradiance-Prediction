@@ -6,14 +6,10 @@ import numpy as np
 import tensorflow as tf
 
 import src.data.clearskydata as csd
-from src import env, logging
+from src import logging
 from src.data import image
-from src.data.image import (
-    CorruptedImage,
-    ImageNotCached,
-    InvalidImageChannel,
-    InvalidImageOffSet,
-)
+from src.data.image import (CorruptedImage, ImageNotCached,
+                            InvalidImageChannel, InvalidImageOffSet)
 from src.data.metadata import Metadata
 
 logger = logging.create_logger(__name__)
@@ -30,8 +26,8 @@ class Feature(Enum):
 class ErrorStrategy(Enum):
     """How error are handled by the dataloader."""
 
-    skip = "skip"  # Return a black image when data is mising
-    ignore = "ignore"  # Ignore the sample with missing data, and proceed to the next.
+    skip = "skip"  # Ignore the sample with missing data, and proceed to the next.
+    ignore = "ignore"  # Return a black image when data is mising
     stop = "stop"  # Stop code execution.
 
 
@@ -289,7 +285,7 @@ def create_dataset(
     features_type = tuple(len(config.features) * [tf.float32])
     image_reader = image.ImageReader(
         channels=config.channels,
-        cache_dir=env.get_image_reader_cache_directory(),
+        cache_dir=config.image_cache_dir,
         force_caching=config.force_caching,
     )
     dataloader = DataLoader(metadata, image_reader, config=config)
@@ -314,7 +310,7 @@ def create_generator(
 
     image_reader = image.ImageReader(
         channels=config.channels,
-        cache_dir=env.get_image_reader_cache_directory(),
+        cache_dir=config.image_cache_dir,
         force_caching=config.force_caching,
     )
     return DataLoader(metadata, image_reader, config=config).generator()

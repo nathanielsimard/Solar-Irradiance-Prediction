@@ -92,7 +92,7 @@ class ImageReader(object):
             try:
                 return self._load_cache_images(cached_file)
             except FileNotFoundError:
-                logger.debug("Image not in cache")
+                logger.debug(f"Image {cached_file} not in cache")
                 if self.force_caching:
                     raise ImageNotCached(
                         "Requested image not found in cache. Have you enabled 'force_caching' by mistake?"
