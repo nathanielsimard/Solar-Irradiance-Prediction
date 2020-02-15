@@ -82,7 +82,9 @@ class Clearsky:
                 )
 
             for station in stations:
-                logger.debug(f"Precomputing clearsky values for {station} located at {stations[station]}")
+                logger.debug(
+                    f"Precomputing clearsky values for {station} located at {stations[station]}"
+                )
                 coordinates = stations[station]
                 location = Location(
                     latitude=coordinates.latitude,
