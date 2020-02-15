@@ -1,5 +1,4 @@
 import itertools
-import os
 from typing import Callable, Iterator, Tuple
 
 import tensorflow as tf
@@ -25,7 +24,7 @@ STATION_COORDINATES = {
 def default_cache_dir():
     """Use SCRATCH directory on helios, tmp otherwise."""
     try:
-        return os.environ["SCRATCH"]
+        return env.get_image_reader_cache_directory()
     except KeyError:
         return "/tmp"
 

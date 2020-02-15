@@ -33,5 +33,5 @@ class Model(tf.keras.Model, abc.ABC):
         pass
 
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
-        """Different models can a preprocessing pipeline."""
+        """Different models can apply a preprocessing pipeline."""
         return dataset
