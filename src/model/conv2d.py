@@ -80,7 +80,8 @@ class CNN2D(base.Model):
             lambda image, target_ghi: (
                 self.scaling_image.normalize(image),
                 self._preprocess_target(target_ghi),
-            )
+            ),
+            num_parallel_calls=tf.data.experimental.AUTOTUNE,
         )
 
     def _preprocess_target(self, target_ghi: tf.Tensor) -> tf.Tensor:

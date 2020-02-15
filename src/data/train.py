@@ -3,8 +3,8 @@ from typing import Callable, Iterator, Tuple
 
 import tensorflow as tf
 
-from src import logging
 import src.env as env
+from src import logging
 from src.data import dataloader, split
 from src.data.metadata import Coordinates, Metadata, MetadataLoader, Station
 

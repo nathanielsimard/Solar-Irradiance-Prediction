@@ -294,7 +294,9 @@ def create_dataset(
     )
     dataloader = DataLoader(metadata, image_reader, config=config)
 
-    return tf.data.Dataset.from_generator(dataloader.generator, features_type)
+    return tf.data.Dataset.from_generator(dataloader.generator, features_type).prefetch(
+        tf.data.experimental.AUTOTUNE
+    )
 
 
 def create_generator(
