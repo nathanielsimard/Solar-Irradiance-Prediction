@@ -1,5 +1,12 @@
 import tensorflow as tf
-from tensorflow.keras.layers import Dense, Flatten, MaxPooling3D, ConvLSTM
+from tensorflow.keras.layers import (
+    Dense,
+    Flatten,
+    MaxPooling3D,
+    ConvLSTM2D,
+    TimeDistributed,
+    BatchNormalization,
+)
 from tensorflow.keras.models import Sequential
 
 from src import logging
@@ -23,9 +30,9 @@ class CONVLSTM(base.Model):
         )
         self.num_images = num_images
 
-        self.conv_lstm1 = self._convlstm_step((5, 5), 64)
-        self.conv_lstm2 = self._convlstm_step((3, 3), 128)
-        self.conv_lstm3 = self._convlstm_step((3, 3), 256)
+        self.conv_lstm1 = self._convlstm_block((5, 5), 64)
+        self.conv_lstm2 = self._convlstm_block((3, 3), 128)
+        self.conv_lstm3 = self._convlstm_block((3, 3), 256)
 
         self.flatten = Flatten()
 
@@ -53,12 +60,12 @@ class CONVLSTM(base.Model):
 
         return x
 
-    def _convlstm_step(self, kernel_size, channels):
-        convlstm_1 = ConvLSTM(channels, kernel_size=kernel_size, activation="tanh")
-        convlstm_2 = ConvLSTM(channels, kernel_size=kernel_size, activation="tanh")
+    def _convlstm_block(self, kernel_size, channels):
+        convlstm = ConvLSTM2D(channels, kernel_size=kernel_size, activation="tanh")
+        batch_norm = BatchNormalization()
         max_pool = MaxPooling3D(pool_size=(1, 2, 2))
 
-        return Sequential([convlstm_1, convlstm_2, max_pool])
+        return Sequential([convlstm_1, batch_norm, max_pool])
 
     def config(self, training=False) -> dataloader.DataloaderConfig:
         """Configuration."""
