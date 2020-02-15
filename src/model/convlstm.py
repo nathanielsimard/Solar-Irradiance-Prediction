@@ -22,7 +22,7 @@ NAME = "ConvLSTM"
 class CONVLSTM(base.Model):
     """Create ConvLSTM model."""
 
-    def __init__(self, num_images=16):
+    def __init__(self, num_images=8):
         """Initialize the architecture."""
         super().__init__(NAME)
         self.scaling_image = preprocessing.MinMaxScaling(
@@ -30,9 +30,9 @@ class CONVLSTM(base.Model):
         )
         self.num_images = num_images
 
-        self.conv_lstm1 = self._convlstm_block((5, 5), 64)
-        self.conv_lstm2 = self._convlstm_block((3, 3), 128)
-        self.conv_lstm3 = self._convlstm_block((3, 3), 256)
+        self.conv_lstm1 = self._convlstm_block((5, 5), 32)
+        self.conv_lstm2 = self._convlstm_block((3, 3), 64)
+        self.conv_lstm3 = self._convlstm_block((3, 3), 64)
 
         self.flatten = Flatten()
 
@@ -61,11 +61,11 @@ class CONVLSTM(base.Model):
         return x
 
     def _convlstm_block(self, kernel_size, channels):
-        convlstm = ConvLSTM2D(channels, kernel_size=kernel_size, activation="tanh")
-        batch_norm = BatchNormalization()
+        convlstm_1 = ConvLSTM2D(channels, kernel_size=kernel_size, activation="tanh", return_sequences=True)
+        convlstm_2 = ConvLSTM2D(channels, kernel_size=kernel_size, activation="tanh", return_sequences=True)
         max_pool = MaxPooling3D(pool_size=(1, 2, 2))
 
-        return Sequential([convlstm, batch_norm, max_pool])
+        return Sequential([convlstm_1, convlstm_2, max_pool])
 
     def config(self, training=False) -> dataloader.DataloaderConfig:
         """Configuration."""
