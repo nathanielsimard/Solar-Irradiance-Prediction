@@ -12,6 +12,7 @@ import tqdm
 
 from src.data import dataloader
 from src.data.metadata import Coordinates, MetadataLoader, Station
+from src.model import conv2d
 
 
 def prepare_dataloader(
@@ -20,7 +21,7 @@ def prepare_dataloader(
     station: str,
     coordinates: typing.Tuple[float, float, float],
     target_time_offsets: typing.List[datetime.timedelta],
-    config: typing.Dict[typing.AnyStr, typing.Any],
+    config: dataloader.DataloaderConfig,
 ) -> tf.data.Dataset:
     """Output data.
 
@@ -47,9 +48,7 @@ def prepare_dataloader(
             During evaluation time, it will only be one station to avoid confusions.
             See comment on function `generate_all_predictions` with the for loop.
         target_time_offsets: the list of timedeltas to predict GHIs for (by definition: [T=0, T+1h, T+3h, T+6h]).
-        config: configuration dictionary holding any extra parameters that might be required by the user. These
-            parameters are loaded automatically if the user provided a JSON file in their submission. Submitting
-            such a JSON file is completely optional, and this argument can be ignored if not needed.
+        config: configuration for the dataloader.
 
     Returns:
         A ``tf.data.Dataset`` object that can be used to produce input tensors for your model. One tensor
@@ -84,23 +83,8 @@ def prepare_model(
         A ``tf.keras.Model`` object that can be used to generate new GHI predictions given imagery tensors.
 
     """
-    # TODO: Add our model here
-
-    class DummyModel(tf.keras.Model):
-        def __init__(self, target_time_offsets):
-            super(DummyModel, self).__init__()
-            self.flatten = tf.keras.layers.Flatten()
-            self.dense1 = tf.keras.layers.Dense(32, activation=tf.nn.relu)
-            self.dense2 = tf.keras.layers.Dense(
-                len(target_time_offsets), activation=tf.nn.softmax
-            )
-
-        def call(self, inputs):
-            x = self.dense1(self.flatten(inputs))
-            return self.dense2(x)
-
-    model = DummyModel(target_time_offsets)
-
+    model = conv2d.CNN2D()
+    model.load("Conv2D-100")  # Just an example how to load weights.
     return model
 
 
@@ -149,15 +133,18 @@ def generate_all_predictions(
             f"preparing data loader & model for station '{station_name}' ({station_idx + 1}/{len(target_stations)})"
         )
         coordinates = target_stations[station_name]
+
+        model = prepare_model(target_time_offsets, user_config)
+        model_config = model.config(training=False)
+
         data_loader = prepare_dataloader(
             dataframe,
             target_datetimes,
             station_name,
             coordinates,
             target_time_offsets,
-            user_config,
+            model_config,
         )
-        model = prepare_model(target_time_offsets, user_config)
         station_preds = generate_predictions(
             data_loader, model, pred_count=len(target_datetimes)
         )

@@ -32,11 +32,11 @@ def get_image_reader_cache_directory() -> str:
     if not run_local:
         if "SLURM_TMPDIR" in os.environ:
             ssd_dir = os.environ["SLURM_TMPDIR"]
-            return ssd_dir + "/image_reader_cache/"
+            return ssd_dir + "/image_reader_cache"
         else:
-            return "/tmp/"
+            return "/tmp"
     else:
-        return "../image_reader_cache/"
+        return "../image_reader_cache"
 
 
 def get_model_checkpoint_directory() -> str:

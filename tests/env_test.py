@@ -38,18 +38,18 @@ class EnvTest(unittest.TestCase):
 
     def test_default_image_reader_directory(self):
         env.run_local = False
-        self.assertEqual(env.get_image_reader_cache_directory(), "/tmp/")
+        self.assertEqual(env.get_image_reader_cache_directory(), "/tmp")
 
     def test_local_image_reader_directory(self):
         env.run_local = True
         self.assertEqual(
-            env.get_image_reader_cache_directory(), "../image_reader_cache/"
+            env.get_image_reader_cache_directory(), "../image_reader_cache"
         )
 
     def test_slurm_image_reader_directory(self):
         env.run_local = False
         os.environ["SLURM_TMPDIR"] = "/test"
         self.assertEqual(
-            env.get_image_reader_cache_directory(), "/test/image_reader_cache/"
+            env.get_image_reader_cache_directory(), "/test/image_reader_cache"
         )
         del os.environ["SLURM_TMPDIR"]
