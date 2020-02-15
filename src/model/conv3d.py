@@ -15,16 +15,17 @@ NAME = "Conv3D"
 class CNN3D(base.Model):
     """Create Conv2D model."""
 
-    def __init__(self):
+    def __init__(self, num_images=8):
         """Initialize the architecture."""
         super().__init__(NAME)
         self.scaling_image = preprocessing.MinMaxScaling(
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
         )
+        self.num_images = num_images
 
-        self.conv1 = self._convolution_step((5, 5, 5), 64)
-        self.conv2 = self._convolution_step((3, 3, 3), 128)
-        self.conv3 = self._convolution_step((3, 3, 3), 256)
+        self.conv1 = self._convolution_step((1, 5, 5), 64)
+        self.conv2 = self._convolution_step((1, 3, 3), 128)
+        self.conv3 = self._convolution_step((1, 3, 3), 256)
 
         self.flatten = Flatten()
 
@@ -56,15 +57,14 @@ class CNN3D(base.Model):
         conv3d_1 = Conv3D(channels, kernel_size=kernel_size, activation="relu")
         conv3d_2 = Conv3D(channels, kernel_size=kernel_size, activation="relu")
         conv3d_3 = Conv3D(channels, kernel_size=kernel_size, activation="relu")
-        max_pool = MaxPooling3D(pool_size=(2, 2, 2))
+        max_pool = MaxPooling3D(pool_size=(1, 2, 2))
 
         return Sequential([conv3d_1, conv3d_2, conv3d_3, max_pool])
 
     def config(self, training=False) -> dataloader.Config:
         """Configuration."""
         config = default_config()
-        config.num_images = 6
-        config.ratio = 0.01
+        config.num_images = self.num_images
         config.features = [dataloader.Feature.image, dataloader.Feature.target_ghi]
 
         if training:
