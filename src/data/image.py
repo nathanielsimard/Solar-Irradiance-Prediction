@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 import h5py
 import numpy as np
 
-from src import env, logging
+from src import logging
 from src.data import metadata
 from src.data.utils import fetch_hdf5_sample, viz_hdf5_imagery
 
@@ -60,8 +60,11 @@ class ImageReader(object):
         self.cache_dir = cache_dir
         self.enable_caching = enable_caching
         self.force_caching = force_caching
-        if cache_dir is None:
-            self.cache_dir = env.get_image_reader_cache_directory()
+        self.cache_hits = 0
+        self.cache_miss = 0
+
+        if self.enable_caching and self.cache_dir is None:
+            raise ValueError("Not cache dir provided, but cache was enabled")
 
     def read(
         self,
@@ -90,9 +93,14 @@ class ImageReader(object):
                 image_path, image_offset, coordinates, output_size
             )
             try:
-                return self._load_cache_images(cached_file)
+                image = self._load_cache_images(cached_file)
+                self.cache_hits += 1
+                return image
             except FileNotFoundError:
-                logger.debug("Image not in cache")
+                self.cache_miss += 1
+                logger.debug(f"Image {cached_file} not in cache")
+                if self.cache_miss % 100 == 0:
+                    logger.warning(f"{self.cache_hits} hits, {self.cache_miss} miss!")
                 if self.force_caching:
                     raise ImageNotCached(
                         "Requested image not found in cache. Have you enabled 'force_caching' by mistake?"

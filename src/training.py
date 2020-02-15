@@ -6,6 +6,7 @@ import tensorflow as tf
 from src import logging
 from src.data.train import load_data
 from src.model.base import Model
+from src import env
 
 logger = logging.create_logger(__name__)
 
@@ -71,9 +72,15 @@ class SupervisedTraining(object):
             "test": tf.keras.metrics.Mean("test loss", dtype=tf.float32),
         }
         self.writer = {
-            "train": tf.summary.create_file_writer(TRAIN_LOG_DIR),
-            "valid": tf.summary.create_file_writer(VALID_LOG_DIR),
-            "test": tf.summary.create_file_writer(TEST_LOG_DIR),
+            "train": tf.summary.create_file_writer(
+                env.get_tensorboard_log_directory() + "/train/"
+            ),
+            "valid": tf.summary.create_file_writer(
+                env.get_tensorboard_log_directory() + "/valid/"
+            ),
+            "test": tf.summary.create_file_writer(
+                env.get_tensorboard_log_directory() + "/test/"
+            ),
         }
 
         self.history = History()
