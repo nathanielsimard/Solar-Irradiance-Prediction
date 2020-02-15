@@ -159,7 +159,8 @@ class DataLoader(object):
                     [
                         self._readers[feature](metadata)
                         for feature in self.config.features
-                    ])
+                    ]
+                )
                 self.ok += 1
                 yield output
             except AttributeError as e:
@@ -173,7 +174,7 @@ class DataLoader(object):
                     raise e
                 logger.debug(f"Error while generating data, skipping : {e}")
                 self.skipped += 1
-                if (self.skipped % 100) == 0:
+                if (self.skipped % 1000) == 0:
                     logger.warning(f"{self.skipped} skipped, {self.ok} ok.")
 
     def _read_target(self, metadata: Metadata) -> tf.Tensor:

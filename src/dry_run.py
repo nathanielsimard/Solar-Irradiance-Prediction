@@ -2,6 +2,7 @@ from src import logging
 import tensorflow as tf
 from src.data.train import load_data_and_create_generators
 import time as time
+
 logger = logging.create_logger(__name__)
 
 
@@ -22,7 +23,7 @@ def run(
     start = time.time()
     for sample in train_generator:
         samples += 1
-        if(samples % 100 == 0):
+        if samples % 100 == 0:
             temps = time.time() - start
             print(f"{100/temps} images par secondes {tf.shape(sample[0])}")
             start = time.time()

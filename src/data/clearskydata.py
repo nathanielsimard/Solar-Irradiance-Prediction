@@ -8,8 +8,11 @@ import tensorflow as tf
 import shelve
 
 from pvlib.location import Location
+from typing import Dict
 
 from src.data import metadata
+
+from src.data.metadata import Coordinates, Station
 
 
 class CSMDOffset(IntEnum):
@@ -61,7 +64,33 @@ class Clearsky:
         if self.enable_caching:
             self.cache.clear()
 
-    def _generate_cache_key(self, coordinates, timestamp):
+    def _load_values_to_cache(self, row):
+        self.cache[row["cache_key"]] = row["ghi"]
+
+    def _precompute_clearsky_values(
+        self, target_datetimes=None, stations: Dict[Station, Coordinates] = None
+    ):
+        if target_datetimes is not None:
+            if stations is None:
+                raise ValueError(
+                    "Must provided stations along with target datetimes for pre-computation"
+                )
+            for station in stations:
+                coordinates = station.coordinates
+                location = Location(
+                    latitude=coordinates.latitude,
+                    longitude=coordinates.longitude,
+                    altitude=coordinates.altitude,
+                )
+                clearsky_values = location.get_clearsky(
+                    pd.DatetimeIndex(target_datetimes)
+                )
+                clearsky_values["cache_key"] = clearsky_values.index.to_series().apply(
+                    self._generate_cache_key, args=[coordinates]
+                )
+                clearsky_values.apply(self._load_values_to_cache, axis=1)
+
+    def _generate_cache_key(self, timestamp, coordinates):
         ts_str = str(timestamp)
         return f"{coordinates.latitude:.4f};{coordinates.longitude:.4f};{coordinates.altitude:.2f};{ts_str}"
 
@@ -77,8 +106,8 @@ class Clearsky:
         Returns:
             np.array:-- A numpy array with the computed values at T, T+1, T+3 and T+6 hours.
         """
-        cache_key = self._generate_cache_key(coordinates, timestamp)
-        if cache_key not in self.cache or not self.enable_caching:
+        cache_key = self._generate_cache_key(timestamp, coordinates)
+        if cache_key not in self.cache:
             location = Location(
                 latitude=coordinates.latitude,
                 longitude=coordinates.longitude,

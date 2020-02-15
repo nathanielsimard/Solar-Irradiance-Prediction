@@ -280,7 +280,7 @@ class DataLoaderTest(unittest.TestCase):
         self.dataloader = DataLoader(
             lambda: [self._metadata(image_paths=[IMAGE_PATH, IMAGE_PATH])],
             self.image_reader,
-            config=DataloaderConfig(features=[Feature.image],),
+            config=DataloaderConfig(features=[Feature.image], num_images=2),
         )
 
         for (image,) in self.dataloader.generator():
@@ -292,7 +292,7 @@ class DataLoaderTest(unittest.TestCase):
         self.dataloader = DataLoader(
             lambda: [self._metadata(image_paths=[IMAGE_PATH, IMAGE_PATH])],
             self.image_reader,
-            config=DataloaderConfig(features=[Feature.image],),
+            config=DataloaderConfig(features=[Feature.image], num_images=2),
         )
 
         (image,) = next(self.dataloader.generator())
