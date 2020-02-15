@@ -37,7 +37,7 @@ def main():
         dry_run.run(args.enable_tf_caching, args.skip_non_cached)
         return
 
-    model = conv3d.Conv3D()
+    model = conv3d.CNN3D()
     optimizer = optimizers.Adam(0.001)
     loss_obj = losses.MeanSquaredError()
 

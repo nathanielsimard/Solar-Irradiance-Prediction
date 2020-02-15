@@ -61,7 +61,7 @@ class CNN3D(base.Model):
 
         return Sequential([conv3d_1, conv3d_2, conv3d_3, max_pool])
 
-    def config(self, training=False) -> dataloader.Config:
+    def config(self, training=False) -> dataloader.DataloaderConfig:
         """Configuration."""
         config = default_config()
         config.num_images = self.num_images
