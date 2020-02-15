@@ -12,7 +12,7 @@ import tqdm
 
 from src.data import dataloader
 from src.data.metadata import Coordinates, MetadataLoader, Station
-from src.model import conv3d
+from src.model import conv2d
 
 
 def prepare_dataloader(
@@ -83,8 +83,8 @@ def prepare_model(
         A ``tf.keras.Model`` object that can be used to generate new GHI predictions given imagery tensors.
 
     """
-    model = conv3d.CNN3D()
-    model.load("Conv3D-100")
+    model = conv2d.CNN2D()
+    model.load("Conv2D-100")  # Just an example how to load weights.
     return model
 
 
