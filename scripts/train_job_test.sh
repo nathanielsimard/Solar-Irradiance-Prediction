@@ -5,8 +5,8 @@
 #SBATCH --mem=16000M
 
 module load python/3.7
-#source /project/cq-training-1/project1/teams/team10/env/bin/activate
-source /home/guest150/project1/bin/activate
+source /project/cq-training-1/project1/teams/team10/env/bin/activate
+#source /home/guest150/project1/bin/activate
 echo python run_train.py --skip_non_cached
 python -V
 #python run_train.py --skip_non_cached
@@ -23,7 +23,7 @@ tar -xf image_reader_cache.tar
 date
 #du -d 1 .
 cd $cwd
-source /home/guest150/project1/bin/activate
+#source /home/guest150/project1/bin/activate
 ls
 python run_train.py --skip_non_cached
 
