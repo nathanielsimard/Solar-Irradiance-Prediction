@@ -3,11 +3,12 @@ import argparse
 from tensorflow.keras import losses, optimizers
 
 from src import dry_run, env
-from src.model import conv2d
+from src.model import convlstm
 from src.training import SupervisedTraining
 
 
 def main():
+    """Executable."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--enable_tf_caching", help="Enable tensorflow caching.", action="store_true"
@@ -36,7 +37,7 @@ def main():
         dry_run.run(args.enable_tf_caching, args.skip_non_cached)
         return
 
-    model = conv2d.CNN2D()
+    model = convlstm.CONVLSTM()
     optimizer = optimizers.Adam(0.001)
     loss_obj = losses.MeanSquaredError()
 
