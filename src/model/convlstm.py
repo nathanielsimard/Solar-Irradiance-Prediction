@@ -65,7 +65,7 @@ class CONVLSTM(base.Model):
         batch_norm = BatchNormalization()
         max_pool = MaxPooling3D(pool_size=(1, 2, 2))
 
-        return Sequential([convlstm_1, batch_norm, max_pool])
+        return Sequential([convlstm, batch_norm, max_pool])
 
     def config(self, training=False) -> dataloader.DataloaderConfig:
         """Configuration."""
