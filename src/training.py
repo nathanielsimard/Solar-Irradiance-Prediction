@@ -65,10 +65,14 @@ class SupervisedTraining(object):
         self.optim = optimizer
         self.loss_fn = loss_fn
         self.model = model
+        self.train_rmse = tf.keras.metrics.RootMeanSquaredError()
+        self.valid_rmse = tf.keras.metrics.RootMeanSquaredError()
 
         self.metrics = {
             "train": tf.keras.metrics.Mean("train loss", dtype=tf.float32),
+            "train_rmse": tf.keras.metrics.RootMeanSquaredError(),
             "valid": tf.keras.metrics.Mean("valid loss", dtype=tf.float32),
+            "valid_rmse": tf.keras.metrics.RootMeanSquaredError(),
             "test": tf.keras.metrics.Mean("test loss", dtype=tf.float32),
         }
         self.writer = {
@@ -93,6 +97,7 @@ class SupervisedTraining(object):
         enable_tf_caching=False,
         skip_non_cached=False,
         enable_checkpoint=True,
+        dry_run=False
     ):
         """Performs the training of the model in minibatch.
 
@@ -103,10 +108,10 @@ class SupervisedTraining(object):
             caching: if temporary caching is desired.
         """
         logger.info(f"Starting supervised training with model {self.model.title}")
-        config = self.model.config(training=True)
+        config = self.model.config(training=True, dry_run=dry_run)
         train_set, valid_set, test_set = load_data(
             enable_tf_caching=enable_tf_caching,
-            config=config,
+            dataloader_config=config,
             skip_non_cached=skip_non_cached,
         )
 
@@ -121,10 +126,12 @@ class SupervisedTraining(object):
         for epoch in range(epochs):
             logger.info("Supervised training...")
 
-            for i, (targets, inputs) in enumerate(train_set.batch(batch_size)):
-                logger.info(f"Batch #{i+1} {tf.shape(inputs)}")
+            for i, (targets, meta, image) in enumerate(train_set.batch(batch_size)):
+                logger.info(f"Batch #{i+1}")
 
-                self._train_step(inputs, targets, training=True)
+                self._train_step(targets, meta, image, training=True)
+                if (i % 10 == 0):
+                    self._update_progress(i)
 
             logger.info("Evaluating validation loss")
             self._evaluate("valid", epoch, valid_set, valid_batch_size)
@@ -146,7 +153,7 @@ class SupervisedTraining(object):
         train_writer = self.writer["train"]
 
         logger.info(
-            f"Epoch: {epoch + 1}, Train loss: {train_metric.result()}, Valid loss: {valid_metric.result()} "
+            f"Step: {epoch + 1}, Train loss: {train_metric.result()}, Train RMSE: {self.train_rmse.result()}, Valid loss: {valid_metric.result()} "
         )
 
         with train_writer.as_default():
@@ -156,6 +163,8 @@ class SupervisedTraining(object):
         self.history.record("train", train_metric.result())
         train_metric.reset_states()
         valid_metric.reset_states()
+        self.train_rmse.reset_states()
+        self.valid_rmse.reset_states()
 
     def _evaluate(self, name, epoch, dataset, batch_size):
         metric = self.metrics[name]
@@ -171,10 +180,11 @@ class SupervisedTraining(object):
         self.history.record(name, metric.result())
 
     @tf.function
-    def _train_step(self, train_inputs, train_targets, training: bool):
+    def _train_step(self, targets, meta, image, training: bool):
         with tf.GradientTape() as tape:
-            outputs = self.model(train_inputs, training)
-            loss = self.loss_fn(train_targets, outputs)
+            outputs = self.model(image, meta, training)
+            self.train_rmse.update_state(targets, outputs)
+            loss = self.loss_fn(targets, outputs)  # By convention, the target will always come first
         gradients = tape.gradient(loss, self.model.trainable_variables)
         self.optim.apply_gradients(zip(gradients, self.model.trainable_variables))
 

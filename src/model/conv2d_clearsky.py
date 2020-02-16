@@ -9,10 +9,10 @@ from src.model import base
 
 logger = logging.create_logger(__name__)
 
-NAME = "Conv2D"
+NAME = "CNN2DClearsky"
 
 
-class CNN2D(base.Model):
+class CNN2DClearsky(base.Model):
     """Create Conv2D model."""
 
     def __init__(self):
@@ -31,9 +31,10 @@ class CNN2D(base.Model):
         self.d1 = Dense(1048, activation="relu")
         self.d2 = Dense(512, activation="relu")
         self.d3 = Dense(256, activation="relu")
-        self.d4 = Dense(1)
+        self.d4 = Dense(256, activation="relu")
+        self.d5 = Dense(1)
 
-    def call(self, x, training: bool):
+    def call(self, x, meta, training: bool):
         """Performs the forward pass in the neural network.
 
         Can use a different pass with the optional training boolean if
@@ -48,7 +49,9 @@ class CNN2D(base.Model):
         x = self.d1(x)
         x = self.d2(x)
         x = self.d3(x)
-        x = self.d4(x)
+        z = tf.concat([x, meta], 1)  # Late combining of the metadata.
+        x = self.d4(z)
+        x = self.d5(x)
 
         return x
 
@@ -65,20 +68,21 @@ class CNN2D(base.Model):
         config = default_config()
         config.num_images = 1
         config.ratio = 1
-        config.features = [dataloader.Feature.target_ghi, dataloader.Feature.image]
-
+        config.features = [dataloader.Feature.target_ghi, dataloader.Feature.metadata, dataloader.Feature.image]
         if training:
             config.error_strategy = dataloader.ErrorStrategy.skip
         else:
             config.error_strategy = dataloader.ErrorStrategy.ignore
-
+        if dry_run:
+            config.error_strategy = dataloader.ErrorStrategy.stop
         return config
 
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Applies the preprocessing to the inputs and the targets."""
         return dataset.map(
-            lambda target_ghi, image: (
+            lambda target_ghi, metadata, image: (
                 self._preprocess_target(target_ghi),
+                metadata,
                 self.scaling_image.normalize(image),
             ),
             num_parallel_calls=tf.data.experimental.AUTOTUNE,

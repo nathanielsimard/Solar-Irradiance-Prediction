@@ -46,24 +46,11 @@ class ClearSkyDataTest(unittest.TestCase):
         clearsky = csd.Clearsky()
         clearsky._precompute_clearsky_values(target_datetimes, stations)
         self.assertCloseTo(
-            clearsky.cache["40.0519;-88.3731;230.00;2015-01-04 19:15:00"], 414.271049
+            clearsky.cache["40.0519;-88.3731;230.00;2015-01-04 19:15:00"][0], 414.271049
         )
         self.assertCloseTo(
-            clearsky.cache["40.0519;-88.3731;230.00;2014-07-10 00:15:00"], 98.633557
+            clearsky.cache["40.0519;-88.3731;230.00;2014-07-10 00:15:00"][0], 98.633557
         )
-
-    def test_clearsky_prediction(self):
-        dataset = self._create_data_loader(
-            target_datetimes=[datetime(2010, 6, 19, 22, 15)]
-        )
-
-        for (meta, image, target) in dataset:
-            print(meta[0, 0])
-            self.assertCloseTo(meta[0, csd.CSMDOffset.GHI_T].numpy(), 471.675670)
-            self.assertCloseTo(meta[0, csd.CSMDOffset.GHI_T_1h].numpy(), 280.165857)
-            self.assertCloseTo(meta[0, csd.CSMDOffset.GHI_T_3h].numpy(), 0.397029)
-            self.assertCloseTo(meta[0, csd.CSMDOffset.GHI_T_6h].numpy(), 0.0)
-            pass
 
     def test_clearsky_prediction_function(self):
         target_datetime = datetime(2010, 6, 19, 22, 15)

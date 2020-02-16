@@ -17,7 +17,7 @@ def plot3d():
         config.time_interval_min = 30
         config.num_images = 10
 
-        train_dataset, _, _ = load_data(config=config)
+        train_dataset, _, _ = load_data(dataloader_config=config)
         images = _first_image(train_dataset)
 
         image_names = []

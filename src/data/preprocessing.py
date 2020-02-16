@@ -42,7 +42,7 @@ def find_target_ghi_minmax_value(dataset=None):
     if dataset is None:
         config = default_config()
         config.features = [dataloader.Feature.target_ghi]
-        dataset, _, _ = load_data(config=config)
+        dataset, _, _ = load_data(dataloader_config=config)
 
     max_value = dataset.reduce(0.0, _reduce_max)
     min_value = dataset.reduce(max_value, _reduce_min)

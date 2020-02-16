@@ -5,6 +5,9 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 import numpy as np
 import tensorflow as tf
 
+from typing import Dict
+from src.data.metadata import Coordinates, Station
+
 import src.data.clearskydata as csd
 from src import logging
 from src.data import image
@@ -82,6 +85,9 @@ class DataloaderConfig:
         num_images=1,
         time_interval_min=15,
         ratio=1,
+        target_datetimes=None,
+        stations: Dict[Station, Coordinates] = None,
+        precompute_clearsky=False
     ):
         """All configurations are optional with default values.
 
@@ -109,6 +115,27 @@ class DataloaderConfig:
         self.num_images = num_images
         self.time_interval_min = time_interval_min
         self.ratio = ratio
+        self.target_datetimes = target_datetimes
+        self.station = stations
+        self.precompute_clearsky = precompute_clearsky
+
+    def __str__(self):
+        return f"""
+                local_path = {self.local_path}
+                error_strategy = {self.error_strategy}
+                crop_size= {self.crop_size}
+                features = {self.features} 
+                channels = {self.channels}
+                force_caching = {self.force_caching}
+                image_cache_dir = {self.image_cache_dir}
+                num_images = {self.num_images}
+                time_interval_min = {self.time_interval_min}
+                ratio  = {self.ratio}
+                precompute_clearsky = {self.precompute_clearsky}
+        """
+
+    def __repr__(self):
+        return self.__str__()
 
 
 class MetadataFeatureIndex(IntEnum):
@@ -129,12 +156,22 @@ class DataLoader(object):
         metadata: Callable[[], Iterable[Metadata]],
         image_reader: image.ImageReader,
         config: DataloaderConfig = DataloaderConfig(),
+
     ):
         """Load the config with the image_reader from the metadata."""
         self.metadata = metadata
         self.image_reader = image_reader
         self.config = config
-        self.csd = csd.Clearsky()
+        enable_clearsky_caching = False
+
+        if config.precompute_clearsky:
+            enable_clearsky_caching = True
+
+        self.csd = csd.Clearsky(enable_caching=enable_clearsky_caching)
+
+        if config.precompute_clearsky:
+            self.csd._precompute_clearsky_values(config.target_datetimes, config.stations)
+
         self.ok = 0
         self.skipped = 0
 
@@ -263,7 +300,7 @@ class DataLoader(object):
         """
         meta[0 : len(clearsky_values)] = clearsky_values
 
-        return tf.convert_to_tensor(meta)
+        return tf.convert_to_tensor(meta, dtype=tf.float32)
 
     def _target_value(self, target):
         if target is not None:
@@ -285,6 +322,7 @@ class DataLoader(object):
 def create_dataset(
     metadata: Callable[[], Iterable[Metadata]],
     config: Union[Dict[str, Any], DataloaderConfig] = DataloaderConfig(),
+    target_datetimes=None, stations: Dict[Station, Coordinates] = None
 ) -> tf.data.Dataset:
     """Create a tensorflow Dataset base on the metadata and dataloader's config.
 

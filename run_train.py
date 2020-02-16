@@ -4,6 +4,7 @@ from tensorflow.keras import losses, optimizers
 
 from src import dry_run, env
 from src.model import conv2d
+from src.model import conv2d_clearsky
 from src.training import SupervisedTraining
 
 
@@ -29,15 +30,20 @@ def main():
     parser.add_argument(
         "--no_checkpoint", help="Will not save any checkpoints", action="store_true",
     )
+
+    parser.add_argument("--model", help="Name of the model to train", default="CNN2D")
     parser.add_argument("--batch_size", help="Batch size", default=128, type=int)
     args = parser.parse_args()
     env.run_local = args.run_local
 
-    if args.dry_run:
-        dry_run.run(args.enable_tf_caching, args.skip_non_cached)
-        return
+    # if args.dry_run:
+    #    dry_run.run(args.enable_tf_caching, args.skip_non_cached)
+    #    return
+    if args.model == "CNN2D":
+        model = conv2d.CNN2D()
+    if args.model == "CNN2DClearsky":
+        model = conv2d_clearsky.CNN2DClearsky()
 
-    model = conv2d.CNN2D()
     optimizer = optimizers.Adam(0.001)
     loss_obj = losses.MeanSquaredError()
 
@@ -52,6 +58,7 @@ def main():
         skip_non_cached=args.skip_non_cached,
         enable_checkpoint=not args.no_checkpoint,
         batch_size=args.batch_size,
+        dry_run=args.dry_run
     )
 
 
