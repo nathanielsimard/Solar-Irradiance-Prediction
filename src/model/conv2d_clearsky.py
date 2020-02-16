@@ -32,7 +32,7 @@ class CNN2DClearsky(base.Model):
         self.d2 = Dense(512, activation="relu")
         self.d3 = Dense(256, activation="relu")
         self.d4 = Dense(256, activation="relu")
-        self.d5 = Dense(1)
+        self.d5 = Dense(4)
 
     def call(self, x, meta, training: bool):
         """Performs the forward pass in the neural network.
@@ -81,7 +81,7 @@ class CNN2DClearsky(base.Model):
         """Applies the preprocessing to the inputs and the targets."""
         return dataset.map(
             lambda target_ghi, metadata, image: (
-                self._preprocess_target(target_ghi),
+                target_ghi,
                 metadata,
                 self.scaling_image.normalize(image),
             ),

@@ -21,6 +21,7 @@ def main():
         help="No training, no tensorflow, just the generator",
         action="store_true",
     )
+
     parser.add_argument(
         "--skip_non_cached",
         help="Skip images which are not already cached in the image reader",

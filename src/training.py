@@ -131,8 +131,12 @@ class SupervisedTraining(object):
 
             for i, (targets, meta, image) in enumerate(train_set.batch(batch_size)):
                 logger.info(f"Batch #{i+1}")
+                clearsky = meta[:, 0:4]  # TODO: Do something better.
+                adjusted_target = tf.clip_by_value((targets / clearsky), 0, 1)
+                #adjusted_target = abs(clearsky - targets) / clearsky
+                #adjusted_target[adjusted_target == float("Inf")] = 0
 
-                self._train_step(targets, meta, image, training=True)
+                self._train_step(adjusted_target, targets, clearsky, image, training=True)
                 if (i % 10 == 0):
                     self._update_progress(i)
 
@@ -182,11 +186,12 @@ class SupervisedTraining(object):
         self.history.record(name, metric.result())
 
     @tf.function
-    def _train_step(self, targets, meta, image, training: bool):
+    def _train_step(self, adjusted_targets, targets, clearsky, image, training: bool):
         with tf.GradientTape() as tape:
-            outputs = self.model(image, meta, training)
-            self.train_rmse.update_state(targets, outputs)
-            loss = self.loss_fn(targets, outputs)  # By convention, the target will always come first
+            outputs = self.model(image, clearsky, training)
+            real_outputs = clearsky * outputs
+            self.train_rmse.update_state(targets, real_outputs)
+            loss = self.loss_fn(adjusted_targets, outputs)  # By convention, the target will always come first
         gradients = tape.gradient(loss, self.model.trainable_variables)
         self.optim.apply_gradients(zip(gradients, self.model.trainable_variables))
 
