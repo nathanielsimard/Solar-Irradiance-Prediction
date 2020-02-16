@@ -122,6 +122,9 @@ class SupervisedTraining(object):
 
         logger.info("Creating loss logs")
 
+        # Fail early!
+        self.model.save(str(0))
+
         logger.info("Fitting model.")
         for epoch in range(epochs):
             logger.info("Supervised training...")
@@ -169,9 +172,8 @@ class SupervisedTraining(object):
     def _evaluate(self, name, epoch, dataset, batch_size):
         metric = self.metrics[name]
         writer = self.writer[name]
-
-        for inputs, targets in dataset.batch(batch_size):
-            loss = self._calculate_loss(inputs, targets, training=False)
+        for targets, meta, image in dataset.batch(batch_size):
+            loss = self._calculate_loss(image, meta, targets, training=False)
             metric(loss)
 
         with writer.as_default():
@@ -191,6 +193,7 @@ class SupervisedTraining(object):
         self.metrics["train"](loss)
 
     @tf.function
-    def _calculate_loss(self, valid_inputs, valid_targets, training: bool):
-        outputs = self.model(valid_inputs, training)
+    def _calculate_loss(self, image, meta, valid_targets, training: bool):
+        outputs = self.model(image, meta, training)
+        self.valid_rmse.update_state(valid_targets, outputs)
         return self.loss_fn(valid_targets, outputs)

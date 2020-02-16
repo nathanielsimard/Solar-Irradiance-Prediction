@@ -3,6 +3,7 @@ import abc
 import tensorflow as tf
 
 from src.data import dataloader
+from src import env
 
 MODEL_BASE_DIR = "/project/cq-training-1/project1/teams/team10/models"
 
@@ -17,7 +18,7 @@ class Model(tf.keras.Model, abc.ABC):
 
     def save(self, instance: str):
         """Saving the model."""
-        file_name = f"{MODEL_BASE_DIR}/{self.title}/{instance}"
+        file_name = f"{env.get_model_checkpoint_directory()}/{self.title}/{instance}"
         super().save_weights(
             file_name, save_format="tf", overwrite=True,
         )
