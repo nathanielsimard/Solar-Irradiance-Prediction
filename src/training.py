@@ -242,7 +242,18 @@ class SupervisedTraining(object):
         self.metrics["train"](loss)
 
     @tf.function
-    def _calculate_loss(self, image, meta, valid_targets, target_cloudiness, training: bool):
+    def _calculate_loss(self, image, clearsky, valid_targets, target_cloudiness, training: bool):
         outputs = self.model(image, meta, training)
-        self.valid_rmse.update_state(valid_targets, outputs)
-        return self.loss_fn(valid_targets, outputs)
+        outputs_onehot = tf.one_hot(tf.argmax(outputs, 1), depth=5)
+        penalty = outputs_onehot[:, 3] * 1 + outputs_onehot[:, 4] * \
+            0.95 + outputs_onehot[:, 2] * 0.75 + outputs_onehot[:, 1] * 0.5
+        clearsky_t0 = clearsky[:, 0] * penalty
+        clearsky_t1 = clearsky[:, 1] * penalty
+        clearsky_t3 = clearsky[:, 2] * penalty
+        clearsky_t6 = clearsky[:, 3] * penalty
+
+        output_ghi = tf.stack([clearsky_t0, clearsky_t1, clearsky_t3, clearsky_t6], axis=1)
+
+        self.valid_rmse.update_state(valid_targets, output_ghi)
+        loss = tf.nn.softmax_cross_entropy_with_logits(labels=target_cloudiness, logits=outputs)
+        return loss
