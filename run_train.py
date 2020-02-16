@@ -32,6 +32,8 @@ def main():
         "--no_checkpoint", help="Will not save any checkpoints", action="store_true",
     )
 
+    parser.add_argument("--lr", help="Learning rate", default=0.0001, type=float)
+
     parser.add_argument("--model", help="Name of the model to train", default="CNN2D")
     parser.add_argument("--batch_size", help="Batch size", default=128, type=int)
     args = parser.parse_args()
@@ -44,8 +46,10 @@ def main():
         model = conv2d.CNN2D()
     if args.model == "CNN2DClearsky":
         model = conv2d_clearsky.CNN2DClearsky()
+    if args.model == "CNN2DClearskyCloudiness":
+        model = conv2d_clearsky.CNN2DClearskyCloudiness()
 
-    optimizer = optimizers.Adam(0.001)
+    optimizer = optimizers.Adam(args.lr)
     loss_obj = losses.MeanSquaredError()
 
     def rmse(pred, target):

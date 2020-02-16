@@ -27,7 +27,8 @@ class Feature(Enum):
 
     image = "image"
     target_ghi = "target_ghi"
-    metadata = "metadata"
+    metadata = "metadata",
+    target_cloudiness = "target_cloudiness"
 
 
 class ErrorStrategy(Enum):
@@ -124,7 +125,7 @@ class DataloaderConfig:
                 local_path = {self.local_path}
                 error_strategy = {self.error_strategy}
                 crop_size= {self.crop_size}
-                features = {self.features} 
+                features = {self.features}
                 channels = {self.channels}
                 force_caching = {self.force_caching}
                 image_cache_dir = {self.image_cache_dir}
@@ -179,6 +180,7 @@ class DataLoader(object):
             Feature.image: self._read_image,
             Feature.target_ghi: self._read_target,
             Feature.metadata: self._read_metadata,
+            Feature.target_cloudiness: self._read_target_cloudiness
         }
 
     def generator(self):
@@ -222,6 +224,21 @@ class DataLoader(object):
                 self._target_value(metadata.target_ghi_3h),
                 self._target_value(metadata.target_ghi_6h),
             ],
+            dtype=tf.float32,
+        )
+
+    def _read_target_cloudiness(self, metadata: Metadata) -> tf.Tensor:
+        label = metadata.target_cloudiness
+        # "night/cloudy/slightly cloudy/clear/"variable""
+        one_hot = {
+            "night": np.array([1, 0, 0, 0, 0]),
+            "cloudy": np.array([0, 1, 0, 0, 0]),
+            "slightly cloudy": np.array([0, 0, 1, 0, 0]),
+            "clear": np.array([0, 0, 0, 1, 0]),
+            "variable" : np.array([0, 0, 0, 0, 1]),
+        }
+        return tf.convert_to_tensor(
+            self._target_value(one_hot[label]),
             dtype=tf.float32,
         )
 
