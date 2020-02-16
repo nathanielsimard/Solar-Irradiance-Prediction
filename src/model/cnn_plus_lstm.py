@@ -33,7 +33,7 @@ class CNNLSTM(base.Model):
         self.cnn = self._cnn()
         self.flatten = Flatten()
 
-        self.time_dist = TimeDistributed()
+        self.time_dist = TimeDistributed(self.cnn)
         self.lstm = LSTM(return_sequences=True)
 
         self.d1 = Dense(1024, activation="relu")
