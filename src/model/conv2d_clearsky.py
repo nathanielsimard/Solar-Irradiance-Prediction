@@ -49,8 +49,9 @@ class CNN2DClearsky(base.Model):
         x = self.d1(x)
         x = self.d2(x)
         x = self.d3(x)
-        z = tf.concat([x, meta], 1)  # Late combining of the metadata.
-        x = self.d4(z)
+        # z = tf.concat([x, meta], 1)  # Late combining of the metadata.
+        #x = self.d4(z)
+        x = self.d4(x)
         x = self.d5(x)
 
         return x
