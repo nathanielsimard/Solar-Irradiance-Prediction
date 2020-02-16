@@ -87,9 +87,9 @@ class SupervisedTraining(object):
 
     def run(
         self,
-        batch_size=128,
-        epochs=10,
-        valid_batch_size=256,
+        batch_size=32,
+        epochs=25,
+        valid_batch_size=32,
         enable_tf_caching=False,
         skip_non_cached=False,
         enable_checkpoint=True,
@@ -129,15 +129,13 @@ class SupervisedTraining(object):
             logger.info("Evaluating validation loss")
             self._evaluate("valid", epoch, valid_set, valid_batch_size)
 
-            if enable_checkpoint and epoch % CHECKPOINT_TIMESTAMP == 0:
-                logger.info("Checkpointing...")
-                self.model.save(str(epoch))
+            logger.info("Checkpointing...")
+            self.model.save(str(epoch))
 
             self._update_progress(epoch)
+            self.history.save(f"{self.model.title}-{epoch}")
 
         self._evaluate("test", epoch, test_set, valid_batch_size)
-
-        self.history.save(f"{self.model.title}-{epochs}")
         logger.info("Done.")
 
     def _update_progress(self, epoch):
