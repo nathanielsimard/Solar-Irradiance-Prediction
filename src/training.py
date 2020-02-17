@@ -220,14 +220,22 @@ class SupervisedTraining(object):
             # }
 
             outputs_onehot = tf.one_hot(tf.argmax(outputs, 1), depth=5)
-            penalty = outputs_onehot[:, 3] * 1 + outputs_onehot[:, 4] * \
-                0.95 + outputs_onehot[:, 2] * 0.75 + outputs_onehot[:, 1] * 0.5
+            #penalty = outputs_onehot[:, 3] * 1 + outputs_onehot[:, 4] * \
+            #    0.95 + outputs_onehot[:, 2] * 0.75 + outputs_onehot[:, 1] * 0.5
+            #clearsky_t0 = clearsky[:, 0] * penalty
+            #clearsky_t1 = clearsky[:, 1] * penalty
+            #clearsky_t3 = clearsky[:, 2] * penalty
+            #clearsky_t6 = clearsky[:, 3] * penalty
+
+            penalty = target_cloudiness[:, 3] * 1 + target_cloudiness[:, 4] * \
+                0.95 + target_cloudiness[:, 2] * 0.75 + target_cloudiness[:, 1] * 0.5
             clearsky_t0 = clearsky[:, 0] * penalty
             clearsky_t1 = clearsky[:, 1] * penalty
             clearsky_t3 = clearsky[:, 2] * penalty
             clearsky_t6 = clearsky[:, 3] * penalty
 
             output_ghi = tf.stack([clearsky_t0, clearsky_t1, clearsky_t3, clearsky_t6], axis=1)
+        
 
             self.train_accuracy.update_state(target_cloudiness, outputs)
             self.train_rmse.update_state(targets, output_ghi)
