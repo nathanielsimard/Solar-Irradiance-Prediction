@@ -81,8 +81,8 @@ class SupervisedTraining(object):
     def run(
         self,
         batch_size=32,
-        epochs=10,
-        valid_batch_size=256,
+        epochs=100,
+        valid_batch_size=64,
         enable_tf_caching=False,
         skip_non_cached=False,
         enable_checkpoint=True,
@@ -124,7 +124,7 @@ class SupervisedTraining(object):
 
             if enable_checkpoint and epoch % CHECKPOINT_TIMESTAMP == 0:
                 logger.info("Checkpointing...")
-                #self.model.save(str(epoch))
+                # self.model.save(str(epoch)) uncomment when you have write access to the model folder
 
             self._update_progress(epoch)
 
