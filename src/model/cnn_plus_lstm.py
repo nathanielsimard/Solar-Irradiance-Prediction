@@ -22,7 +22,7 @@ NAME = "CNN_LSTM"
 class CNNLSTM(base.Model):
     """Create ConvLSTM model."""
 
-    def __init__(self, num_images=8):
+    def __init__(self, num_images=16):
         """Initialize the architecture."""
         super().__init__(NAME)
         self.scaling_image = preprocessing.MinMaxScaling(
@@ -30,9 +30,7 @@ class CNNLSTM(base.Model):
         )
         self.num_images = num_images
 
-        self.conv1 = TimeDistributed(Conv2D(64, (5,5), activation="relu"), input_shape=(self.num_images, 64,64,5))
-        self.mp1 = TimeDistributed(MaxPooling2D(pool_size=(2,2)))
-        self.flat = TimeDistributed(Flatten())
+        self.cnn = self._cnn()
         self.lstm = LSTM(units=1024, return_sequences=False)
 
         self.d1 = Dense(1024, activation="relu")
@@ -47,11 +45,7 @@ class CNNLSTM(base.Model):
         some operations need to be skipped at evaluation(e.g. Dropout)
         """
         print(x.shape)
-        x = self.conv1(x)
-        print(x.shape)
-        x = self.mp1(x)
-        print(x.shape)
-        x = self.flat(x)
+        x = self.cnn(x)
         print(x.shape)
 
         x = self.lstm(x)
@@ -65,18 +59,25 @@ class CNNLSTM(base.Model):
         return x
 
     def _cnn(self) -> Sequential:
-        conv1 = self._convolution_step((5, 5), 32)
-        conv2 = self._convolution_step((3, 3), 64)
-        conv3 = self._convolution_step((3, 3), 64)
+        step1 = self._convolution_step((5, 5), 64, first=True)
+        step2 = self._convolution_step((3, 3), 128)
+        flat = TimeDistributed(Flatten())
 
-        return Sequential([conv1, conv2, conv3])
+        return Sequential([step1, step2, flat])
 
-    def _convolution_step(self, kernel_size, channels):
-        conv3d_1 = Conv2D(channels, kernel_size=kernel_size, activation="relu")
-        conv3d_2 = Conv2D(channels, kernel_size=kernel_size, activation="relu")
-        max_pool = MaxPooling2D(pool_size=(2, 2))
+    def _convolution_step(self, kernel_size, channels, first=False):
+        conv2 = TimeDistributed(Conv2D(channels, kernel_size, activation="relu"))
+        max_pool = TimeDistributed(MaxPooling2D(pool_size=(2, 2)))
 
-        return Sequential([conv3d_1, conv3d_2, max_pool])
+        if first:
+            conv1 = TimeDistributed(
+                Conv2D(channels, kernel_size, activation="relu"),
+                input_shape=(self.num_images, 64, 64, 5),
+            )
+        else:
+            conv1 = TimeDistributed(Conv2D(channels, kernel_size, activation="relu"))
+
+        return Sequential([conv1, conv2, max_pool])
 
     def config(self, training=False) -> dataloader.DataloaderConfig:
         """Configuration."""
