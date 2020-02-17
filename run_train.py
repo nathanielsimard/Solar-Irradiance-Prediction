@@ -48,6 +48,8 @@ def main():
         model = conv2d_clearsky.CNN2DClearsky()
     if args.model == "CNN2DClearskyCloudiness":
         model = conv2d_clearsky.CNN2DClearskyCloudiness()
+    if args.model == "CNN2DClearskyJessica":
+        model = conv2d_clearsky.CNN2DClearsky()
 
     optimizer = optimizers.Adam(args.lr)
     loss_obj = losses.MeanSquaredError()
@@ -63,7 +65,7 @@ def main():
         skip_non_cached=args.skip_non_cached,
         enable_checkpoint=not args.no_checkpoint,
         batch_size=args.batch_size,
-        dry_run=args.dry_run
+        dry_run=args.dry_run,
     )
 
 
