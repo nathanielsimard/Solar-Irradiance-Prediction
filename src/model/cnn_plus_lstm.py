@@ -6,6 +6,7 @@ from tensorflow.keras.layers import (
     TimeDistributed,
     LSTM,
     Conv2D,
+    Dropout,
 )
 from tensorflow.keras.models import Sequential
 
@@ -30,10 +31,17 @@ class CNNLSTM(base.Model):
         )
         self.num_images = num_images
 
-        self.cnn = self._cnn()
-        self.lstm = LSTM(units=1024, return_sequences=False)
+        self.conv1 = self._convolution_step((3, 3), 64, first=True)
+        self.drop1 = Dropout(0.2)
+        self.conv2 = self._convolution_step((3, 3), 128)
+        self.drop2 = Dropout(0.2)
+        self.conv3 = self._convolution_step((3, 3), 256)
+        self.drop3 = Dropout(0.2)
+        self.flat = TimeDistributed(Flatten())
+        self.d1 = TimeDistributed(Dense(512))
+        self.drop4 = Dropout(0.3)
+        self.lstm = LSTM(units=16, return_sequences=False)
 
-        self.d1 = Dense(1024, activation="relu")
         self.d2 = Dense(512, activation="relu")
         self.d3 = Dense(256, activation="relu")
         self.d4 = Dense(4)
@@ -44,26 +52,25 @@ class CNNLSTM(base.Model):
         Can use a different pass with the optional training boolean if
         some operations need to be skipped at evaluation(e.g. Dropout)
         """
-        print(x.shape)
-        x = self.cnn(x)
-        print(x.shape)
-
-        x = self.lstm(x)
-        print(x.shape)
-
+        x = self.conv1(x)
+        if training:
+            x = self.drop1(x)
+        x = self.conv2(x)
+        if training:
+            x = self.drop2(x)
+        x = self.conv3(x)
+        if training:
+            x = self.drop3(x)
+        x = self.flat(x)
         x = self.d1(x)
+        if training:
+            x = self.drop4(x)
+        x = self.lstm(x)
         x = self.d2(x)
         x = self.d3(x)
         x = self.d4(x)
 
         return x
-
-    def _cnn(self) -> Sequential:
-        step1 = self._convolution_step((5, 5), 64, first=True)
-        step2 = self._convolution_step((3, 3), 128)
-        flat = TimeDistributed(Flatten())
-
-        return Sequential([step1, step2, flat])
 
     def _convolution_step(self, kernel_size, channels, first=False):
         conv2 = TimeDistributed(Conv2D(channels, kernel_size, activation="relu"))
@@ -83,6 +90,7 @@ class CNNLSTM(base.Model):
         """Configuration."""
         config = default_config()
         config.num_images = self.num_images
+        config.ratio = 0.15
         config.features = [dataloader.Feature.image, dataloader.Feature.target_ghi]
 
         if training:
