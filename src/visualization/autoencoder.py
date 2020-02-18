@@ -6,7 +6,7 @@ from src.model.autoencoder import Autoencoder
 
 def show_image():
     autoencoder = Autoencoder()
-    autoencoder.load("~/Encoder/25")
+    autoencoder.load(str(24))
 
     config = autoencoder.config(training=False)
 
