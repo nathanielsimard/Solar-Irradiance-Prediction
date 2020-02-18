@@ -80,7 +80,7 @@ class SupervisedTraining(object):
 
     def run(
         self,
-        batch_size=32,
+        batch_size=64,
         epochs=100,
         valid_batch_size=64,
         enable_tf_caching=False,

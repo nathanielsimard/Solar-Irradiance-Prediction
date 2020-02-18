@@ -23,7 +23,7 @@ NAME = "CNN_LSTM"
 class CNNLSTM(base.Model):
     """Create ConvLSTM model."""
 
-    def __init__(self, num_images=16):
+    def __init__(self, num_images=8):
         """Initialize the architecture."""
         super().__init__(NAME)
         self.scaling_image = preprocessing.MinMaxScaling(
@@ -90,7 +90,7 @@ class CNNLSTM(base.Model):
         """Configuration."""
         config = default_config()
         config.num_images = self.num_images
-        config.ratio = 0.01
+        config.ratio = 1
         config.features = [dataloader.Feature.image, dataloader.Feature.target_ghi]
 
         if training:
