@@ -38,7 +38,7 @@ def main():
         return
 
     model = cnn_plus_lstm.CNNLSTM()
-    optimizer = optimizers.Adam(0.001)
+    optimizer = optimizers.Adam(0.1)
     loss_obj = losses.MeanSquaredError()
 
     def rmse(pred, target):

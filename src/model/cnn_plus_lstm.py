@@ -90,7 +90,7 @@ class CNNLSTM(base.Model):
         """Configuration."""
         config = default_config()
         config.num_images = self.num_images
-        config.ratio = 1
+        config.ratio = 0.01
         config.features = [dataloader.Feature.image, dataloader.Feature.target_ghi]
 
         if training:

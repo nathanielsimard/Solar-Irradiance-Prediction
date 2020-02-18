@@ -25,7 +25,7 @@ TEST_LOG_DIR = (
     + CURRENT_TIME
     + "/test"
 )
-CHECKPOINT_TIMESTAMP = 5
+CHECKPOINT_TIMESTAMP = 1
 
 
 class History(object):
@@ -124,7 +124,7 @@ class SupervisedTraining(object):
 
             if enable_checkpoint and epoch % CHECKPOINT_TIMESTAMP == 0:
                 logger.info("Checkpointing...")
-                # self.model.save(str(epoch)) uncomment when you have write access to the model folder
+                self.model.save(str(epoch)) 
 
             self._update_progress(epoch)
 
