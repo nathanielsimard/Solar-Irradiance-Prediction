@@ -65,7 +65,14 @@ class CNN2D(base.Model):
         config = default_config()
         config.num_images = 1
         config.ratio = 0.01
-        config.features = [dataloader.Feature.image, dataloader.Feature.target_ghi]
+        config.features = (
+            [
+                dataloader.Feature.image,
+                dataloader.Feature.target_csm,
+                dataloader.Feature.target_cloud,
+                dataloader.Feature.target_ghi,
+            ],
+        )
 
         if training:
             config.error_strategy = dataloader.ErrorStrategy.skip
