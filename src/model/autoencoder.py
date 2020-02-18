@@ -87,7 +87,6 @@ class Autoencoder(base.Model):
     def __init__(self, dropout=0.3):
         """Initialize the autoencoder."""
         super().__init__(NAME_AUTOENCODER)
-
         self.scaling_image = preprocessing.MinMaxScaling(
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
         )
@@ -129,6 +128,16 @@ class Autoencoder(base.Model):
             lambda image, _: self._preprocess(image),
             num_parallel_calls=tf.data.experimental.AUTOTUNE,
         )
+
+    def save(self, instance: str):
+        """Override the save method to save the encoder and decoder."""
+        self.encoder.save(instance)
+        self.decoder.save(instance)
+
+    def load(self, instance: str):
+        """Override the load method to load the encoder and decoder."""
+        self.encoder = self.encoder.load(instance)
+        self.decoder = self.decoder.load(instance)
 
     def _preprocess(self, image: tf.Tensor) -> tf.Tensor:
         scaled_image = self.scaling_image.normalize(image)
