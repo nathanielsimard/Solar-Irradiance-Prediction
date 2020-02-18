@@ -16,7 +16,7 @@ NAME_ENCODER = "Encoder"
 class Encoder(base.Model):
     """Create Image Encoder model."""
 
-    def __init__(self, dropout=0.3):
+    def __init__(self, dropout=0.5):
         """Initialize the architecture."""
         super().__init__(NAME_ENCODER)
         self.conv1 = Conv2D(
@@ -50,7 +50,7 @@ class Encoder(base.Model):
 class Decoder(tf.keras.models.Model):
     """Create Image Decoder model."""
 
-    def __init__(self, num_channels, dropout=0.3):
+    def __init__(self, num_channels, dropout=0.5):
         """Initialize a decoder with a fixed number of channels."""
         super().__init__(NAME_DECODER)
         self.conv1 = Conv2D(128, kernel_size=(5, 5), activation="relu", padding="same")

@@ -99,7 +99,8 @@ def get_tf_cache_file() -> str:
         [str] -- [Tensorflow main cache filename]
     """
     if not run_local:
-        return "/project/cq-training-1/project1/teams/team10/cached/cached"
+        ssd_dir = os.environ["SLURM_TMPDIR"]
+        return ssd_dir
     else:
         return "defaut_tf_cache"
 
