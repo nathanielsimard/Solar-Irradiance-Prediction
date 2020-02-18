@@ -19,10 +19,6 @@ class Encoder(base.Model):
     def __init__(self, dropout=0.3):
         """Initialize the architecture."""
         super().__init__(NAME_ENCODER)
-        self.scaling_image = preprocessing.MinMaxScaling(
-            preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
-        )
-
         self.conv1 = Conv2D(
             64, kernel_size=(5, 5), activation="relu", strides=2, padding="same"
         )
@@ -49,13 +45,6 @@ class Encoder(base.Model):
     def config(self, training=False) -> dataloader.DataloaderConfig:
         """Configuration."""
         raise Exception("Config should be passe to the model using the encoder.")
-
-    def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
-        """Applies the preprocessing to the image to return two times the same image."""
-        return dataset.map(
-            lambda data: self.scaling_image.normalize(data[0]),
-            num_parallel_calls=tf.data.experimental.AUTOTUNE,
-        )
 
 
 class Decoder(tf.keras.models.Model):
@@ -98,9 +87,17 @@ class Autoencoder(base.Model):
     def __init__(self, dropout=0.3):
         """Initialize the autoencoder."""
         super().__init__(NAME_AUTOENCODER)
+
+        self.scaling_image = preprocessing.MinMaxScaling(
+            preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
+        )
+
         self.default_config = default_config()
         self.default_config.num_images = 1
-        self.default_config.features = [dataloader.Feature.image]
+        self.default_config.features = [
+            dataloader.Feature.image,
+            dataloader.Feature.target_ghi,
+        ]
 
         num_channels = len(self.default_config.channels)
 
@@ -128,6 +125,10 @@ class Autoencoder(base.Model):
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Applies the preprocessing to the image to return two times the same image."""
         return dataset.map(
-            lambda data: (data[0], data[0]),
+            lambda image, _: self._preprocess(image),
             num_parallel_calls=tf.data.experimental.AUTOTUNE,
         )
+
+    def _preprocess(self, image: tf.Tensor) -> tf.Tensor:
+        scaled_image = self.scaling_image.normalize(image)
+        return (scaled_image, scaled_image)
