@@ -20,13 +20,13 @@ class Encoder(base.Model):
         """Initialize the architecture."""
         super().__init__(NAME_ENCODER)
         self.conv1 = Conv2D(
-            64, kernel_size=(5, 5), activation="relu", strides=2, padding="same"
+            64, kernel_size=(3, 3), activation="relu", strides=2, padding="same"
         )
         self.conv2 = Conv2D(
-            32, kernel_size=(3, 3), activation="relu", strides=2, padding="same"
+            64, kernel_size=(3, 3), activation="relu", strides=2, padding="same"
         )
         self.conv3 = Conv2D(
-            16, kernel_size=(3, 3), activation="relu", strides=2, padding="same"
+            32, kernel_size=(3, 3), activation="relu", strides=2, padding="same"
         )
         self.dropout = Dropout(dropout)
 
@@ -62,33 +62,29 @@ class Decoder(base.Model):
         """Initialize a decoder with a fixed number of channels."""
         super().__init__(NAME_DECODER)
         self.conv1 = Conv2D(32, kernel_size=(3, 3), activation="relu", padding="same")
-        self.up_sampling_1 = UpSampling2D((2, 2))
-
         self.conv2 = Conv2D(64, kernel_size=(3, 3), activation="relu", padding="same")
-        self.up_sampling_2 = UpSampling2D((2, 2))
+        self.conv3 = Conv2D(64, kernel_size=(3, 3), activation="relu", padding="same")
+        self.conv4 = Conv2D(num_channels, kernel_size=(3, 3), padding="same")
 
-        self.conv3 = Conv2D(64, kernel_size=(5, 5), activation="relu", padding="same")
-        self.up_sampling_3 = UpSampling2D((2, 2))
-
-        self.conv4= Conv2D(num_channels, kernel_size=(5, 5), padding="same")
+        self.up_sampling = UpSampling2D((2, 2))
         self.dropout = Dropout(dropout)
 
     def call(self, x, training: bool):
         """Decode a compressed image into the original image."""
         x = self.conv1(x)
-        x = self.up_sampling_1(x)
+        x = self.up_sampling(x)
 
         if training:
             x = self.dropout(x)
 
         x = self.conv2(x)
-        x = self.up_sampling_2(x)
+        x = self.up_sampling(x)
 
         if training:
             x = self.dropout(x)
 
         x = self.conv3(x)
-        x = self.up_sampling_3(x)
+        x = self.up_sampling(x)
 
         if training:
             x = self.dropout(x)
@@ -134,7 +130,6 @@ class Autoencoder(base.Model):
     def config(self, training=False) -> dataloader.DataloaderConfig:
         """Configuration."""
         config = self.default_config
-        config.ratio = 0.1
 
         if training:
             config.error_strategy = dataloader.ErrorStrategy.skip

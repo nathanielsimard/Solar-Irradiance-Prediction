@@ -4,7 +4,7 @@ import tensorflow as tf
 
 from src.data import dataloader
 
-MODEL_BASE_DIR = "~"
+MODEL_BASE_DIR = "models"
 
 
 class Model(tf.keras.Model, abc.ABC):
