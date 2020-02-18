@@ -23,7 +23,10 @@ class Encoder(base.Model):
             64, kernel_size=(5, 5), activation="relu", strides=2, padding="same"
         )
         self.conv2 = Conv2D(
-            128, kernel_size=(3, 3), activation="relu", strides=2, padding="same"
+            32, kernel_size=(3, 3), activation="relu", strides=2, padding="same"
+        )
+        self.conv3 = Conv2D(
+            16, kernel_size=(3, 3), activation="relu", strides=2, padding="same"
         )
         self.dropout = Dropout(dropout)
 
@@ -40,6 +43,11 @@ class Encoder(base.Model):
 
         x = self.conv2(x)
 
+        if training:
+            x = self.dropout(x)
+
+        x = self.conv3(x)
+
         return x
 
     def config(self, training=False) -> dataloader.DataloaderConfig:
@@ -53,19 +61,26 @@ class Decoder(base.Model):
     def __init__(self, num_channels, dropout=0.5):
         """Initialize a decoder with a fixed number of channels."""
         super().__init__(NAME_DECODER)
-        self.conv1 = Conv2D(128, kernel_size=(5, 5), activation="relu", padding="same")
+        self.conv1 = Conv2D(32, kernel_size=(3, 3), activation="relu", padding="same")
         self.up_sampling_1 = UpSampling2D((2, 2))
 
         self.conv2 = Conv2D(64, kernel_size=(3, 3), activation="relu", padding="same")
         self.up_sampling_2 = UpSampling2D((2, 2))
 
-        self.conv3 = Conv2D(num_channels, kernel_size=(3, 3), padding="same")
+        self.conv3 = Conv2D(64, kernel_size=(5, 5), activation="relu", padding="same")
+        self.up_sampling_3 = UpSampling2D((2, 2))
+
+        self.conv4= Conv2D(num_channels, kernel_size=(5, 5), padding="same")
         self.dropout = Dropout(dropout)
 
     def call(self, x, training: bool):
         """Decode a compressed image into the original image."""
         x = self.conv1(x)
         x = self.up_sampling_1(x)
+
+        if training:
+            x = self.dropout(x)
+
         x = self.conv2(x)
         x = self.up_sampling_2(x)
 
@@ -73,6 +88,12 @@ class Decoder(base.Model):
             x = self.dropout(x)
 
         x = self.conv3(x)
+        x = self.up_sampling_3(x)
+
+        if training:
+            x = self.dropout(x)
+
+        x = self.conv4(x)
 
         return x
 
