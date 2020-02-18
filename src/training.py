@@ -114,10 +114,12 @@ class SupervisedTraining(object):
         for epoch in range(epochs):
             logger.info("Supervised training...")
 
-            for i, (inputs, targets) in enumerate(train_set.batch(batch_size)):
+            for i, (inputs, clearsky, cloudiness, targets) in enumerate(
+                train_set.batch(batch_size)
+            ):
                 logger.info(f"Batch #{i+1}")
 
-                self._train_step(inputs, targets, training=True)
+                self._train_step(inputs, clearsky, cloudiness, targets, training=True)
 
             logger.info("Evaluating validation loss")
             self._evaluate("valid", epoch, valid_set, valid_batch_size)
@@ -167,7 +169,9 @@ class SupervisedTraining(object):
         self.history.record(name, metric.result())
 
     @tf.function
-    def _train_step(self, train_inputs, train_targets, training: bool):
+    def _train_step(
+        self, train_inputs, clearsky, cloudiness, train_targets, training: bool
+    ):
         with tf.GradientTape() as tape:
             outputs = self.model(train_inputs, training)
             loss = self.loss_fn(train_targets, outputs)
@@ -177,6 +181,8 @@ class SupervisedTraining(object):
         self.metrics["train"](loss)
 
     @tf.function
-    def _calculate_loss(self, valid_inputs, valid_targets, training: bool):
+    def _calculate_loss(
+        self, valid_inputs, clearsky, cloudiness, valid_targets, training: bool
+    ):
         outputs = self.model(valid_inputs, training)
         return self.loss_fn(valid_targets, outputs)
