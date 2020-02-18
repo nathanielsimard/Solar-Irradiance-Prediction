@@ -84,8 +84,10 @@ class CNN2D(base.Model):
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Applies the preprocessing to the inputs and the targets."""
         return dataset.map(
-            lambda image, target_ghi: (
+            lambda image, clearsky, cloudiness, target_ghi: (
                 self.scaling_image.normalize(image),
+                self._preprocess_target(clearsky),
+                self._preprocess_target(cloudiness),
                 self._preprocess_target(target_ghi),
             ),
             num_parallel_calls=tf.data.experimental.AUTOTUNE,
