@@ -50,6 +50,13 @@ class Encoder(base.Model):
         """Configuration."""
         raise Exception("Config should be passe to the model using the encoder.")
 
+    def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
+        """Applies the preprocessing to the image to return two times the same image."""
+        return dataset.map(
+            lambda data: self.scaling_image.normalize(data[0]),
+            num_parallel_calls=tf.data.experimental.AUTOTUNE,
+        )
+
 
 class Decoder(tf.keras.models.Model):
     """Create Image Decoder model."""
@@ -122,10 +129,6 @@ class Autoencoder(base.Model):
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Applies the preprocessing to the image to return two times the same image."""
         return dataset.map(
-            lambda data: self._preprocess(data[0]),
+            lambda data: (data[0], data[0]),
             num_parallel_calls=tf.data.experimental.AUTOTUNE,
         )
-
-    def _preprocess(self, image: tf.Tensor) -> tf.Tensor:
-        scaled_image = self.scaling_image.normalize(image)
-        return (scaled_image, scaled_image)
