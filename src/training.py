@@ -154,7 +154,10 @@ class SupervisedTraining(object):
         metric = self.metrics[name]
         writer = self.writer[name]
 
-        for inputs, targets in dataset.batch(batch_size):
+        for inputs, clearsky, cloudy, targets in dataset.batch(batch_size):
+            logger.info(
+                f"TESSSSTTTTTTT:::::: clearsky: {clearsky[1]}, cloudy: {cloudy[1]}, targets: {targets[1]} "
+            )
             loss = self._calculate_loss(inputs, targets, training=False)
             metric(loss)
 

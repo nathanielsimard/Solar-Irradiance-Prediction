@@ -35,7 +35,12 @@ def default_config():
         error_strategy=dataloader.ErrorStrategy.skip,
         crop_size=(64, 64),
         image_cache_dir=default_cache_dir(),
-        features=[dataloader.Feature.image, dataloader.Feature.target_ghi],
+        features=[
+            dataloader.Feature.image,
+            dataloader.Feature.target_csm,
+            dataloader.Feature.target_cloud,
+            dataloader.Feature.target_ghi,
+        ],
         channels=["ch1", "ch2", "ch3", "ch4", "ch6"],
     )
 
