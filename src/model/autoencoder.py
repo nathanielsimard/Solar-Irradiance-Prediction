@@ -1,0 +1,128 @@
+import tensorflow as tf
+from tensorflow.keras.layers import Conv2D, Dropout, UpSampling2D
+
+from src import logging
+from src.data import dataloader, preprocessing
+from src.data.train import default_config
+from src.model import base
+
+logger = logging.create_logger(__name__)
+
+NAME_AUTOENCODER = "Autoencoder"
+
+
+class Encoder(base.Model):
+    """Create Image Encoder model."""
+
+    def __init__(self, dropout=0.3):
+        """Initialize the architecture."""
+        self.scaling_image = preprocessing.MinMaxScaling(
+            preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
+        )
+
+        self.conv1 = Conv2D(
+            64, kernel_size=(5, 5), activation="relu", strides=2, padding="same"
+        )
+        self.conv2 = Conv2D(
+            128, kernel_size=(3, 3), activation="relu", strides=2, padding="same"
+        )
+        self.dropout = Dropout(dropout)
+
+    def call(self, x, training: bool):
+        """Performs the forward pass in the neural network.
+
+        Can use a different pass with the optional training boolean if
+        some operations need to be skipped at evaluation(e.g. Dropout)
+        """
+        x = self.conv1(x)
+
+        if training:
+            x = self.dropout(x)
+
+        x = self.conv2(x)
+
+        return x
+
+    def config(self, training=False) -> dataloader.DataloaderConfig:
+        """Configuration."""
+        raise Exception("Config should be passe to the model using the encoder.")
+
+
+class Decoder(tf.keras.models.Model):
+    def __init__(self, num_channels, dropout=0.3):
+        self.conv1 = Conv2D(128, kernel_size=(5, 5), activation="relu", padding="same")
+        self.up_sampling_1 = UpSampling2D((2, 2))
+
+        self.conv2 = Conv2D(64, kernel_size=(3, 3), activation="relu", padding="same")
+        self.up_sampling_2 = UpSampling2D((2, 2))
+
+        self.conv3 = Conv2D(num_channels, kernel_size=(3, 3), padding="same")
+        self.dropout = Dropout(dropout)
+
+    def call(self, x, training: bool):
+        """Performs the forward pass in the neural network.
+
+        Can use a different pass with the optional training boolean if
+        some operations need to be skipped at evaluation(e.g. Dropout)
+        """
+        x = self.conv1(x)
+        x = self.up_sampling_1(x)
+        x = self.conv2(x)
+        x = self.up_sampling_2(x)
+
+        if training:
+            x = self.dropout(x)
+
+        x = self.conv3(x)
+
+        return x
+
+    def config(self, training=False) -> dataloader.DataloaderConfig:
+        """Configuration."""
+        raise Exception("Config should be passe to the model using the decoder.")
+
+
+class Autoencoder(base.Model):
+    def __init__(self, dropout=0.3):
+        super().__init__(NAME_AUTOENCODER)
+        self.default_config = default_config()
+        self.default_config.num_images = 1
+        self.default_config.features = [dataloader.Feature.image]
+
+        num_channels = len(self.default_config.channels)
+
+        self.encoder = Encoder(dropout=dropout)
+        self.decoder = Decoder(num_channels, dropout=dropout)
+
+    def call(self, x, training: bool):
+        """Performs the forward pass in the neural network.
+
+        Can use a different pass with the optional training boolean if
+        some operations need to be skipped at evaluation(e.g. Dropout)
+        """
+        x = self.encoder(x, training=training)
+        x = self.decoder(x, training=training)
+
+        return x
+
+    def config(self, training=False) -> dataloader.DataloaderConfig:
+        """Configuration."""
+        config = self.default_config
+
+        if training:
+            config.error_strategy = dataloader.ErrorStrategy.skip
+        else:
+            config.error_strategy = dataloader.ErrorStrategy.ignore
+
+        return config
+
+    def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
+        """Applies the preprocessing to the image to return two times the same image."""
+        return dataset.map(
+            lambda data: self._preprocess(data[0]),
+            num_parallel_calls=tf.data.experimental.AUTOTUNE,
+        )
+
+    def _preprocess(self, image: tf.Tensor) -> tf.Tensor:
+        scaled_image = self.scaling_image.normalize(image)
+        return (scaled_image, scaled_image)
