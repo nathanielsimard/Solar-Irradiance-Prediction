@@ -47,7 +47,7 @@ class Encoder(base.Model):
         raise Exception("Config should be passe to the model using the encoder.")
 
 
-class Decoder(tf.keras.models.Model):
+class Decoder(base.Model):
     """Create Image Decoder model."""
 
     def __init__(self, num_channels, dropout=0.5):
