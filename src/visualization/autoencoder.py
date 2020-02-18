@@ -7,10 +7,33 @@ from src.data.train import load_data
 from src.model.autoencoder import Autoencoder
 
 
-def show_images(
+def plot_comparison(instance: str):
+    """Show original and generated images in a grid."""
+    autoencoder = Autoencoder()
+    autoencoder.load(instance)
+
+    config = autoencoder.config(training=False)
+
+    _, valid_dataset, _ = load_data(config=config)
+    image = _first_image(valid_dataset)
+    image_pred = _predict_image(autoencoder, image)
+
+    generateds = []
+    originals = []
+
+    for i, (original, generated) in enumerate(zip(image, image_pred)):
+        num_channels = original.shape[-1]
+        for n in range(num_channels):
+            originals.append(original[:, :, n])
+            generateds.append(generated[:, :, n])
+
+    _plt_images(originals, generateds, config.crop_size)
+    plt.savefig(f"assets/autoencoder.png")
+
+
+def _plt_images(
     originals: List[np.ndarray], generated: List[np.ndarray], output_size, scale=0.1
 ):
-    """Show images in a grid."""
     plt.cla()
     plt.clf()
 
@@ -37,29 +60,7 @@ def show_images(
         ax_gen.imshow(gen, cmap="gray")
 
 
-def show_image():
-    autoencoder = Autoencoder()
-    autoencoder.load(str(24))
-
-    config = autoencoder.config(training=False)
-
-    train_dataset, _, _ = load_data(config=config)
-    images = _first_image(train_dataset)
-    images_pred = _predict_images(autoencoder, images)
-
-    images_preds = []
-    images_originals = []
-    for i, (image, image_pred) in enumerate(zip(images, images_pred)):
-        num_channels = image.shape[-1]
-        for n in range(num_channels):
-            images_originals.append(image[:, :, n])
-            images_preds.append(image_pred[:, :, n])
-
-    show_images(images_originals, images_preds, config.crop_size)
-    plt.savefig(f"assets/autoencoder.png")
-
-
-def _predict_images(autoencoder, images):
+def _predict_image(autoencoder, images):
     images_scaled = autoencoder.scaling_image.normalize(images)
     images_scaled_pred = autoencoder((images_scaled), False)
     return autoencoder.scaling_image.original(images_scaled_pred)

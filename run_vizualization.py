@@ -124,4 +124,4 @@ def visualize():
 
 
 if __name__ == "__main__":
-    autoencoder.show_image()
+    autoencoder.plot_comparison()
