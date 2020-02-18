@@ -25,6 +25,8 @@ class Feature(Enum):
     image = "image"
     target_ghi = "target_ghi"
     metadata = "metadata"
+    target_csm = "target_clearsky"
+    target_cloud = "target_cloudiness"
 
 
 class ErrorStrategy(Enum):
@@ -140,6 +142,8 @@ class DataLoader(object):
             Feature.image: self._read_image,
             Feature.target_ghi: self._read_target,
             Feature.metadata: self._read_metadata,
+            Feature.target_csm: self._read_clearsky,
+            Feature.target_cloud: self._read_cloudiness,
         }
 
     def generator(self):
@@ -169,6 +173,26 @@ class DataLoader(object):
                     logger.error(f"Error while generating data, stopping : {e}")
                     raise e
                 logger.debug(f"Error while generating data, skipping : {e}")
+
+    def _read_clearsky(self, metadata: Metadata) -> tf.Tensor:
+        return tf.convert_to_tensor(
+            [
+                self._target_value(metadata.target_clearsky),
+                self._target_value(metadata.target_clearsky_1h),
+                self._target_value(metadata.target_clearsky_3h),
+                self._target_value(metadata.target_clearsky_6h),
+            ]
+        )
+
+    def _read_cloudiness(self, metadata: Metadata) -> tf.Tensor:
+        return tf.convert_to_tensor(
+            [
+                self._target_cloud(metadata.target_cloudiness),
+                self._target_cloud(metadata.target_cloudiness_1h),
+                self._target_cloud(metadata.target_cloudiness_3h),
+                self._target_cloud(metadata.target_cloudiness_6h),
+            ]
+        )
 
     def _read_target(self, metadata: Metadata) -> tf.Tensor:
         return tf.convert_to_tensor(
@@ -262,6 +286,15 @@ class DataLoader(object):
 
         if self.config.error_strategy == ErrorStrategy.ignore:
             return 0.0
+
+        raise MissingTargetException()
+
+    def _target_cloud(self, target):
+        if target is not None:
+            return target
+
+        if self.config.error_strategy == ErrorStrategy.ignore:
+            return "variable"
 
         raise MissingTargetException()
 
