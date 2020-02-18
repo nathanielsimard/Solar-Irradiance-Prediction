@@ -37,24 +37,37 @@ def show_image():
 
     train_dataset, _, _ = load_data(config=config)
     images = _first_image(train_dataset)
-    imgs = []
-    for i, image in enumerate(images):
-        plt.cla()
-        plt.clf()
-        plt.axis("off")
-        plt.tight_layout()
 
+    image_tt = autoencoder.scaling_image.normalize(images)
+    print(image_tt.shape)
+    images_pred = autoencoder((image_tt), False)
+    print(images_pred.shape)
+    images_pred = autoencoder.scaling_image.original(images_pred)
+    print(images_pred.shape)
+
+
+    for i, (image, image_pred) in enumerate(zip(images, images_pred)):
         num_channels = image.shape[-1]
         for n in range(num_channels):
+            plt.cla()
+            plt.clf()
+            plt.axis("off")
+            plt.tight_layout()
             image2d = image[:, :, n]
-            imgs.append(image2d)
             plt.imshow(image2d, cmap="gray")
             name = f"assets/{n}-autoencoder.png"
             plt.savefig(name)
-    show_images([imgs], config.crop_size)
 
+            plt.cla()
+            plt.clf()
+            plt.axis("off")
+            plt.tight_layout()
+            image2d_pred = image_pred[:, :, n]
+            plt.imshow(image2d_pred, cmap="gray")
+            name = f"assets/{n}-autoencoder-pred.png"
+            plt.savefig(name)
 
 def _first_image(dataset, index=3):
-    for i, (image, _) in enumerate(dataset.batch(1)):
+    for i, data in enumerate(dataset.batch(1)):
         if i == index:
-            return image
+            return data[0]
