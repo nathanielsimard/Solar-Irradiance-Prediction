@@ -52,7 +52,10 @@ class Encoder(base.Model):
 
 
 class Decoder(tf.keras.models.Model):
+    """Create Image Decoder model."""
+
     def __init__(self, num_channels, dropout=0.3):
+        """Initialize a decoder with a fixed number of channels."""
         super().__init__(NAME_DECODER)
         self.conv1 = Conv2D(128, kernel_size=(5, 5), activation="relu", padding="same")
         self.up_sampling_1 = UpSampling2D((2, 2))
@@ -64,11 +67,7 @@ class Decoder(tf.keras.models.Model):
         self.dropout = Dropout(dropout)
 
     def call(self, x, training: bool):
-        """Performs the forward pass in the neural network.
-
-        Can use a different pass with the optional training boolean if
-        some operations need to be skipped at evaluation(e.g. Dropout)
-        """
+        """Decode a compressed image into the original image."""
         x = self.conv1(x)
         x = self.up_sampling_1(x)
         x = self.conv2(x)
@@ -87,7 +86,10 @@ class Decoder(tf.keras.models.Model):
 
 
 class Autoencoder(base.Model):
+    """Create Image Auto-Encoder model."""
+
     def __init__(self, dropout=0.3):
+        """Initialize the autoencoder."""
         super().__init__(NAME_AUTOENCODER)
         self.default_config = default_config()
         self.default_config.num_images = 1
@@ -99,11 +101,7 @@ class Autoencoder(base.Model):
         self.decoder = Decoder(num_channels, dropout=dropout)
 
     def call(self, x, training: bool):
-        """Performs the forward pass in the neural network.
-
-        Can use a different pass with the optional training boolean if
-        some operations need to be skipped at evaluation(e.g. Dropout)
-        """
+        """Encode than decode the image."""
         x = self.encoder(x, training=training)
         x = self.decoder(x, training=training)
 
