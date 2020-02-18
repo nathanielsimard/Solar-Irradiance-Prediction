@@ -161,6 +161,7 @@ class MetadataLoader:
         catalog = self._filter_null(catalog, image_column)
         catalog = self._filter_null(catalog, f"{station.name}_GHI")
         catalog = self._filter_null(catalog, f"{station.name}_CLEARSKY_GHI")
+        catalog = self._filter_null(catalog, f"{station.name}_CLOUDINESS")
         catalog = self._filter_night(catalog, station, night_time)
 
         target_timestamps = self._target_timestamps(catalog, target_datetimes)
