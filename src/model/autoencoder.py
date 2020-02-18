@@ -9,6 +9,8 @@ from src.model import base
 logger = logging.create_logger(__name__)
 
 NAME_AUTOENCODER = "Autoencoder"
+NAME_DECODER = "Decoder"
+NAME_ENCODER = "Encoder"
 
 
 class Encoder(base.Model):
@@ -16,6 +18,7 @@ class Encoder(base.Model):
 
     def __init__(self, dropout=0.3):
         """Initialize the architecture."""
+        super().__init__(NAME_ENCODER)
         self.scaling_image = preprocessing.MinMaxScaling(
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
         )
@@ -50,6 +53,7 @@ class Encoder(base.Model):
 
 class Decoder(tf.keras.models.Model):
     def __init__(self, num_channels, dropout=0.3):
+        super().__init__(NAME_DECODER)
         self.conv1 = Conv2D(128, kernel_size=(5, 5), activation="relu", padding="same")
         self.up_sampling_1 = UpSampling2D((2, 2))
 
