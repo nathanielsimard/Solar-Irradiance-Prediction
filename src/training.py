@@ -97,11 +97,14 @@ class SupervisedTraining(object):
         """
         logger.info(f"Starting supervised training with model {self.model.title}")
         config = self.model.config(training=True)
+
         train_set, valid_set, test_set = load_data(
             enable_tf_caching=enable_tf_caching,
             config=config,
             skip_non_cached=skip_non_cached,
         )
+
+        logger.info(f"PREPROCESS::: {train_set} ")
 
         logger.info("Apply Preprocessing")
         train_set = self.model.preprocess(train_set)
