@@ -110,6 +110,7 @@ class Autoencoder(base.Model):
     def config(self, training=False) -> dataloader.DataloaderConfig:
         """Configuration."""
         config = self.default_config
+        config.ratio = 0.1
 
         if training:
             config.error_strategy = dataloader.ErrorStrategy.skip
