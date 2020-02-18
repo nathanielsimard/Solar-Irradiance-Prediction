@@ -135,8 +135,8 @@ class Autoencoder(base.Model):
 
     def load(self, instance: str):
         """Override the load method to load the encoder and decoder."""
-        self.encoder = self.encoder.load(instance)
-        self.decoder = self.decoder.load(instance)
+        self.encoder.load(instance)
+        self.decoder.load(instance)
 
     def _preprocess(self, image: tf.Tensor) -> tf.Tensor:
         scaled_image = self.scaling_image.normalize(image)
