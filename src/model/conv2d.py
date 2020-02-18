@@ -65,14 +65,6 @@ class CNN2D(base.Model):
         config = default_config()
         config.num_images = 1
         config.ratio = 0.01
-        config.features = (
-            [
-                dataloader.Feature.image,
-                dataloader.Feature.target_csm,
-                dataloader.Feature.target_cloud,
-                dataloader.Feature.target_ghi,
-            ],
-        )
 
         if training:
             config.error_strategy = dataloader.ErrorStrategy.skip
@@ -83,15 +75,17 @@ class CNN2D(base.Model):
 
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Applies the preprocessing to the inputs and the targets."""
-        return dataset.map(
-            lambda image, clearsky, cloudiness, target_ghi: (
+
+        def preprocess(data):
+            image, clearsky, cloudiness, target_ghi = data
+            return (
                 self.scaling_image.normalize(image),
                 self._preprocess_target(clearsky),
                 self._preprocess_target(cloudiness),
                 self._preprocess_target(target_ghi),
-            ),
-            num_parallel_calls=tf.data.experimental.AUTOTUNE,
-        )
+            )
+
+        return dataset.map(preprocess)
 
     def _preprocess_target(self, target_ghi: tf.Tensor) -> tf.Tensor:
         return target_ghi[0:1]
