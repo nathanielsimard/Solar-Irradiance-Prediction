@@ -71,6 +71,10 @@ class Metadata:
     target_cloudiness_1h: Optional[str] = None
     target_cloudiness_3h: Optional[str] = None
     target_cloudiness_6h: Optional[str] = None
+    target_clearsky: Optional[float] = None
+    target_clearsky_1h: Optional[float] = None
+    target_clearsky_3h: Optional[float] = None
+    target_clearsky_6h: Optional[float] = None
 
     def __str__(self):
         """Converts metadata to string for logging. Not all info is output."""
@@ -156,6 +160,8 @@ class MetadataLoader:
 
         catalog = self._filter_null(catalog, image_column)
         catalog = self._filter_null(catalog, f"{station.name}_GHI")
+        catalog = self._filter_null(catalog, f"{station.name}_CLEARSKY_GHI")
+        catalog = self._filter_null(catalog, f"{station.name}_CLOUDINESS")
         catalog = self._filter_night(catalog, station, night_time)
 
         target_timestamps = self._target_timestamps(catalog, target_datetimes)
@@ -273,6 +279,17 @@ class MetadataLoader:
             rows, station, timestamp, 6, variable="CLOUDINESS"
         )
 
+        target_clearsky = row[f"{station.name}_CLEARSKY_GHI"]
+        target_clearsky_1h = self._find_future_value(
+            rows, station, timestamp, 1, variable="CLEARSKY_GHI"
+        )
+        target_clearsky_3h = self._find_future_value(
+            rows, station, timestamp, 3, variable="CLEARSKY_GHI"
+        )
+        target_clearsky_6h = self._find_future_value(
+            rows, station, timestamp, 6, variable="CLEARSKY_GHI"
+        )
+
         datetime = timestamp.to_pydatetime()
 
         return Metadata(
@@ -289,6 +306,10 @@ class MetadataLoader:
             target_cloudiness_1h=target_cloudiness_1h,
             target_cloudiness_3h=target_cloudiness_3h,
             target_cloudiness_6h=target_cloudiness_6h,
+            target_clearsky=target_clearsky,
+            target_clearsky_1h=target_clearsky_1h,
+            target_clearsky_3h=target_clearsky_3h,
+            target_clearsky_6h=target_clearsky_6h,
         )
 
     def _find_additional_image_paths(
