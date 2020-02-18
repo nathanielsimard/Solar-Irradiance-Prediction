@@ -187,12 +187,34 @@ class DataLoader(object):
     def _read_cloudiness(self, metadata: Metadata) -> tf.Tensor:
         return tf.convert_to_tensor(
             [
-                self._target_cloud(metadata.target_cloudiness),
-                self._target_cloud(metadata.target_cloudiness_1h),
-                self._target_cloud(metadata.target_cloudiness_3h),
-                self._target_cloud(metadata.target_cloudiness_6h),
+                self._convert_cloud_to_oneHot(
+                    self._target_cloud(metadata.target_cloudiness)
+                ),
+                self._convert_cloud_to_oneHot(
+                    self._target_cloud(metadata.target_cloudiness_1h)
+                ),
+                self._convert_cloud_to_oneHot(
+                    self._target_cloud(metadata.target_cloudiness_3h)
+                ),
+                self._convert_cloud_to_oneHot(
+                    self._target_cloud(metadata.target_cloudiness_6h)
+                ),
             ]
         )
+
+    def _convert_cloud_to_oneHot(self, cloud):
+        one_hot = {
+            "night": np.array([1, 0, 0, 0, 0]),
+            "cloudy": np.array([0, 1, 0, 0, 0]),
+            "slightly cloudy": np.array([0, 0, 1, 0, 0]),
+            "clear": np.array([0, 0, 0, 1, 0]),
+            "variable": np.array([0, 0, 0, 0, 1]),
+        }
+
+        try:
+            return one_hot[cloud]
+        except KeyError:
+            return [0, 0, 0, 0, 0]
 
     def _read_target(self, metadata: Metadata) -> tf.Tensor:
         return tf.convert_to_tensor(
