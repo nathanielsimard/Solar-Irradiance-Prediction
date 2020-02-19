@@ -163,6 +163,7 @@ class Clearsky:
             clearsky[CSMDOffset.GHI_T_6h] = future_clearsky_ghi[6]  # T=T+6
             if self.enable_caching:
                 self.cache[cache_key] = clearsky
+            return clearsky
         else:
             return self.cache[cache_key]
 

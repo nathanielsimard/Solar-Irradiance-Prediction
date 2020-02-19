@@ -4,6 +4,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 import tensorflow as tf
+from datetime import datetime
 
 from typing import Dict
 from src.data.metadata import Coordinates, Station
@@ -27,8 +28,10 @@ class Feature(Enum):
 
     image = "image"
     target_ghi = "target_ghi"
-    metadata = "metadata",
+    metadata = "metadata"
     target_cloudiness = "target_cloudiness"
+    datetime = "datetime"
+    location = "location"
 
 
 class ErrorStrategy(Enum):
@@ -180,7 +183,9 @@ class DataLoader(object):
             Feature.image: self._read_image,
             Feature.target_ghi: self._read_target,
             Feature.metadata: self._read_metadata,
-            Feature.target_cloudiness: self._read_target_cloudiness
+            Feature.target_cloudiness: self._read_target_cloudiness,
+            Feature.location : self._read_location,
+            Feature.datetime : self._read_datetime
         }
 
     def generator(self):
@@ -241,6 +246,16 @@ class DataLoader(object):
             self._target_value(one_hot[label]),
             dtype=tf.float32,
         )
+
+    def _read_datetime(self, metadata: Metadata):
+        return tf.convert_to_tensor(int(datetime.timestamp(metadata.datetime)), dtype=tf.int32)
+
+    def _read_location(self, metadata: Metadata):
+        location = np.zeros(3)
+        location[0] = metadata.coordinates.latitude
+        location[1] = metadata.coordinates.longitude
+        location[2] = metadata.coordinates.altitude
+        return tf.convert_to_tensor(location)
 
     def _read_image(self, metadata: Metadata) -> tf.Tensor:
         try:

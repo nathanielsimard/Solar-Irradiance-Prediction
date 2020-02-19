@@ -37,6 +37,7 @@ class ClearSkyDataTest(unittest.TestCase):
         self.assertGreater(value, target - epsilon)
         self.assertLess(value, target + epsilon)
 
+    @unittest.skip("Too slow for everyday testing")
     def test_precompute(self):
         meta_config = config.read_configuration_file(
             "tests/data/samples/train_config_raphael.json"

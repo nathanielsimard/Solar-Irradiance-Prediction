@@ -2,6 +2,7 @@ import pickle
 from datetime import datetime
 
 import tensorflow as tf
+import numpy as np
 
 from src import logging
 from src.data.train import load_data
@@ -100,7 +101,8 @@ class SupervisedTraining(object):
         enable_tf_caching=False,
         skip_non_cached=False,
         enable_checkpoint=True,
-        dry_run=False
+        dry_run=False,
+
     ):
         """Performs the training of the model in minibatch.
 
@@ -128,11 +130,16 @@ class SupervisedTraining(object):
         # Fail early!
         self.model.save(str(0))
 
+        #epoch_output = np.array()
+        epoch_results = None
+
         logger.info("Fitting model.")
         for epoch in range(epochs):
             logger.info("Supervised training...")
+            if dry_run:
+                self._evaluate("valid", epoch, valid_set, valid_batch_size)
 
-            for i, (targets, meta, image, target_cloudiness) in enumerate(train_set.batch(batch_size)):
+            for i, (targets, meta, image, target_cloudiness, timestamp, location) in enumerate(train_set.batch(batch_size)):
                 logger.info(f"Batch #{i+1}")
                 clearsky = meta[:, 0:4]  # TODO: Do something better.
                 # clearsky = clearsky / 1000  # Cheap normalization
@@ -140,10 +147,19 @@ class SupervisedTraining(object):
                 #adjusted_target = abs(clearsky - targets) / clearsky
                 #adjusted_target[adjusted_target == float("Inf")] = 0
 
-                self._train_step(adjusted_target, targets, clearsky, image, target_cloudiness, training=True)
+                train_step_results = self._train_step(adjusted_target, targets, clearsky, image,
+                                                      target_cloudiness, timestamp, location, training=True)
+                if epoch_results is None:
+                    epoch_results = train_step_results
+                else:
+                    # Highly inefficient, but should not slow down training.
+                    epoch_results = np.append(epoch_results, train_step_results, axis=0)
                 if (i % 10 == 0):
                     self._update_progress(i)
 
+            np.save(f"epoch_results{epoch}.npy", epoch_results)
+
+            epoch_results = None  # Reset at the end of one epoch
             logger.info("Evaluating validation loss")
             self._evaluate("valid", epoch, valid_set, valid_batch_size)
 
@@ -181,9 +197,10 @@ class SupervisedTraining(object):
     def _evaluate(self, name, epoch, dataset, batch_size):
         metric = self.metrics[name]
         writer = self.writer[name]
-        for targets, meta, image, target_cloudiness in dataset.batch(batch_size):
+        for targets, meta, image, target_cloudiness, timestamp, location in dataset.batch(batch_size):
             clearsky = meta[:, 0:4]  # TODO: Do something better.
-            loss = self._calculate_loss(image, clearsky, targets, training=False)
+            loss = self._calculate_loss(image, clearsky, targets, target_cloudiness,
+                                        timestamp, location, training=False)
             metric(loss)
 
         with writer.as_default():
@@ -192,7 +209,8 @@ class SupervisedTraining(object):
         self.history.record(name, metric.result())
 
     # @tf.function
-    def _train_step(self, adjusted_targets, targets, clearsky, image, target_cloudiness, training: bool):
+    def _train_step(self, adjusted_targets, targets, clearsky, image, target_cloudiness,
+                    timestamp, location, training: bool):
 
         # if cloudiness == 'night':
         # return tmp_clearsky
@@ -204,6 +222,9 @@ class SupervisedTraining(object):
         #    return tmp_clearsky
         # if cloudiness == 'variable':
         #    return tmp_clearsky - (tmp_clearsky*0.05)
+
+        #pd.Series(timestamp.numpy()).apply(pd.Timestamp, unit='s')
+        results = np.zeros(1)
 
         with tf.GradientTape() as tape:
             outputs = self.model(image, clearsky, training)
@@ -221,7 +242,9 @@ class SupervisedTraining(object):
 
             outputs_onehot = tf.one_hot(tf.argmax(outputs, 1), depth=5)
             penalty = outputs_onehot[:, 3] * 1 + outputs_onehot[:, 4] * \
-                0.95 + outputs_onehot[:, 2] * 0.75 + outputs_onehot[:, 1] * 0.5
+                0.95 + outputs_onehot[:, 2] * 0.75 + outputs_onehot[:, 1] * 0.5 + outputs_onehot[:, 0] * 0
+            # no_penalty = outputs_onehot[:, 3] * 1 + outputs_onehot[:, 4] * \
+            #    1 + outputs_onehot[:, 2] * 1 + outputs_onehot[:, 1] * 1 + outputs_onehot[:, 0] * 1
             clearsky_t0 = clearsky[:, 0] * penalty
             clearsky_t1 = clearsky[:, 1] * penalty
             clearsky_t3 = clearsky[:, 2] * penalty
@@ -237,13 +260,19 @@ class SupervisedTraining(object):
             #    labels=tf.argmax(target_cloudiness, 1), logits=outputs)
 
             # loss = self.loss_fn(adjusted_targets, outputs)  # By convention, the target will always come first
+            results = tf.concat([tf.expand_dims(timestamp, axis=1), location, clearsky, outputs,
+                                 outputs_onehot, target_cloudiness, tf.expand_dims(penalty, axis=1), targets, output_ghi], axis=1).numpy()
+            np.save("current_results.npy", results)
+
         gradients = tape.gradient(loss, self.model.trainable_variables)
         self.optim.apply_gradients(zip(gradients, self.model.trainable_variables))
         self.metrics["train"](loss)
+        return results
 
     @tf.function
-    def _calculate_loss(self, image, clearsky, valid_targets, target_cloudiness, training: bool):
-        outputs = self.model(image, meta, training)
+    def _calculate_loss(self, image, clearsky, valid_targets, target_cloudiness,
+                        timestamp, location, training: bool):
+        outputs = self.model(image, clearsky, training)
         outputs_onehot = tf.one_hot(tf.argmax(outputs, 1), depth=5)
         penalty = outputs_onehot[:, 3] * 1 + outputs_onehot[:, 4] * \
             0.95 + outputs_onehot[:, 2] * 0.75 + outputs_onehot[:, 1] * 0.5

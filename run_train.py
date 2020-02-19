@@ -48,6 +48,8 @@ def main():
         model = conv2d_clearsky.CNN2DClearsky()
     if args.model == "CNN2DClearskyCloudiness":
         model = conv2d_clearsky.CNN2DClearskyCloudiness()
+    if args.model == "Resnet50":
+        model = conv2d_clearsky.ResNet50()
 
     optimizer = optimizers.Adam(args.lr)
     loss_obj = losses.MeanSquaredError()
