@@ -44,7 +44,7 @@ class CNNLSTM(base.Model):
         self.drop4 = Dropout(0.3)
 
         # self.lstm, self.enc, self.dec = self._lstm_seq_to_seq(n_units=8)
-        self.lstm = LSTM(n_units=8, return_sequences=True, return_state=True)
+        self.lstm = LSTM(units=8, return_sequences=True, return_state=True)
 
         self.d2 = Dense(512, activation="relu")
         self.d3 = Dense(128, activation="relu")
