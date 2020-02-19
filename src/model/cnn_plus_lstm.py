@@ -40,11 +40,11 @@ class CNNLSTM(base.Model):
         self.flat = TimeDistributed(Flatten())
         self.d1 = TimeDistributed(Dense(512))
         self.drop4 = Dropout(0.3)
-        self.lstm = LSTM(units=16, return_sequences=False)
+        self.lstm = LSTM(units=8, return_sequences=True)
 
-        self.d2 = Dense(512, activation="relu")
-        self.d3 = Dense(256, activation="relu")
-        self.d4 = Dense(4)
+        self.d2 = TimeDistributed(Dense(512, activation="relu"))
+        self.d3 = TimeDistributed(Dense(128, activation="relu"))
+        self.d4 = TimeDistributed(Dense(1))
 
     def call(self, x, training: bool):
         """Performs the forward pass in the neural network.
