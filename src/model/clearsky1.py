@@ -4,7 +4,7 @@ from tensorflow.keras.layers import Dense, Flatten
 from src import logging
 from src.data import dataloader, preprocessing
 from src.data.train import default_config
-from src.model import base
+from src.model import autoencoder, base
 
 logger = logging.create_logger(__name__)
 
@@ -12,9 +12,13 @@ NAME = "Clearsky1"
 
 
 class Clearsky(base.Model):
-    """Create Conv2D model."""
+    """Create Clearsky model.
 
-    def __init__(self, encoder):
+    It only predits the current ghi value based on the current image
+    and the current clearsky predictions using the image encoder.
+    """
+
+    def __init__(self, encoder: autoencoder.Encoder):
         """Initialize the architecture."""
         super().__init__(NAME)
         self.scaling_image = preprocessing.MinMaxScaling(
@@ -44,7 +48,6 @@ class Clearsky(base.Model):
         """Configuration."""
         config = default_config()
         config.num_images = 1
-        config.ratio = 1.0
         config.features = [
             dataloader.Feature.image,
             dataloader.Feature.target_csm,
@@ -68,9 +71,11 @@ class Clearsky(base.Model):
         """
 
         def encoder(image):
-            image = tf.expand_dims(image, 0) # Create Fake Batch Size
+            # Create Fake Batch Size
+            image = tf.expand_dims(image, 0)
             image_encoded = self.encoder((image), False)
-            return self.flatten(image_encoded)[0,:] # Remove Fake Batch Size
+            # Remove Fake Batch Size
+            return self.flatten(image_encoded)[0, :]
 
         def preprocess(image, clearsky, target_ghi):
             image = self.scaling_image.normalize(image)
@@ -78,7 +83,7 @@ class Clearsky(base.Model):
             clearsky = self._preprocess_target(clearsky)
             target_ghi = self._preprocess_target(target_ghi)
 
-            features  = tf.concat([image_features, clearsky], 0) 
+            features = tf.concat([image_features, clearsky], 0)
             return (features, target_ghi)
 
         return dataset.map(preprocess).cache()
