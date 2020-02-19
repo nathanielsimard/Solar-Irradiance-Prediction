@@ -1,5 +1,6 @@
-from src.training import History
 import matplotlib.pyplot as plt
+
+from src.training import History
 
 
 def plot_learning_curve(file_name):
