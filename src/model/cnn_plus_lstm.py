@@ -44,11 +44,12 @@ class CNNLSTM(base.Model):
         self.drop4 = Dropout(0.3)
 
         # self.lstm, self.enc, self.dec = self._lstm_seq_to_seq(n_units=8)
-        self.lstm = LSTM(n_units=8, return_sequences=True)
+        self.lstm = LSTM(units=8, return_sequences=True)
 
-        self.d2 = Dense(512, activation="relu")
-        self.d3 = Dense(128, activation="relu")
-        self.d4 = Dense(self.n_outputs)
+        self.flat2 = Flatten()
+        self.d2 = Dense(32, activation="relu")
+        self.d3 = Dense(16, activation="relu")
+        self.d4 = Dense(self.num_outputs)
 
     def call(self, x, training: bool):
         """Performs the forward pass in the neural network.
@@ -71,6 +72,7 @@ class CNNLSTM(base.Model):
             x = self.drop4(x)
 
         x = self.lstm(x)
+        x = self.flat2(x)
         x = self.d2(x)
         x = self.d3(x)
         x = self.d4(x)
