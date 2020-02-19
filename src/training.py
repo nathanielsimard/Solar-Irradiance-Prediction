@@ -124,7 +124,7 @@ class SupervisedTraining(object):
 
             if enable_checkpoint and epoch % CHECKPOINT_TIMESTAMP == 0:
                 logger.info("Checkpointing...")
-                self.model.save(str(epoch)) 
+                self.model.save(str(epoch))
 
             self._update_progress(epoch)
 

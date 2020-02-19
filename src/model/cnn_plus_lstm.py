@@ -40,7 +40,7 @@ class CNNLSTM(base.Model):
         self.flat = TimeDistributed(Flatten())
         self.d1 = TimeDistributed(Dense(512))
         self.drop4 = Dropout(0.3)
-        self.lstm = LSTM(units=8, return_sequences=True)
+        self.lstm = LSTM(units=4, return_sequences=True)
 
         self.d2 = TimeDistributed(Dense(512, activation="relu"))
         self.d3 = TimeDistributed(Dense(128, activation="relu"))
