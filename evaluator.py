@@ -12,7 +12,7 @@ import tqdm
 
 from src.data import dataloader
 from src.data.metadata import Coordinates, MetadataLoader, Station
-from src.model import conv2d
+from src.model import base, conv3d
 
 
 def prepare_dataloader(
@@ -69,7 +69,7 @@ def prepare_dataloader(
 def prepare_model(
     target_time_offsets: typing.List[datetime.timedelta],
     config: typing.Dict[typing.AnyStr, typing.Any],
-) -> tf.keras.Model:
+) -> base.Model:
     """Model for the data.
 
     See https://github.com/mila-iqia/ift6759/tree/master/projects/project1/evaluation.md for more information.
@@ -80,11 +80,12 @@ def prepare_model(
             such a JSON file is completely optional, and this argument can be ignored if not needed.
 
     Returns:
-        A ``tf.keras.Model`` object that can be used to generate new GHI predictions given imagery tensors.
+        A ``base.Model`` object that can be used to generate new GHI predictions given imagery tensors.
 
     """
-    model = conv2d.CNN2D()
-    model.load("Conv2D-100")  # Just an example how to load weights.
+    model = conv3d.CNN3D()
+    # Load the weights
+    model.load("Conv3D-100")
     return model
 
 
@@ -134,10 +135,12 @@ def generate_all_predictions(
         )
         coordinates = target_stations[station_name]
 
+        # Create the model
         model = prepare_model(target_time_offsets, user_config)
+        # Get the configuration from the model to load the proper dataset.
         model_config = model.config(training=False)
 
-        data_loader = prepare_dataloader(
+        dataset = prepare_dataloader(
             dataframe,
             target_datetimes,
             station_name,
@@ -145,8 +148,11 @@ def generate_all_predictions(
             target_time_offsets,
             model_config,
         )
+        # Apply the preprocessing needed for the model.
+        dataset = model.preprocess(dataset)
+
         station_preds = generate_predictions(
-            data_loader, model, pred_count=len(target_datetimes)
+            dataset, model, pred_count=len(target_datetimes)
         )
         assert len(station_preds) == len(
             target_datetimes
