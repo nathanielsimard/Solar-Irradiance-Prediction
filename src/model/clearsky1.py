@@ -24,10 +24,9 @@ class Clearsky(base.Model):
 
         self.flatten = Flatten()
 
-        self.d1 = Dense(1048, activation="relu")
-        self.d2 = Dense(512, activation="relu")
-        self.d3 = Dense(256, activation="relu")
-        self.d4 = Dense(1)
+        self.d1 = Dense(512, activation="relu")
+        self.d2 = Dense(128, activation="relu")
+        self.d3 = Dense(1)
 
     def call(self, x, training: bool):
         """Performs the forward pass in the neural network.
@@ -38,7 +37,6 @@ class Clearsky(base.Model):
         x = self.d1(x)
         x = self.d2(x)
         x = self.d3(x)
-        x = self.d4(x)
 
         return x
 
@@ -46,6 +44,7 @@ class Clearsky(base.Model):
         """Configuration."""
         config = default_config()
         config.num_images = 1
+        config.ratio = 1.0
         config.features = [
             dataloader.Feature.image,
             dataloader.Feature.target_csm,
@@ -68,19 +67,21 @@ class Clearsky(base.Model):
         Data is now (features, target).
         """
 
+        def encoder(image):
+            image = tf.expand_dims(image, 0) # Create Fake Batch Size
+            image_encoded = self.encoder((image), False)
+            return self.flatten(image_encoded)[0,:] # Remove Fake Batch Size
+
         def preprocess(image, clearsky, target_ghi):
             image = self.scaling_image.normalize(image)
-            image_encoded = self.encoder(image)
-            image_features = self.flatten(image_encoded)
-
+            image_features = tf.py_function(func=encoder, inp=[image], Tout=tf.float32)
             clearsky = self._preprocess_target(clearsky)
             target_ghi = self._preprocess_target(target_ghi)
 
-            return (tf.concat([image_features, clearsky]), target_ghi)
+            features  = tf.concat([image_features, clearsky], 0) 
+            return (features, target_ghi)
 
-        return dataset.map(
-            preprocess, num_parallel_calls=tf.data.experimental.AUTOTUNE,
-        )
+        return dataset.map(preprocess).cache()
 
     def _preprocess_target(self, target_ghi: tf.Tensor) -> tf.Tensor:
         return target_ghi[0:1]
