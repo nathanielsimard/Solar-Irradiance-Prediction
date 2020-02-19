@@ -159,17 +159,17 @@ class SupervisedTraining(object):
         metric = self.metrics[name]
         writer = self.writer[name]
 
-        def preprocess(image, clearsky, target_ghi):
+        def preprocess(image, clearsky):
             ratio = outputs / clearsky[:, 0]
             clearsky_future = clearsky
             clearsky_future[:, 1:] = clearsky_future[:, 1:] * ratio
 
-            return (clearsky_future, target_ghi)
+            return clearsky_future
 
         for inputs, targets in dataset.batch(batch_size):
             loss, outputs = self._calculate_loss(inputs, targets, training=False)
 
-            test = dataset.map(preprocess)
+            test = input.map(preprocess)
             logger.info(f"TTTEEEEEEEEEEEEESSSSSSSSSSSSSSSSTTTTTTTT:::::::::::: {test}")
             metric(loss)
 
