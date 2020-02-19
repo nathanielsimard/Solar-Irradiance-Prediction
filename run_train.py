@@ -3,7 +3,11 @@ import argparse
 from tensorflow.keras import losses, optimizers
 
 from src import dry_run, env
+<<<<<<< Updated upstream
 from src.model import autoencoder
+=======
+from src.model import conv3d
+>>>>>>> Stashed changes
 from src.training import SupervisedTraining
 
 
@@ -37,7 +41,7 @@ def main():
         dry_run.run(args.enable_tf_caching, args.skip_non_cached)
         return
 
-    model = autoencoder.Autoencoder()
+    model = conv3d.CNN3D()
     optimizer = optimizers.Adam(0.001)
     loss_obj = losses.MeanSquaredError()
 
