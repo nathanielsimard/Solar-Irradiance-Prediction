@@ -80,4 +80,4 @@ class CNN3D(base.Model):
         """Applies the preprocessing to the inputs and the targets."""
         return dataset.map(
             lambda image, target_ghi: (self.scaling_image.normalize(image), target_ghi,)
-        ).cache("cache")
+        )

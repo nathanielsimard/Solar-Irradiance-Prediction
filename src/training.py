@@ -113,7 +113,7 @@ class SupervisedTraining(object):
         logger.info("Apply Preprocessing")
         train_set = self.model.preprocess(train_set)
         valid_set = self.model.preprocess(valid_set)
-        test_set = self.model.preprocess(valid_set)
+        test_set = self.model.preprocess(test_set)
 
         logger.info("Creating loss logs")
 
