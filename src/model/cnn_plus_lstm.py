@@ -8,7 +8,8 @@ from tensorflow.keras.layers import (
     Conv2D,
     Dropout,
 )
-from tensorflow.keras.models import Sequential
+from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras import Input
 
 from src import logging
 from src.data import dataloader, preprocessing
@@ -23,13 +24,14 @@ NAME = "CNN_LSTM"
 class CNNLSTM(base.Model):
     """Create ConvLSTM model."""
 
-    def __init__(self, num_images=8):
+    def __init__(self, num_images=8, num_outputs=4):
         """Initialize the architecture."""
         super().__init__(NAME)
         self.scaling_image = preprocessing.MinMaxScaling(
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
         )
         self.num_images = num_images
+        self.num_outputs = num_outputs
 
         self.conv1 = self._convolution_step((3, 3), 64, first=True)
         self.drop1 = Dropout(0.2)
@@ -40,11 +42,12 @@ class CNNLSTM(base.Model):
         self.flat = TimeDistributed(Flatten())
         self.d1 = TimeDistributed(Dense(512))
         self.drop4 = Dropout(0.3)
-        self.lstm = LSTM(units=4, return_sequences=True)
 
-        self.d2 = TimeDistributed(Dense(512, activation="relu"))
-        self.d3 = TimeDistributed(Dense(128, activation="relu"))
-        self.d4 = TimeDistributed(Dense(1))
+        self.lstm, self.enc, self.dec = self._lstm_seq_to_seq(n_units=8)
+
+        self.d2 = Dense(512, activation="relu")
+        self.d3 = Dense(128, activation="relu")
+        self.d4 = Dense(self.n_outputs)
 
     def call(self, x, training: bool):
         """Performs the forward pass in the neural network.
@@ -65,12 +68,52 @@ class CNNLSTM(base.Model):
         x = self.d1(x)
         if training:
             x = self.drop4(x)
-        x = self.lstm(x)
+
+        output = []
+        target_init = 0
+        for time_stamp in range(self.num_outputs):
+
         x = self.d2(x)
         x = self.d3(x)
         x = self.d4(x)
 
         return x
+
+    def _lstm_seq_to_seq(self, n_units):
+        """Implementation of a ML blog for a test.
+
+        https://machinelearningmastery.com/develop-encoder-decoder-model-sequence-sequence-prediction-keras/
+        """
+        encoder_inputs = Input(shape=(None, self.num_images))
+        lstm_encoder = LSTM(n_units, return_state=True)
+        encoder_outputs, hidden_state, final_state = lstm_encoder(encoder_inputs)
+        encoder_states = [hidden_state, final_state]
+
+        decoder_inputs = Input(shape=(None, self.num_outputs))
+        lstm_decoder = LSTM(n_units, return_sequences=True, return_state=True)
+        decoder_outputs, _, _ = lstm_decoder(
+            decoder_inputs, initial_state=encoder_states
+        )
+        dense_layer = Dense(self.num_outputs)
+        decoder_outputs = dense_layer(decoder_outputs)
+
+        training_model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
+        encoder_model = Model(encoder_inputs, encoder_states)
+
+        decoder_hidden_state_in = Input(shape=(n_units,))
+        decoder_final_state_in = Input(shape=(n_units,))
+        decoder_states_in = [decoder_hidden_state_in, decoder_final_state_in]
+        decoder_outputs, hidden_state, final_state = lstm_decoder(
+            decoder_inputs, initial_state=decoder_states_in
+        )
+        decoder_states = [hidden_state, final_state]
+        decoder_outputs = dense_layer(decoder_outputs)
+
+        decoder_model = Model(
+            [decoder_inputs] + decoder_states_in, [decoder_outputs], decoder_states
+        )
+
+        return training_model, encoder_model, decoder_model
 
     def _convolution_step(self, kernel_size, channels, first=False):
         conv2 = TimeDistributed(Conv2D(channels, kernel_size, activation="relu"))
