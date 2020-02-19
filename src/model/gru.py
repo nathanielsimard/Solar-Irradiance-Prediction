@@ -77,11 +77,11 @@ class GRU(base.Model):
         """
 
         def encoder(images, clearsky):
-            #logger.info(clearsky)
+            # logger.info(clearsky)
             images_encoded = self.encoder((images), False)
-            image_features=  self.flatten(images_encoded)
-            features = tf.concat([image_features, tf.expand_dims(clearsky, 1)], 1)
-            #logger.info(features.shape)
+            image_features = self.flatten(images_encoded)
+            features = tf.concat([image_features, clearsky], 1)
+            # logger.info(features.shape)
             return features
 
         def preprocess(images, clearsky, target_ghi):
@@ -89,7 +89,9 @@ class GRU(base.Model):
             # clearsky = self.scaling_target.normalize(clearsky)
             # Warp the encoder preprocessing in a py function
             # because its size is not known at compile time.
-            features = tf.py_function(func=encoder, inp=[images, clearsky], Tout=tf.float32)
+            features = tf.py_function(
+                func=encoder, inp=[images, clearsky], Tout=tf.float32
+            )
             # Every image feature also has the 4 clearsky predictions.
             return (features, target_ghi)
 
