@@ -42,12 +42,14 @@ def main():
     # if args.dry_run:
     #    dry_run.run(args.enable_tf_caching, args.skip_non_cached)
     #    return
+    categorical = False
     if args.model == "CNN2D":
         model = conv2d.CNN2D()
     if args.model == "CNN2DClearsky":
         model = conv2d_clearsky.CNN2DClearsky()
     if args.model == "CNN2DClearskyCloudiness":
         model = conv2d_clearsky.CNN2DClearskyCloudiness()
+        categorical = True
     if args.model == "Resnet50":
         model = conv2d_clearsky.ResNet50()
 
@@ -65,7 +67,8 @@ def main():
         skip_non_cached=args.skip_non_cached,
         enable_checkpoint=not args.no_checkpoint,
         batch_size=args.batch_size,
-        dry_run=args.dry_run
+        dry_run=args.dry_run,
+        categorical=categorical
     )
 
 

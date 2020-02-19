@@ -61,7 +61,7 @@ class CNN2DClearsky(base.Model):
         x = self.d3(x)
         z = tf.concat([x, meta], 1)  # Late combining of the metadata.
         x = self.d4(z)
-        x = self.d4(x)
+        #x = self.d4(x)
         x = self.d5(x)
 
         return x
@@ -79,7 +79,7 @@ class CNN2DClearsky(base.Model):
         config = default_config()
         config.num_images = 1
         config.ratio = 1
-        config.features = [ALL_FEATURES]
+        config.features = ALL_FEATURES
         if training:
             config.error_strategy = dataloader.ErrorStrategy.skip
         else:
@@ -91,10 +91,13 @@ class CNN2DClearsky(base.Model):
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Applies the preprocessing to the inputs and the targets."""
         return dataset.map(
-            lambda target_ghi, metadata, image: (
+            lambda target_ghi, metadata, image, target_cloudiness, timestamp, location: (
                 target_ghi,
                 metadata,
                 self.scaling_image.normalize(image),
+                target_cloudiness,
+                timestamp,
+                location
             ),
             num_parallel_calls=tf.data.experimental.AUTOTUNE,
         )

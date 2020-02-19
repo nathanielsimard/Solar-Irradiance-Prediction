@@ -68,7 +68,7 @@ class SupervisedTraining(object):
         self.model = model
         self.train_rmse = tf.keras.metrics.RootMeanSquaredError()
         self.valid_rmse = tf.keras.metrics.RootMeanSquaredError()
-        #self.train_accuracy = tf.keras.metrics.Accuracy()
+        # self.train_accuracy = tf.keras.metrics.Accuracy()
         self.train_accuracy = tf.keras.metrics.CategoricalAccuracy()
         self.valid_accuracy = tf.keras.metrics.CategoricalAccuracy()
 
@@ -102,6 +102,7 @@ class SupervisedTraining(object):
         skip_non_cached=False,
         enable_checkpoint=True,
         dry_run=False,
+        categorical=True
 
     ):
         """Performs the training of the model in minibatch.
@@ -112,6 +113,7 @@ class SupervisedTraining(object):
             valid_batch_size: should be as large as the GPU can handle.
             caching: if temporary caching is desired.
         """
+        self.categorical = categorical
         logger.info(f"Starting supervised training with model {self.model.title}")
         config = self.model.config(training=True, dry_run=dry_run)
         train_set, valid_set, test_set = load_data(
@@ -121,16 +123,17 @@ class SupervisedTraining(object):
         )
 
         logger.info("Apply Preprocessing")
-        train_set = self.model.preprocess(train_set)
-        valid_set = self.model.preprocess(valid_set)
-        test_set = self.model.preprocess(valid_set)
+        #train_set = self.model.preprocess(train_set)
+        #valid_set = self.model.preprocess(valid_set)
+        #test_set = self.model.preprocess(valid_set)
 
         logger.info("Creating loss logs")
 
         # Fail early!
         self.model.save(str(0))
+        self._evaluate("test", 0, test_set, valid_batch_size, dry_run=True)
 
-        #epoch_output = np.array()
+        # epoch_output = np.array()
         epoch_results = None
 
         logger.info("Fitting model.")
@@ -143,9 +146,7 @@ class SupervisedTraining(object):
                 logger.info(f"Batch #{i+1}")
                 clearsky = meta[:, 0:4]  # TODO: Do something better.
                 # clearsky = clearsky / 1000  # Cheap normalization
-                adjusted_target = tf.clip_by_value(tf.math.abs(targets / clearsky), 0, 1)
-                #adjusted_target = abs(clearsky - targets) / clearsky
-                #adjusted_target[adjusted_target == float("Inf")] = 0
+                adjusted_target = tf.clip_by_value(targets, 0, 2000) / tf.clip_by_value(clearsky, 1, 2000)
 
                 train_step_results = self._train_step(adjusted_target, targets, clearsky, image,
                                                       target_cloudiness, timestamp, location, training=True)
@@ -194,14 +195,19 @@ class SupervisedTraining(object):
         self.valid_rmse.reset_states()
         self.train_accuracy.reset_states()
 
-    def _evaluate(self, name, epoch, dataset, batch_size):
+    def _evaluate(self, name, epoch, dataset, batch_size, dry_run=False):
         metric = self.metrics[name]
         writer = self.writer[name]
         for targets, meta, image, target_cloudiness, timestamp, location in dataset.batch(batch_size):
             clearsky = meta[:, 0:4]  # TODO: Do something better.
-            loss = self._calculate_loss(image, clearsky, targets, target_cloudiness,
-                                        timestamp, location, training=False)
+            # clearsky = clearsky / 1000  # Cheap normalization
+            adjusted_target = tf.clip_by_value(targets, 0, 2000) / tf.clip_by_value(clearsky, 1, 2000)
+
+            loss = self._valid_step(adjusted_target, targets, clearsky, image,
+                                    target_cloudiness, timestamp, location, training=True)
             metric(loss)
+            if dry_run:
+                break
 
         with writer.as_default():
             tf.summary.scalar(name, metric.result(), step=epoch)
@@ -209,6 +215,20 @@ class SupervisedTraining(object):
         self.history.record(name, metric.result())
 
     # @tf.function
+    def _categorical_to_ghi(self, outputs, clearsky):
+        outputs_onehot = tf.one_hot(tf.argmax(outputs, 1), depth=5)
+        penalty = outputs_onehot[:, 3] * 0.99 + outputs_onehot[:, 4] * \
+            0.75 + outputs_onehot[:, 2] * 0.85 + outputs_onehot[:, 1] * 0.45 + outputs_onehot[:, 0] * 0
+        # no_penalty = outputs_onehot[:, 3] * 1 + outputs_onehot[:, 4] * \
+        #    1 + outputs_onehot[:, 2] * 1 + outputs_onehot[:, 1] * 1 + outputs_onehot[:, 0] * 1
+        clearsky_t0 = clearsky[:, 0] * penalty
+        clearsky_t1 = clearsky[:, 1] * penalty
+        clearsky_t3 = clearsky[:, 2] * penalty
+        clearsky_t6 = clearsky[:, 3] * penalty
+
+        output_ghi = tf.stack([clearsky_t0, clearsky_t1, clearsky_t3, clearsky_t6], axis=1)
+        return (output_ghi, outputs_onehot, penalty)
+
     def _train_step(self, adjusted_targets, targets, clearsky, image, target_cloudiness,
                     timestamp, location, training: bool):
 
@@ -223,66 +243,67 @@ class SupervisedTraining(object):
         # if cloudiness == 'variable':
         #    return tmp_clearsky - (tmp_clearsky*0.05)
 
-        #pd.Series(timestamp.numpy()).apply(pd.Timestamp, unit='s')
+        # pd.Series(timestamp.numpy()).apply(pd.Timestamp, unit='s')
         results = np.zeros(1)
 
         with tf.GradientTape() as tape:
             outputs = self.model(image, clearsky, training)
-            #real_outputs = clearsky * outputs
-            #self.last_outputs = outputs.numpy()
-            #self.last_real_outputs = real_outputs.numpy()
-            #self.train_rmse.update_state(targets, real_outputs)
+            # real_outputs = clearsky * outputs
+            # self.last_outputs = outputs.numpy()
+            # self.last_real_outputs = real_outputs.numpy()
+            # self.train_rmse.update_state(targets, real_outputs)
             #        one_hot = {
             # "night": np.array([1, 0, 0, 0, 0]),
-            # "cloudy": np.array([0, 1, 0, 0, 0]),
-            # "slightly cloudy": np.array([0, 0, 1, 0, 0]),
-            # "clear": np.array([0, 0, 0, 1, 0]),
-            # "variable" : np.array([0, 0, 0, 0, 1]),
+            # "cloudy": np.array([0, 1, 0, 0, 0]), 45%
+            # "slightly cloudy": np.array([0, 0, 1, 0, 0]), 85%
+            # "clear": np.array([0, 0, 0, 1, 0]), 99%
+            # "variable" : np.array([0, 0, 0, 0, 1]), 75%
             # }
+            if self.categorical:
+                output_ghi, outputs_onehot, penalty = self._categorical_to_ghi(outputs, clearsky)
+                self.train_accuracy.update_state(target_cloudiness, outputs)
+                loss = tf.nn.softmax_cross_entropy_with_logits(labels=target_cloudiness, logits=outputs)
+                results = tf.concat([tf.expand_dims(timestamp, axis=1), location, clearsky, outputs,
+                                     outputs_onehot, target_cloudiness, tf.expand_dims(penalty, axis=1),
+                                     targets, output_ghi], axis=1).numpy()
 
-            outputs_onehot = tf.one_hot(tf.argmax(outputs, 1), depth=5)
-            penalty = outputs_onehot[:, 3] * 1 + outputs_onehot[:, 4] * \
-                0.95 + outputs_onehot[:, 2] * 0.75 + outputs_onehot[:, 1] * 0.5 + outputs_onehot[:, 0] * 0
-            # no_penalty = outputs_onehot[:, 3] * 1 + outputs_onehot[:, 4] * \
-            #    1 + outputs_onehot[:, 2] * 1 + outputs_onehot[:, 1] * 1 + outputs_onehot[:, 0] * 1
-            clearsky_t0 = clearsky[:, 0] * penalty
-            clearsky_t1 = clearsky[:, 1] * penalty
-            clearsky_t3 = clearsky[:, 2] * penalty
-            clearsky_t6 = clearsky[:, 3] * penalty
+            else:
+                output_ghi = outputs  # * clearsky
 
-            output_ghi = tf.stack([clearsky_t0, clearsky_t1, clearsky_t3, clearsky_t6], axis=1)
+                #loss = tf.math.sqrt(tf.reduce_sum((targets - output_ghi)**2) / len(targets))
+                loss = self.loss_fn(targets, outputs)
 
-            self.train_accuracy.update_state(target_cloudiness, outputs)
+                results = tf.concat([tf.expand_dims(timestamp, axis=1), location, clearsky, outputs,
+                                     target_cloudiness, adjusted_targets, targets, output_ghi], axis=1).numpy()
+
             self.train_rmse.update_state(targets, output_ghi)
 
-            loss = tf.nn.softmax_cross_entropy_with_logits(labels=target_cloudiness, logits=outputs)
             # loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
             #    labels=tf.argmax(target_cloudiness, 1), logits=outputs)
 
             # loss = self.loss_fn(adjusted_targets, outputs)  # By convention, the target will always come first
-            results = tf.concat([tf.expand_dims(timestamp, axis=1), location, clearsky, outputs,
-                                 outputs_onehot, target_cloudiness, tf.expand_dims(penalty, axis=1), targets, output_ghi], axis=1).numpy()
             np.save("current_results.npy", results)
+            np.save("current_images.npy", image)
 
         gradients = tape.gradient(loss, self.model.trainable_variables)
         self.optim.apply_gradients(zip(gradients, self.model.trainable_variables))
         self.metrics["train"](loss)
         return results
 
-    @tf.function
-    def _calculate_loss(self, image, clearsky, valid_targets, target_cloudiness,
-                        timestamp, location, training: bool):
+    # @tf.function
+    def _valid_step(self, adjusted_targets, targets, clearsky, image, target_cloudiness,
+                    timestamp, location, training: bool):
         outputs = self.model(image, clearsky, training)
-        outputs_onehot = tf.one_hot(tf.argmax(outputs, 1), depth=5)
-        penalty = outputs_onehot[:, 3] * 1 + outputs_onehot[:, 4] * \
-            0.95 + outputs_onehot[:, 2] * 0.75 + outputs_onehot[:, 1] * 0.5
-        clearsky_t0 = clearsky[:, 0] * penalty
-        clearsky_t1 = clearsky[:, 1] * penalty
-        clearsky_t3 = clearsky[:, 2] * penalty
-        clearsky_t6 = clearsky[:, 3] * penalty
 
-        output_ghi = tf.stack([clearsky_t0, clearsky_t1, clearsky_t3, clearsky_t6], axis=1)
+        if self.categorical:
+            output_ghi, outputs_onehot, penalty = self._categorical_to_ghi(outputs, clearsky)
+            self.train_accuracy.update_state(target_cloudiness, outputs)
+            loss = tf.nn.softmax_cross_entropy_with_logits(labels=target_cloudiness, logits=outputs)
 
-        self.valid_rmse.update_state(valid_targets, output_ghi)
-        loss = tf.nn.softmax_cross_entropy_with_logits(labels=target_cloudiness, logits=outputs)
+        else:
+            output_ghi = outputs * clearsky
+            loss = self.loss_fn(adjusted_targets, outputs)
+
+        self.valid_rmse.update_state(targets, output_ghi)
+
         return loss
