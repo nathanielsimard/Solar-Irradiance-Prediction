@@ -159,8 +159,18 @@ class SupervisedTraining(object):
         metric = self.metrics[name]
         writer = self.writer[name]
 
+        def preprocess(image, clearsky, target_ghi):
+            ratio = outputs / clearsky[:, 0]
+            clearsky_future = clearsky
+            clearsky_future[:, 1:] = clearsky_future[:, 1:] * ratio
+
+            return (clearsky_future, target_ghi)
+
         for inputs, targets in dataset.batch(batch_size):
-            loss = self._calculate_loss(inputs, targets, training=False)
+            loss, outputs = self._calculate_loss(inputs, targets, training=False)
+
+            test = dataset.map(preprocess)
+            logger.info(f"TTTEEEEEEEEEEEEESSSSSSSSSSSSSSSSTTTTTTTT:::::::::::: {test}")
             metric(loss)
 
         with writer.as_default():
@@ -181,4 +191,4 @@ class SupervisedTraining(object):
     @tf.function
     def _calculate_loss(self, valid_inputs, valid_targets, training: bool):
         outputs = self.model(valid_inputs, training)
-        return self.loss_fn(valid_targets, outputs)
+        return self.loss_fn(valid_targets, outputs), outputs
