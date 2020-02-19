@@ -47,7 +47,7 @@ class GRU(base.Model):
         config.ratio = 0.1
         config.features = [
             dataloader.Feature.image,
-            dataloader.Feature.target_csm,
+            dataloader.Feature.clearsky,
             dataloader.Feature.target_ghi,
         ]
 
@@ -67,22 +67,18 @@ class GRU(base.Model):
         Data is now (features, target).
         """
 
-        num_targets = 4
-
         def encoder(images):
             logger.info(f"Image dim {images.shape}")
             images_encoded = self.encoder((images), False)
             return self.flatten(images_encoded)
 
-        def preprocess(images, target_csm, target_ghi):
+        def preprocess(images, clearsky, target_ghi):
             images = self.scaling_image.normalize(images)
             # Warp the encoder preprocessing in a py function
             # because its size is not known at compile time.
             image_features = tf.py_function(func=encoder, inp=[images], Tout=tf.float32)
 
             # Every image feature also has the 4 clearsky predictions.
-            clearsky = tf.zeros(self.num_images, num_targets)
-            clearsky[:, :] = target_csm
             features = tf.concat([image_features, clearsky], 1)
 
             return (features, target_ghi)

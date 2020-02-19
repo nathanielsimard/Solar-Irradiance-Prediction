@@ -4,6 +4,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, Iterable, List, Optional
 
+import numpy as np
 import pandas as pd
 
 
@@ -59,6 +60,7 @@ class Metadata:
     """
 
     image_paths: List[str]
+    clearsky_values: List[float]
     image_compression: str
     image_offsets: List[int]
     datetime: datetime
@@ -87,7 +89,7 @@ class MetadataLoader:
     # Dictionnary of all SURFRAD station names and locations
     # Given as (latitude, longitude, altitude) tuples
 
-    def __init__(self, file_name=None, dataframe=None) -> None:
+    def __init__(self, file_name=None, dataframe=None, training=True) -> None:
         """Create a metadata loader.
 
         :param file_name: Path to the catalog file.
@@ -100,6 +102,7 @@ class MetadataLoader:
             Those parameters are mutually exclusive and should not be provided at the same time.
 
         """
+        self.training = training
         if (
             not isinstance(file_name, str) and file_name is not None
         ):  # Calling this with a bool (I made the mistake)
@@ -158,11 +161,12 @@ class MetadataLoader:
         image_column = self._image_column(compression)
         image_offset_column = self._image_column(compression, variable="offset")
 
-        catalog = self._filter_null(catalog, image_column)
-        catalog = self._filter_null(catalog, f"{station.name}_GHI")
-        catalog = self._filter_null(catalog, f"{station.name}_CLEARSKY_GHI")
-        catalog = self._filter_null(catalog, f"{station.name}_CLOUDINESS")
-        catalog = self._filter_night(catalog, station, night_time)
+        if self.training:
+            catalog = self._filter_null(catalog, image_column)
+            catalog = self._filter_null(catalog, f"{station.name}_GHI")
+            catalog = self._filter_null(catalog, f"{station.name}_CLEARSKY_GHI")
+            catalog = self._filter_null(catalog, f"{station.name}_CLOUDINESS")
+            catalog = self._filter_night(catalog, station, night_time)
 
         target_timestamps = self._target_timestamps(catalog, target_datetimes)
         catalog = catalog.drop_duplicates()
@@ -248,7 +252,7 @@ class MetadataLoader:
         num_images: int,
         time_interval_min: int,
     ) -> Metadata:
-        image_paths, image_offsets = self._find_additional_image_paths(
+        image_paths, image_offsets = self._find_image_paths(
             rows,
             image_column,
             image_offset_column,
@@ -256,7 +260,9 @@ class MetadataLoader:
             num_images,
             time_interval_min,
         )
-
+        clearsky_values = self._find_clearsky_values(
+            rows, station, timestamp, num_images, time_interval_min
+        )
         target_ghi = row[f"{station.name}_GHI"]
         target_ghi_1h = self._find_future_value(
             rows, station, timestamp, 1, variable="GHI"
@@ -294,6 +300,7 @@ class MetadataLoader:
 
         return Metadata(
             image_paths=image_paths,
+            clearsky_values=clearsky_values,
             datetime=datetime,
             image_compression=compression,
             image_offsets=image_offsets,
@@ -312,7 +319,7 @@ class MetadataLoader:
             target_clearsky_6h=target_clearsky_6h,
         )
 
-    def _find_additional_image_paths(
+    def _find_image_paths(
         self,
         rows,
         image_column,
@@ -338,10 +345,27 @@ class MetadataLoader:
 
         return image_paths, image_offsets
 
-    def _find_image_path(
-        self, rows: Dict[pd.Timestamp, Any], num_images, time_interval_min
+    def _find_clearsky_values(
+        self, rows, station, timestamp, num_clearsky, time_interval_min,
     ):
-        pass
+        clearsky_values = []
+        # Iterate in reverse to add the oldest images first.
+        for i in range(num_clearsky - 1, -1, -1):
+            try:
+                index = timestamp - pd.to_timedelta(i * time_interval_min, unit="min")
+                clearsky_value = rows[index][f"{station.name}_CLEARSKY_GHI"]
+                if (
+                    clearsky_value == np.nan
+                    or clearsky_values == "nan"
+                    or clearsky_values is None
+                ):
+                    clearsky_values.append(0.0)
+                else:
+                    clearsky_values.append(clearsky_value)
+            except KeyError:
+                clearsky_values.append(0.0)
+
+        return clearsky_values
 
     def _target_timestamps(
         self, catalog: pd.DataFrame, target_datetimes: Optional[List[datetime]]

@@ -8,12 +8,8 @@ import tensorflow as tf
 import src.data.clearskydata as csd
 from src import logging
 from src.data import image
-from src.data.image import (
-    CorruptedImage,
-    ImageNotCached,
-    InvalidImageChannel,
-    InvalidImageOffSet,
-)
+from src.data.image import (CorruptedImage, ImageNotCached,
+                            InvalidImageChannel, InvalidImageOffSet)
 from src.data.metadata import Metadata
 
 logger = logging.create_logger(__name__)
@@ -23,6 +19,7 @@ class Feature(Enum):
     """Feature which the dataloader can load."""
 
     image = "image"
+    clearsky = "clearsky"
     target_ghi = "target_ghi"
     metadata = "metadata"
     target_csm = "target_clearsky"
@@ -140,9 +137,10 @@ class DataLoader(object):
 
         self._readers = {
             Feature.image: self._read_image,
+            Feature.clearsky: self._read_clearsky,
             Feature.target_ghi: self._read_target,
             Feature.metadata: self._read_metadata,
-            Feature.target_csm: self._read_clearsky,
+            Feature.target_csm: self._read_target_clearsky,
             Feature.target_cloud: self._read_cloudiness,
         }
 
@@ -174,7 +172,7 @@ class DataLoader(object):
                     raise e
                 logger.debug(f"Error while generating data, skipping : {e}")
 
-    def _read_clearsky(self, metadata: Metadata) -> tf.Tensor:
+    def _read_target_clearsky(self, metadata: Metadata) -> tf.Tensor:
         return tf.convert_to_tensor(
             [
                 self._target_value(metadata.target_clearsky),
@@ -204,6 +202,9 @@ class DataLoader(object):
             ],
             dtype=tf.float32,
         )
+
+    def _read_clearsky(self, metadata: Metadata) -> tf.Tensor:
+        return tf.convert_to_tensor(metadata.clearsky_values, dtype=tf.float32)
 
     def _read_image(self, metadata: Metadata) -> tf.Tensor:
         try:
