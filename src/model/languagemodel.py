@@ -14,7 +14,7 @@ NAME = "LanguageModel"
 class LanguageModel(base.Model):
     """Create Language Model to predict the futur images."""
 
-    def __init__(self, encoder, num_images=6):
+    def __init__(self, encoder, num_images=6, num_features=2048):
         """Initialize the architecture."""
         super().__init__(NAME)
         self.num_images = num_images
@@ -25,13 +25,17 @@ class LanguageModel(base.Model):
         self.encoder = encoder
 
         self.flatten = Flatten()
-        self.gru = GRU(
+
+        self.gru1 = GRU(
             512,
             return_sequences=True,
-            stateful=True,
-            recurrent_initializer="glorot_uniform",
         )
-        self.d1 = Dense(1)
+
+        self.gru2 = GRU(
+            num_features,
+            return_sequences=True,
+        )
+
 
     def call(self, x, training: bool):
         """Performs the forward pass in the neural network.
@@ -39,19 +43,17 @@ class LanguageModel(base.Model):
         Can use a different pass with the optional training boolean if
         some operations need to be skipped at evaluation(e.g. Dropout)
         """
-        x = self.gru(x)
-        x = self.d1(x)
+        x = self.gru1(x)
+        x = self.gru2(x)
 
         return x
 
     def config(self, training=False) -> dataloader.DataloaderConfig:
         """Configuration."""
         config = default_config()
-        config.num_images = 1
+        config.num_images = self.num_images
         config.ratio = 0.1
-        config.features = [
-            dataloader.Feature.image,
-        ]
+        config.features = [dataloader.Feature.image, dataloader.Feature.target_ghi]
 
         if training:
             config.error_strategy = dataloader.ErrorStrategy.skip
@@ -70,11 +72,13 @@ class LanguageModel(base.Model):
         """
 
         def encoder(images):
-            image_encoded = self.encoder((images), False)
-            return self.flatten(image_encoded)
+            logger.info(f"Image dim {images.shape}")
+            images_encoded = self.encoder((images), False)
+            return self.flatten(images_encoded)
 
-        def preprocess(image):
-            image_features = tf.py_function(func=encoder, inp=[image], Tout=tf.float32)
-            return (image_features[0:-2], image_features[1:])
+        def preprocess(images, target):
+            images = self.scaling_image.normalize(images)
+            image_features = tf.py_function(func=encoder, inp=[images], Tout=tf.float32)
+            return (image_features[0:-1], image_features[1:])
 
         return dataset.map(preprocess).cache()

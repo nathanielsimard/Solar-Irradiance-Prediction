@@ -261,6 +261,7 @@ class DataLoader(object):
                 logger.debug(f"Error while generating past images, ignoring : {e}")
                 images.append(np.zeros(shape))
 
+
         return images
 
     def _read_metadata(self, metadata: Metadata) -> tf.Tensor:

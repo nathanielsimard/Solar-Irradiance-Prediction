@@ -14,9 +14,9 @@ def plot_comparison(
 ):
     """Show original and generated futur images in a grid."""
     encoder = Encoder()
-    encoder.load(encoder_instance)
+    encoder.load("3")
     model = LanguageModel(encoder)
-    model.load(language_model_instance)
+    model.load("22")
 
     decoder = Decoder(num_channels)
     decoder.load(encoder_instance)
@@ -27,19 +27,24 @@ def plot_comparison(
     dataset = model.preprocess(valid_dataset)
 
     images = _first_images(dataset)
+    images_originals = _first_images(valid_dataset)
     image_pred = _predict_images(model, decoder, images)
+    print("End Pred")
+    print(f"Pred {len(image_pred)}")
 
     generateds = []
     originals = []
 
-    for i, (original, generated) in enumerate(zip(images, image_pred)):
+    for i in range(6):
+        generated = image_pred[i]
+        original = images_originals[0, i]
+
         num_channels = original.shape[-1]
-        for n in range(num_channels):
-            originals.append(original[:, :, n])
-            generateds.append(generated[:, :, n])
+        originals.append(original[:, :, 1])
+        generateds.append(generated[:, :, 1])
 
     _plt_images(originals, generateds, config.crop_size)
-    plt.savefig(f"assets/autoencoder.png")
+    plt.savefig(f"assets/languagemodel.png")
 
 
 def _plt_images(
@@ -72,20 +77,27 @@ def _plt_images(
 
 
 def _predict_images(model: LanguageModel, decoder: Decoder, images_features):
+    print("PREDICTING")
     preds = []
-    inputs = tf.expand_dims(images_features, 0)
-    model.reset_states()
-    num_generate = len(images_features)
+    inputs = images_features
+    num_generate = 6
 
     for i in range(num_generate):
-        pred_features, _ = model(inputs, False)
-        inputs = pred_features
+        pred_features = model(inputs, False)
+        print(inputs.shape)
+        inputs = tf.concat([inputs[0,1:], pred_features[0, -1:]],0)
+        inputs = tf.expand_dims(inputs, 0)
 
-        # Remove the batch dim
+
+        print(inputs.shape)
+
         pred_features = tf.squeeze(pred_features, 0)
-        pred_images = decoder((pred_features), False)
+        next_feature = pred_features[-1]
+        # Remove the batch dim
+        next_feature =tf.reshape(next_feature,(1,8,8,32))
+        pred_images = decoder((next_feature), False)
         pred = model.scaling_image.original(pred_images)
-        preds.append(pred)
+        preds.append(pred[0])
 
     return preds
 

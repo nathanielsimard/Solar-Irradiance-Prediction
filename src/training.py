@@ -121,7 +121,7 @@ class SupervisedTraining(object):
         for epoch in range(epochs):
             logger.info("Supervised training...")
 
-            for i, (inputs, targets) in enumerate(train_set.batch(batch_size)):
+            for i, (inputs, targets) in enumerate(train_set.batch(batch_size, drop_remainder=True)):
                 logger.info(f"Batch #{i+1}")
 
                 self._train_step(inputs, targets, training=True)
@@ -159,7 +159,7 @@ class SupervisedTraining(object):
         metric = self.metrics[name]
         writer = self.writer[name]
 
-        for inputs, targets in dataset.batch(batch_size):
+        for inputs, targets in dataset.batch(batch_size, drop_remainder=True):
             loss = self._calculate_loss(inputs, targets, training=False)
             metric(loss)
 
