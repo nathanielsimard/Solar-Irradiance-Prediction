@@ -66,6 +66,7 @@ class CNN3D(base.Model):
         config = default_config()
         config.num_images = self.num_images
         config.ratio = 0.1
+        config.time_interval_min = 30
         config.features = [dataloader.Feature.image, dataloader.Feature.target_ghi]
 
         if training:
@@ -79,4 +80,4 @@ class CNN3D(base.Model):
         """Applies the preprocessing to the inputs and the targets."""
         return dataset.map(
             lambda image, target_ghi: (self.scaling_image.normalize(image), target_ghi,)
-        )
+        ).cache("cache")

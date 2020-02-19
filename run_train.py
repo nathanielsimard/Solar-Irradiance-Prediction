@@ -3,11 +3,8 @@ import argparse
 from tensorflow.keras import losses, optimizers
 
 from src import dry_run, env
-<<<<<<< Updated upstream
 from src.model import autoencoder
-=======
 from src.model import conv3d
->>>>>>> Stashed changes
 from src.training import SupervisedTraining
 
 
