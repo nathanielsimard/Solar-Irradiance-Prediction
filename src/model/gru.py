@@ -22,12 +22,18 @@ class GRU(base.Model):
         self.scaling_image = preprocessing.MinMaxScaling(
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
         )
+
+        self.scaling_target = preprocessing.MinMaxScaling(
+            preprocessing.TARGET_GHI_MIN, preprocessing.TARGET_GHI_MAX
+        )
         self.encoder = encoder
         self.flatten = layers.Flatten()
 
-        self.gru1 = layers.GRU(64)
+        self.gru1 = layers.GRU(512, return_sequences=True)
+        self.gru2 = layers.GRU(512)
 
-        self.d1 = layers.Dense(4)
+        self.d1 = layers.Dense(512)
+        self.d2 = layers.Dense(4)
 
     def call(self, x, training: bool):
         """Performs the forward pass in the neural network.
@@ -36,7 +42,10 @@ class GRU(base.Model):
         some operations need to be skipped at evaluation(e.g. Dropout)
         """
         x = self.gru1(x)
+        x = self.gru2(x)
+
         x = self.d1(x)
+        x = self.d2(x)
 
         return x
 
@@ -44,7 +53,7 @@ class GRU(base.Model):
         """Configuration."""
         config = default_config()
         config.num_images = self.num_images
-        config.ratio = 0.1
+        config.ratio = 1.0
         config.features = [
             dataloader.Feature.image,
             dataloader.Feature.clearsky,
@@ -67,20 +76,21 @@ class GRU(base.Model):
         Data is now (features, target).
         """
 
-        def encoder(images):
-            logger.info(f"Image dim {images.shape}")
+        def encoder(images, clearsky):
+            #logger.info(clearsky)
             images_encoded = self.encoder((images), False)
-            return self.flatten(images_encoded)
+            image_features=  self.flatten(images_encoded)
+            features = tf.concat([image_features, tf.expand_dims(clearsky, 1)], 1)
+            #logger.info(features.shape)
+            return features
 
         def preprocess(images, clearsky, target_ghi):
             images = self.scaling_image.normalize(images)
+            # clearsky = self.scaling_target.normalize(clearsky)
             # Warp the encoder preprocessing in a py function
             # because its size is not known at compile time.
-            image_features = tf.py_function(func=encoder, inp=[images], Tout=tf.float32)
-
+            features = tf.py_function(func=encoder, inp=[images, clearsky], Tout=tf.float32)
             # Every image feature also has the 4 clearsky predictions.
-            features = tf.concat([image_features, clearsky], 1)
-
             return (features, target_ghi)
 
         return dataset.map(preprocess).cache()

@@ -113,7 +113,7 @@ class SupervisedTraining(object):
         logger.info("Apply Preprocessing")
         train_set = self.model.preprocess(train_set)
         valid_set = self.model.preprocess(valid_set)
-        test_set = self.model.preprocess(valid_set)
+        test_set = self.model.preprocess(test_set)
 
         logger.info("Creating loss logs")
 
@@ -135,7 +135,7 @@ class SupervisedTraining(object):
             self._update_progress(epoch)
             self.history.save(f"{self.model.title}-{epoch}")
 
-        self._evaluate("test", epoch, test_set, valid_batch_size)
+        # self._evaluate("test", epoch, test_set, valid_batch_size)
         logger.info("Done.")
 
     def _update_progress(self, epoch):

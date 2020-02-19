@@ -204,7 +204,11 @@ class DataLoader(object):
         )
 
     def _read_clearsky(self, metadata: Metadata) -> tf.Tensor:
-        return tf.convert_to_tensor(metadata.clearsky_values, dtype=tf.float32)
+        clearsky_values = []
+        for values in metadata.clearsky_values:
+            clearsky_values.append([self._target_value(value) for value in values])
+
+        return tf.convert_to_tensor(clearsky_values, dtype=tf.float32)
 
     def _read_image(self, metadata: Metadata) -> tf.Tensor:
         try:

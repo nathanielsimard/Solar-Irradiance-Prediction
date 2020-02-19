@@ -353,15 +353,33 @@ class MetadataLoader:
         for i in range(num_clearsky - 1, -1, -1):
             try:
                 index = timestamp - pd.to_timedelta(i * time_interval_min, unit="min")
-                clearsky_value = rows[index][f"{station.name}_CLEARSKY_GHI"]
-                if (
-                    clearsky_value == np.nan
-                    or clearsky_values == "nan"
-                    or clearsky_values is None
-                ):
-                    clearsky_values.append(0.0)
-                else:
-                    clearsky_values.append(clearsky_value)
+
+                target_clearsky = self._find_future_value(
+                    rows, station, timestamp, 0, variable="CLEARSKY_GHI"
+                )
+                target_clearsky_1h = self._find_future_value(
+                    rows, station, timestamp, 1, variable="CLEARSKY_GHI"
+                )
+                target_clearsky_3h = self._find_future_value(
+                    rows, station, timestamp, 3, variable="CLEARSKY_GHI"
+                )
+                target_clearsky_6h = self._find_future_value(
+                    rows, station, timestamp, 6, variable="CLEARSKY_GHI"
+                )
+                clearsky_values.append([
+                    target_clearsky,
+                    target_clearsky_1h,
+                    target_clearsky_3h,
+                    target_clearsky_6h,
+                ])
+                #if (
+                #    clearsky_value == np.nan
+                #    or clearsky_values == "nan"
+                #    or clearsky_values is None
+                #):
+                #    clearsky_values.append(0.0)
+                #else:
+                #    clearsky_values.append(clearsky_value)
             except KeyError:
                 clearsky_values.append(0.0)
 
