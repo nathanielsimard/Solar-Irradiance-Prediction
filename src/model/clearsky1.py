@@ -35,8 +35,6 @@ class Clearsky(base.Model):
         Can use a different pass with the optional training boolean if
         some operations need to be skipped at evaluation(e.g. Dropout)
         """
-        x = self.flatten(x)
-
         x = self.d1(x)
         x = self.d2(x)
         x = self.d3(x)
@@ -62,7 +60,13 @@ class Clearsky(base.Model):
         return config
 
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
-        """Applies the preprocessing to the inputs and the targets."""
+        """Apply preprocessing specifitly for this model.
+
+        Extract the features from the image with the encoder.
+        Flatten and concatenate them with the clearsky.
+        Change target to only consider present time.
+        Data is now (features, target).
+        """
 
         def preprocess(image, clearsky, target_ghi):
             image = self.scaling_image.normalize(image)
