@@ -43,7 +43,8 @@ class CNNLSTM(base.Model):
         self.d1 = TimeDistributed(Dense(512))
         self.drop4 = Dropout(0.3)
 
-        self.lstm, self.enc, self.dec = self._lstm_seq_to_seq(n_units=8)
+        # self.lstm, self.enc, self.dec = self._lstm_seq_to_seq(n_units=8)
+        self.lstm = LSTM(n_units=8, return_sequences=True)
 
         self.d2 = Dense(512, activation="relu")
         self.d3 = Dense(128, activation="relu")
@@ -69,10 +70,7 @@ class CNNLSTM(base.Model):
         if training:
             x = self.drop4(x)
 
-        output = []
-        target_init = 0
-        for time_stamp in range(self.num_outputs):
-
+        x = self.lstm(x)
         x = self.d2(x)
         x = self.d3(x)
         x = self.d4(x)
