@@ -124,7 +124,7 @@ class SupervisedTraining(object):
             for i, (inputs, targets, csm) in enumerate(train_set.batch(batch_size)):
                 logger.info(f"Batch #{i+1}")
 
-                self._train_step(_dynamic_cropping(inputs), targets, csm, training=True)
+                self._train_step(inputs, targets, csm, training=True)
 
             logger.info("Evaluating validation loss")
             self._evaluate("valid", epoch, valid_set, valid_batch_size)
