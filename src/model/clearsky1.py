@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Flatten
 
@@ -32,12 +34,14 @@ class Clearsky(base.Model):
         self.d2 = Dense(128, activation="relu")
         self.d3 = Dense(1)
 
-    def call(self, x, training: bool):
+    def call(self, data: Tuple[tf.Tensor], training=False):
         """Performs the forward pass in the neural network.
 
         Can use a different pass with the optional training boolean if
         some operations need to be skipped at evaluation(e.g. Dropout)
         """
+        x = data[0]
+
         x = self.d1(x)
         x = self.d2(x)
         x = self.d3(x)

@@ -186,5 +186,5 @@ class SupervisedTraining(object):
 
     @tf.function
     def _calculate_loss(self, valid_inputs, valid_targets):
-        outputs = self.model(valid_inputs, training=False)
+        outputs = self.model(valid_inputs)
         return self.loss_fn(valid_targets, outputs)
