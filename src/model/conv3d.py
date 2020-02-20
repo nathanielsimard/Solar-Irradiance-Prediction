@@ -91,10 +91,14 @@ class CNN3D(base.Model):
         new_dataset = dataset.map(
             lambda image, target_csm, target_ghi: (
                 tf.image.central_crop(image, central_fraction=0.5),
-                target_csm,
                 target_ghi,
+                target_csm,
             )
         )
         return new_dataset.map(
-            lambda image, target_ghi: (self.scaling_image.normalize(image), target_ghi,)
+            lambda image, target_csm, target_ghi: (
+                self.scaling_image.normalize(image),
+                target_ghi,
+                target_csm,
+            )
         )
