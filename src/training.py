@@ -121,11 +121,8 @@ class SupervisedTraining(object):
             logger.info("Supervised training...")
 
             for i, data in enumerate(train_set.batch(batch_size)):
-                logger.info(len(data))
                 inputs = data[:-1]
-                logger.info(len(inputs))
                 targets = data[-1]
-                logger.info(targets.shape)
 
                 logger.info(f"Batch #{i+1}")
 
@@ -164,8 +161,11 @@ class SupervisedTraining(object):
         metric = self.metrics[name]
         writer = self.writer[name]
 
-        for i, (inputs, targets) in enumerate(dataset.batch(batch_size)):
+        for i, data in enumerate(dataset.batch(batch_size)):
             logger.info(f"Evaluation batch #{i}")
+            inputs = data[:-1]
+            targets = data[-1]
+
             loss = self._calculate_loss(inputs, targets)
             metric(loss)
 
