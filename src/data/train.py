@@ -65,15 +65,18 @@ def load_data(
     config.force_caching = skip_non_cached
 
     train_datetimes, valid_datetimes, test_datetimes = split.load()
+
+    logger.info(f"First train datetimes: {train_datetimes[:10]}")
+    logger.info(f"First valid datetimes: {valid_datetimes[:10]}")
+    logger.info(f"First test datetimes: {test_datetimes[:10]}")
+
     ratio_train_datetimes = int(len(train_datetimes) * config.ratio)
-    ratio_valid_datetimes = int(len(valid_datetimes) * config.ratio)
 
     logger.info(f"Training dataset ratio {config.ratio}")
     logger.info(f"Training dataset has {ratio_train_datetimes} datetimes")
     logger.info(f"Training dataset has {len(STATION_COORDINATES)} stations")
 
     train_datetimes = train_datetimes[:ratio_train_datetimes]
-    valid_datetimes = valid_datetimes[:ratio_valid_datetimes]
 
     metadata_loader = MetadataLoader(file_name=file_name)
     metadata_train = metadata_station(

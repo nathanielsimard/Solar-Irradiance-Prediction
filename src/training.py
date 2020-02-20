@@ -111,8 +111,8 @@ class SupervisedTraining(object):
         )
 
         logger.info("Apply Preprocessing")
-        train_set = self.model.preprocess(train_set)
-        valid_set = self.model.preprocess(valid_set)
+        train_set = self.model.preprocess(train_set).cache("tmp-train")
+        valid_set = self.model.preprocess(valid_set).cache("tmp-valid")
         test_set = self.model.preprocess(test_set)
 
         logger.info("Creating loss logs")
@@ -159,7 +159,8 @@ class SupervisedTraining(object):
         metric = self.metrics[name]
         writer = self.writer[name]
 
-        for inputs, targets in dataset.batch(batch_size):
+        for i, (inputs, targets) in enumerate(dataset.batch(batch_size)):
+            logger.info(f"Evaluation batch #{i}")
             loss = self._calculate_loss(inputs, targets, training=False)
             metric(loss)
 
