@@ -16,7 +16,7 @@ NAME = "EmbedConv3D"
 class Conv3D(base.Model):
     """Create Language Model to predict the futur images."""
 
-    def __init__(self, encoder, num_images=6, time_interval_min=30, dropout=0.20):
+    def __init__(self, encoder, num_images=6, time_interval_min=30, dropout=0.25):
         """Initialize the architecture."""
         super().__init__(NAME)
         self.num_images = num_images
@@ -60,10 +60,16 @@ class Conv3D(base.Model):
         x = self.conv1(images)
         x = self.conv2(x)
 
+        if training:
+            x = self.dropout(x)
+
         x = self.max_pool(x)
 
         x = self.conv3(x)
         x = self.conv4(x)
+
+        if training:
+            x = self.dropout(x)
 
         x = self.flatten(x)
 
