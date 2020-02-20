@@ -77,7 +77,7 @@ class Clearsky(base.Model):
         def encoder(image):
             # Create Fake Batch Size
             image = tf.expand_dims(image, 0)
-            image_encoded = self.encoder((image), False)
+            image_encoded = self.encoder((image), training=False)
             # Remove Fake Batch Size
             return self.flatten(image_encoded)[0, :]
 
