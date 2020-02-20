@@ -183,6 +183,10 @@ class SupervisedTraining(object):
         outputs = self.model(valid_inputs, other_input, training)
         return self.loss_fn(valid_targets, outputs)
 
-
-def _dynamic_cropping(inputs):
-    return tf.image.central_crop(inputs, central_fraction=0.5)
+    def test_evaluation(self, skip_non_cached=False):
+        """Test the performance of the model on the unseen dataset."""
+        _, _, test_set = load_data(skip_non_cached=False)
+        self.model.config(training=False)
+        test_set = self.model.preprocess(test_set)
+        self._evaluate("test", epoch=1, dataset=test_set, batch_size=128)
+        logger.info("Done.")
