@@ -3,10 +3,9 @@ from datetime import datetime
 
 import tensorflow as tf
 
-from src import logging
+from src import env, logging
 from src.data.train import load_data
 from src.model.base import Model
-from src import env
 
 logger = logging.create_logger(__name__)
 
@@ -121,7 +120,10 @@ class SupervisedTraining(object):
         for epoch in range(epochs):
             logger.info("Supervised training...")
 
-            for i, (inputs, targets) in enumerate(train_set.batch(batch_size)):
+            for i, data in enumerate(train_set.batch(batch_size)):
+                inputs = data[:-1]
+                targets = data[-1]
+
                 logger.info(f"Batch #{i+1}")
 
                 self._train_step(inputs, targets, training=True)
@@ -171,7 +173,7 @@ class SupervisedTraining(object):
     @tf.function
     def _train_step(self, train_inputs, train_targets, training: bool):
         with tf.GradientTape() as tape:
-            outputs = self.model(train_inputs, training)
+            outputs = self.model(*train_inputs, training)
             loss = self.loss_fn(train_targets, outputs)
         gradients = tape.gradient(loss, self.model.trainable_variables)
         self.optim.apply_gradients(zip(gradients, self.model.trainable_variables))
@@ -180,5 +182,5 @@ class SupervisedTraining(object):
 
     @tf.function
     def _calculate_loss(self, valid_inputs, valid_targets, training: bool):
-        outputs = self.model(valid_inputs, training)
+        outputs = self.model(*valid_inputs, training)
         return self.loss_fn(valid_targets, outputs)

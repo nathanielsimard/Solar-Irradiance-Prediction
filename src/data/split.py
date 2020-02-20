@@ -3,6 +3,7 @@ import pickle
 import random
 from datetime import datetime
 from typing import Iterator, List, Tuple
+
 from src import env
 
 TRAIN_SET_FILE_NAME = "train_set.pkl"
