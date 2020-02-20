@@ -124,7 +124,7 @@ class SupervisedTraining(object):
             for i, (inputs, targets, csm) in enumerate(train_set.batch(batch_size)):
                 logger.info(f"Batch #{i+1}")
 
-                self._train_step(inputs, targets, csm, training=True)
+                self._train_step(_dynamic_cropping(inputs), targets, csm, training=True)
 
             logger.info("Evaluating validation loss")
             self._evaluate("valid", epoch, valid_set, valid_batch_size)
@@ -182,3 +182,7 @@ class SupervisedTraining(object):
     def _calculate_loss(self, valid_inputs, other_input, valid_targets, training: bool):
         outputs = self.model(valid_inputs, other_input, training)
         return self.loss_fn(valid_targets, outputs)
+
+
+def _dynamic_cropping(inputs):
+    return tf.central_crop(inputs, central_fraction=0.5)
