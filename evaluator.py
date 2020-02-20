@@ -100,7 +100,7 @@ def generate_predictions(
                 isinstance(minibatch, tuple) and len(minibatch) >= 2
             ), "the data loader should load each minibatch as a tuple with model input(s) and target tensors"
             # Call the model without the target and with training = False.
-            pred = model(*minibatch[0:-1], False).numpy()
+            pred = model(minibatch[0:-1]).numpy()
             assert (
                 pred.ndim == 2
             ), "prediction tensor shape should be BATCH x SEQ_LENGTH"
