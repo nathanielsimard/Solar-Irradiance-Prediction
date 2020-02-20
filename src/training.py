@@ -185,4 +185,4 @@ class SupervisedTraining(object):
 
 
 def _dynamic_cropping(inputs):
-    return tf.central_crop(inputs, central_fraction=0.5)
+    return tf.image.central_crop(inputs, central_fraction=0.5)
