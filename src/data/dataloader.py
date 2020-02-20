@@ -112,6 +112,14 @@ class DataloaderConfig:
         self.time_interval_min = time_interval_min
         self.ratio = ratio
 
+    def __str__(self):
+        """Return nice string representation of the config."""
+        string = "{\n"
+        attributes = vars(self)
+        for key, value in attributes.items():
+            string += f"  {key}: {value}\n"
+        return string + "}\n"
+
 
 class MetadataFeatureIndex(IntEnum):
     """Mapping for the augmented features to the location in the tensor."""

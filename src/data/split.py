@@ -1,6 +1,5 @@
 import os
 import pickle
-import random
 from datetime import datetime
 from typing import Iterator, List, Tuple
 
@@ -26,7 +25,6 @@ def create_split(
         if date >= datetime(2014, 1, 1) and date < datetime(2015, 1, 1)
     ]
     train_set = [date for date in datetimes if date < datetime(2014, 1, 1)]
-    random.shuffle(train_set)
 
     return (train_set, valid_set, test_set)
 

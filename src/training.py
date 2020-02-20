@@ -3,10 +3,9 @@ from datetime import datetime
 
 import tensorflow as tf
 
-from src import logging
+from src import env, logging
 from src.data.train import load_data
 from src.model.base import Model
-from src import env
 
 logger = logging.create_logger(__name__)
 
@@ -52,7 +51,7 @@ class History(object):
             return pickle.load(file)
 
 
-class SupervisedTraining(object):
+class Training(object):
     """Train a model in a supervised way.
 
     It assumes that the data is labeled (inputs, targets).
@@ -102,8 +101,13 @@ class SupervisedTraining(object):
             valid_batch_size: should be as large as the GPU can handle.
             caching: if temporary caching is desired.
         """
-        logger.info(f"Starting supervised training with model {self.model.title}")
         config = self.model.config(training=True)
+        logger.info(
+            f"Starting training\n"
+            + f" - Model: {self.model.title}\n"
+            + f" - Config: {config}"
+        )
+
         train_set, valid_set, test_set = load_data(
             enable_tf_caching=enable_tf_caching,
             config=config,
