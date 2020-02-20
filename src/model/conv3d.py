@@ -45,14 +45,12 @@ class CNN3D(base.Model):
             y: clearsky values
             training: specify training behaviour
         """
-        print(x.shape)
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv3(x)
 
         x = self.flatten(x)
         x = tf.concat([x, y], axis=1)
-        print(x.shape)
 
         x = self.d1(x)
         x = self.d2(x)
@@ -73,7 +71,7 @@ class CNN3D(base.Model):
         """Configuration."""
         config = default_config()
         config.num_images = self.num_images
-        config.ratio = 0.01
+        config.ratio = 1
         config.time_interval_min = 60
         config.features = [
             dataloader.Feature.image,
