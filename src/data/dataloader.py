@@ -8,12 +8,8 @@ import tensorflow as tf
 import src.data.clearskydata as csd
 from src import logging
 from src.data import image
-from src.data.image import (
-    CorruptedImage,
-    ImageNotCached,
-    InvalidImageChannel,
-    InvalidImageOffSet,
-)
+from src.data.image import (CorruptedImage, ImageNotCached,
+                            InvalidImageChannel, InvalidImageOffSet)
 from src.data.metadata import Metadata
 
 logger = logging.create_logger(__name__)
@@ -331,6 +327,7 @@ class DataLoader(object):
 def create_dataset(
     metadata: Callable[[], Iterable[Metadata]],
     config: Union[Dict[str, Any], DataloaderConfig] = DataloaderConfig(),
+    enable_image_cache=True,
 ) -> tf.data.Dataset:
     """Create a tensorflow Dataset base on the metadata and dataloader's config.
 
@@ -346,6 +343,7 @@ def create_dataset(
         channels=config.channels,
         cache_dir=config.image_cache_dir,
         force_caching=config.force_caching,
+        enable_caching=enable_image_cache,
     )
     dataloader = DataLoader(metadata, image_reader, config=config)
 

@@ -61,6 +61,7 @@ def prepare_dataloader(
         Station(station),
         Coordinates(coordinates[0], coordinates[1], coordinates[2]),
         target_datetimes=target_datetimes,
+        enable_image_cache=False,
     )
 
     return dataloader.create_dataset(metadata_generator, config)
