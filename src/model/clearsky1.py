@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Flatten
 
@@ -32,12 +34,14 @@ class Clearsky(base.Model):
         self.d2 = Dense(128, activation="relu")
         self.d3 = Dense(1)
 
-    def call(self, x, training: bool):
+    def call(self, data: Tuple[tf.Tensor], training=False):
         """Performs the forward pass in the neural network.
 
         Can use a different pass with the optional training boolean if
         some operations need to be skipped at evaluation(e.g. Dropout)
         """
+        x = data[0]
+
         x = self.d1(x)
         x = self.d2(x)
         x = self.d3(x)
@@ -73,7 +77,7 @@ class Clearsky(base.Model):
         def encoder(image):
             # Create Fake Batch Size
             image = tf.expand_dims(image, 0)
-            image_encoded = self.encoder((image), False)
+            image_encoded = self.encoder((image), training=False)
             # Remove Fake Batch Size
             return self.flatten(image_encoded)[0, :]
 

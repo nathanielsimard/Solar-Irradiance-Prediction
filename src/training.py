@@ -125,10 +125,13 @@ class Training(object):
         for epoch in range(epochs):
             logger.info("Supervised training...")
 
-            for i, (inputs, targets) in enumerate(train_set.batch(batch_size)):
+            for i, data in enumerate(train_set.batch(batch_size)):
+                inputs = data[:-1]
+                targets = data[-1]
+
                 logger.info(f"Batch #{i+1}")
 
-                self._train_step(inputs, targets, training=True)
+                self._train_step(inputs, targets)
 
             logger.info("Evaluating validation loss")
             self._evaluate("valid", epoch, valid_set, valid_batch_size)
@@ -163,8 +166,12 @@ class Training(object):
         metric = self.metrics[name]
         writer = self.writer[name]
 
-        for inputs, targets in dataset.batch(batch_size):
-            loss = self._calculate_loss(inputs, targets, training=False)
+        for i, data in enumerate(dataset.batch(batch_size)):
+            logger.info(f"Evaluation batch #{i}")
+            inputs = data[:-1]
+            targets = data[-1]
+
+            loss = self._calculate_loss(inputs, targets)
             metric(loss)
 
         with writer.as_default():
@@ -173,9 +180,9 @@ class Training(object):
         self.history.record(name, metric.result())
 
     @tf.function
-    def _train_step(self, train_inputs, train_targets, training: bool):
+    def _train_step(self, train_inputs, train_targets):
         with tf.GradientTape() as tape:
-            outputs = self.model(train_inputs, training)
+            outputs = self.model(train_inputs, training=True)
             loss = self.loss_fn(train_targets, outputs)
         gradients = tape.gradient(loss, self.model.trainable_variables)
         self.optim.apply_gradients(zip(gradients, self.model.trainable_variables))
@@ -183,6 +190,6 @@ class Training(object):
         self.metrics["train"](loss)
 
     @tf.function
-    def _calculate_loss(self, valid_inputs, valid_targets, training: bool):
-        outputs = self.model(valid_inputs, training)
+    def _calculate_loss(self, valid_inputs, valid_targets):
+        outputs = self.model(valid_inputs)
         return self.loss_fn(valid_targets, outputs)
