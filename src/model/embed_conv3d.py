@@ -8,10 +8,10 @@ from src.model import base
 
 logger = logging.create_logger(__name__)
 
-NAME = "GRU"
+NAME = "EmbedConv3D"
 
 
-class GRU(base.Model):
+class Conv3D(base.Model):
     """Create Language Model to predict the futur images."""
 
     def __init__(self, encoder, num_images=6, time_interval_min=30, dropout=0.20):
@@ -24,16 +24,13 @@ class GRU(base.Model):
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
         )
 
-        self.scaling_target = preprocessing.MinMaxScaling(
-            preprocessing.TARGET_GHI_MIN, preprocessing.TARGET_GHI_MAX
-        )
-
         self.encoder = encoder
         self.flatten = layers.Flatten()
         self.dropout = layers.Dropout(dropout)
 
-        self.gru1 = layers.GRU(512, return_sequences=True, return_state=True)
-        self.gru2 = layers.GRU(256)
+        self.conv1 = layers.Conv3D(32, kernel_size=(3, 3, 3), padding="same", activation="relu")
+        self.conv2 = layers.Conv3D(32, kernel_size=(3, 3, 3), padding="same", activation="relu")
+        self.conv3 = layers.Conv3D(32, kernel_size=(3, 3, 3), padding="same", activation="relu")
 
         self.d1 = layers.Dense(256)
         self.d2 = layers.Dense(128)
@@ -45,10 +42,21 @@ class GRU(base.Model):
         Can use a different pass with the optional training boolean if
         some operations need to be skipped at evaluation(e.g. Dropout)
         """
-        x = self.gru1(x)
-        x = self.gru2(x)
+        batch_size = x.shape[0]
+        num_clearsky = 4
+
+        image = x[:, :, 0:-num_clearsky]
+        image = tf.reshape(image, (batch_size, self.num_images, 8, 8, 32))
+        clearsky = x[:, :, -num_clearsky:]
+
+        x = self.conv1(image)
+        x = self.conv2(x)
+        x = self.conv3(x)
 
         x = self.flatten(x)
+
+        # Add only latest clearsky
+        x = tf.concat([x, clearsky[:, -1, :]], 1)
 
         x = self.d1(x)
         if training:
