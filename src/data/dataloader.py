@@ -228,7 +228,7 @@ class DataLoader(object):
     def _read_clearsky(self, metadata: Metadata) -> tf.Tensor:
         clearsky_values = []
         for values in metadata.clearsky_values:
-            clearsky_values.append([self._target_value(value) for value in values])
+            clearsky_values.append([self._clearsky_value(value) for value in values])
 
         return tf.convert_to_tensor(clearsky_values, dtype=tf.float32)
 
@@ -306,6 +306,12 @@ class DataLoader(object):
         meta[0 : len(clearsky_values)] = clearsky_values
 
         return tf.convert_to_tensor(meta)
+
+    def _clearsky_value(self, value):
+        if value is not None:
+            return value
+
+        return -1
 
     def _target_value(self, target):
         if target is not None:
