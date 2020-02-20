@@ -32,7 +32,7 @@ class Encoder(base.Model):
         )
         self.dropout = Dropout(dropout)
 
-    def call(self, data: tf.Tensor, training=False):
+    def call(self, x: tf.Tensor, training=False):
         """Performs the forward pass in the neural network.
 
         Can use a different pass with the optional training boolean if
@@ -71,7 +71,7 @@ class Decoder(base.Model):
         self.up_sampling = UpSampling2D((2, 2))
         self.dropout = Dropout(dropout)
 
-    def call(self, data: tf.Tensor, training=False):
+    def call(self, x: tf.Tensor, training=False):
         """Decode a compressed image into the original image."""
         x = self.conv1(x)
         x = self.up_sampling(x)
