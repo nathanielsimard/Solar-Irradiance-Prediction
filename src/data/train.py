@@ -1,4 +1,5 @@
 import itertools
+import random
 from typing import Callable, Iterator, Tuple
 
 import tensorflow as tf
@@ -66,17 +67,23 @@ def load_data(
 
     train_datetimes, valid_datetimes, test_datetimes = split.load()
 
-    logger.info(f"First train datetimes: {train_datetimes[:10]}")
-    logger.info(f"First valid datetimes: {valid_datetimes[:10]}")
-    logger.info(f"First test datetimes: {test_datetimes[:10]}")
+    random.shuffle(train_datetimes)
+    random.shuffle(valid_datetimes)
+    random.shuffle(test_datetimes)
 
     ratio_train_datetimes = int(len(train_datetimes) * config.ratio)
+    ratio_valid_datetimes = int(len(valid_datetimes) * config.ratio)
+    ratio_test_datetimes = int(len(test_datetimes) * config.ratio)
 
-    logger.info(f"Training dataset ratio {config.ratio}")
+    logger.info(f"Loading {config.ratio*100}% of the data")
     logger.info(f"Training dataset has {ratio_train_datetimes} datetimes")
-    logger.info(f"Training dataset has {len(STATION_COORDINATES)} stations")
+    logger.info(f"Validation dataset has {ratio_valid_datetimes} datetimes")
+    logger.info(f"Test dataset has {ratio_test_datetimes} datetimes")
+    logger.info(f"Using {len(STATION_COORDINATES)} stations")
 
     train_datetimes = train_datetimes[:ratio_train_datetimes]
+    valid_datetimes = valid_datetimes[:ratio_valid_datetimes]
+    test_datetimes = test_datetimes[:ratio_test_datetimes]
 
     metadata_loader = MetadataLoader(file_name=file_name)
     metadata_train = metadata_station(

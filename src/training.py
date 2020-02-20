@@ -3,10 +3,9 @@ from datetime import datetime
 
 import tensorflow as tf
 
-from src import logging
+from src import env, logging
 from src.data.train import load_data
 from src.model.base import Model
-from src import env
 
 logger = logging.create_logger(__name__)
 
@@ -52,7 +51,7 @@ class History(object):
             return pickle.load(file)
 
 
-class SupervisedTraining(object):
+class Training(object):
     """Train a model in a supervised way.
 
     It assumes that the data is labeled (inputs, targets).
@@ -102,8 +101,13 @@ class SupervisedTraining(object):
             valid_batch_size: should be as large as the GPU can handle.
             caching: if temporary caching is desired.
         """
-        logger.info(f"Starting supervised training with model {self.model.title}")
         config = self.model.config(training=True)
+        logger.info(
+            f"Starting training\n"
+            + f" - Model: {self.model.title}\n"
+            + f" - Config: {config}"
+        )
+
         train_set, valid_set, test_set = load_data(
             enable_tf_caching=enable_tf_caching,
             config=config,
@@ -111,8 +115,8 @@ class SupervisedTraining(object):
         )
 
         logger.info("Apply Preprocessing")
-        train_set = self.model.preprocess(train_set).cache("tmp-train")
-        valid_set = self.model.preprocess(valid_set).cache("tmp-valid")
+        train_set = self.model.preprocess(train_set)
+        valid_set = self.model.preprocess(valid_set)
         test_set = self.model.preprocess(test_set)
 
         logger.info("Creating loss logs")
@@ -121,10 +125,13 @@ class SupervisedTraining(object):
         for epoch in range(epochs):
             logger.info("Supervised training...")
 
-            for i, (inputs, targets) in enumerate(train_set.batch(batch_size)):
+            for i, data in enumerate(train_set.batch(batch_size)):
+                inputs = data[:-1]
+                targets = data[-1]
+
                 logger.info(f"Batch #{i+1}")
 
-                self._train_step(inputs, targets, training=True)
+                self._train_step(inputs, targets)
 
             logger.info("Evaluating validation loss")
             self._evaluate("valid", epoch, valid_set, valid_batch_size)
@@ -159,9 +166,12 @@ class SupervisedTraining(object):
         metric = self.metrics[name]
         writer = self.writer[name]
 
-        for i, (inputs, targets) in enumerate(dataset.batch(batch_size)):
+        for i, data in enumerate(dataset.batch(batch_size)):
             logger.info(f"Evaluation batch #{i}")
-            loss = self._calculate_loss(inputs, targets, training=False)
+            inputs = data[:-1]
+            targets = data[-1]
+
+            loss = self._calculate_loss(inputs, targets)
             metric(loss)
 
         with writer.as_default():
@@ -170,9 +180,9 @@ class SupervisedTraining(object):
         self.history.record(name, metric.result())
 
     @tf.function
-    def _train_step(self, train_inputs, train_targets, training: bool):
+    def _train_step(self, train_inputs, train_targets):
         with tf.GradientTape() as tape:
-            outputs = self.model(train_inputs, training)
+            outputs = self.model(train_inputs, training=True)
             loss = self.loss_fn(train_targets, outputs)
         gradients = tape.gradient(loss, self.model.trainable_variables)
         self.optim.apply_gradients(zip(gradients, self.model.trainable_variables))
@@ -180,6 +190,6 @@ class SupervisedTraining(object):
         self.metrics["train"](loss)
 
     @tf.function
-    def _calculate_loss(self, valid_inputs, valid_targets, training: bool):
-        outputs = self.model(valid_inputs, training)
+    def _calculate_loss(self, valid_inputs, valid_targets):
+        outputs = self.model(valid_inputs)
         return self.loss_fn(valid_targets, outputs)

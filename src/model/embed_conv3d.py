@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import tensorflow as tf
 from tensorflow.keras import layers
 
@@ -28,10 +30,18 @@ class Conv3D(base.Model):
         self.flatten = layers.Flatten()
         self.dropout = layers.Dropout(dropout)
 
-        self.conv1 = layers.Conv3D(32, kernel_size=(3, 3, 3), padding="same", activation="relu")
-        self.conv2 = layers.Conv3D(32, kernel_size=(3, 3, 3), padding="same", activation="relu")
-        self.conv3 = layers.Conv3D(32, kernel_size=(3, 3, 3), padding="same", activation="relu")
-        self.conv4 = layers.Conv3D(32, kernel_size=(3, 3, 3), padding="same", activation="relu")
+        self.conv1 = layers.Conv3D(
+            32, kernel_size=(3, 3, 3), padding="same", activation="relu"
+        )
+        self.conv2 = layers.Conv3D(
+            32, kernel_size=(3, 3, 3), padding="same", activation="relu"
+        )
+        self.conv3 = layers.Conv3D(
+            32, kernel_size=(3, 3, 3), padding="same", activation="relu"
+        )
+        self.conv4 = layers.Conv3D(
+            32, kernel_size=(3, 3, 3), padding="same", activation="relu"
+        )
 
         self.max_pool = layers.MaxPooling3D((2, 2, 2))
 
@@ -39,29 +49,25 @@ class Conv3D(base.Model):
         self.d2 = layers.Dense(128)
         self.d3 = layers.Dense(4)
 
-    def call(self, x, training: bool):
+    def call(self, data: Tuple[tf.Tensor, tf.Tensor], training=False):
         """Performs the forward pass in the neural network.
 
         Can use a different pass with the optional training boolean if
         some operations need to be skipped at evaluation(e.g. Dropout)
         """
-        batch_size = x.shape[0]
-        num_clearsky = 4
+        images, target_csm = data
 
-        image = x[:, :, 0:-num_clearsky]
-        image = tf.reshape(image, (batch_size, self.num_images, 8, 8, 32))
-        clearsky = x[:, :, -num_clearsky:]
-
-        x = self.conv1(image)
+        x = self.conv1(images)
         x = self.conv2(x)
+
         x = self.max_pool(x)
+
         x = self.conv3(x)
         x = self.conv4(x)
 
         x = self.flatten(x)
 
-        # Add only latest clearsky
-        x = tf.concat([x, clearsky[:, -1, :]], 1)
+        x = tf.concat([x, target_csm], 1)
 
         x = self.d1(x)
         if training:
@@ -78,10 +84,9 @@ class Conv3D(base.Model):
         config = default_config()
         config.num_images = self.num_images
         config.time_interval_min = self.time_interval_min
-        config.ratio = 0.1
         config.features = [
             dataloader.Feature.image,
-            dataloader.Feature.clearsky,
+            dataloader.Feature.target_csm,
             dataloader.Feature.target_ghi,
         ]
 
@@ -101,20 +106,14 @@ class Conv3D(base.Model):
         Data is now (features, target).
         """
 
-        def encoder(images, clearsky):
-            images_encoded = self.encoder((images), False)
-            image_features = self.flatten(images_encoded)
-            features = tf.concat([image_features, clearsky], 1)
-            return features
+        def encoder(images):
+            return self.encoder((images), training=False)
 
-        def preprocess(images, clearsky, target_ghi):
+        def preprocess(images, target_csm, target_ghi):
             images = self.scaling_image.normalize(images)
             # Warp the encoder preprocessing in a py function
             # because its size is not known at compile time.
-            features = tf.py_function(
-                func=encoder, inp=[images, clearsky], Tout=tf.float32
-            )
-            # Every image feature also has the 4 clearsky predictions.
-            return (features, target_ghi)
+            images = tf.py_function(func=encoder, inp=[images], Tout=tf.float32)
+            return (images, target_csm, target_ghi)
 
         return dataset.map(preprocess)

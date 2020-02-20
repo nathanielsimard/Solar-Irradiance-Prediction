@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import tensorflow as tf
 from tensorflow.keras import layers
 
@@ -39,12 +41,13 @@ class GRU(base.Model):
         self.d3 = layers.Dense(128)
         self.d4 = layers.Dense(4)
 
-    def call(self, x, training: bool):
+    def call(self, data: Tuple[tf.Tensor], training=False):
         """Performs the forward pass in the neural network.
 
         Can use a different pass with the optional training boolean if
         some operations need to be skipped at evaluation(e.g. Dropout)
         """
+        x = data[0]
         x = self.gru1(x)
 
         # x = self.flatten(x)

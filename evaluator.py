@@ -99,17 +99,8 @@ def generate_predictions(
             assert (
                 isinstance(minibatch, tuple) and len(minibatch) >= 2
             ), "the data loader should load each minibatch as a tuple with model input(s) and target tensors"
-            # remember: the minibatch should contain the input tensor(s) for the model as well as the GT (target)
-            # values, but since we are not training (and the GT is unavailable), we discard the last element
-            # see https://github.com/mila-iqia/ift6759/blob/master/projects/project1/datasources.md#pipeline-formatting
-            if (
-                len(minibatch) == 2
-            ):  # there is only one input + groundtruth, give the model the input directly
-                pred = model(minibatch[0])
-            else:  # the model expects multiple inputs, give them all at once using the tuple
-                pred = model(minibatch[:-1])
-            if isinstance(pred, tf.Tensor):
-                pred = pred.numpy()
+            # Call the model without the target and with training = False.
+            pred = model(minibatch[0:-1]).numpy()
             assert (
                 pred.ndim == 2
             ), "prediction tensor shape should be BATCH x SEQ_LENGTH"
