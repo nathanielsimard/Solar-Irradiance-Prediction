@@ -3,6 +3,7 @@ import pickle
 import random
 from datetime import datetime
 from typing import Iterator, List, Tuple
+
 from src import env
 
 TRAIN_SET_FILE_NAME = "train_set.pkl"
@@ -19,12 +20,13 @@ def create_split(
     The remaining datetimes will be shuffled and split with the valid_ratio.
     """
     test_set = [date for date in datetimes if date >= datetime(2015, 1, 1)]
-    train_set = [date for date in datetimes if date < datetime(2015, 1, 1)]
+    valid_set = [
+        date
+        for date in datetimes
+        if date >= datetime(2014, 1, 1) and date < datetime(2015, 1, 1)
+    ]
+    train_set = [date for date in datetimes if date < datetime(2014, 1, 1)]
     random.shuffle(train_set)
-
-    num_train = int((1 - valid_ratio) * len(train_set))
-    valid_set = train_set[num_train:-1]
-    train_set = train_set[:num_train]
 
     return (train_set, valid_set, test_set)
 
