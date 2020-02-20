@@ -173,7 +173,7 @@ class DataLoader(object):
                         ]
                     )
                     yield tuple(
-                        [self.readers[Feature.target_ghi](metadata)].insert(0, tmp)
+                        [self._readers[Feature.target_ghi](metadata)].insert(0, tmp)
                     )
             except AttributeError as e:
                 # This is clearly unhandled! We want a crash here!
