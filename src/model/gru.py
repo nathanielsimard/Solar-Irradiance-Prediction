@@ -32,12 +32,12 @@ class GRU(base.Model):
         self.flatten = layers.Flatten()
         self.dropout = layers.Dropout(dropout)
 
-        self.gru1 = layers.GRU(512, return_sequences=True, return_state=True)
-        self.gru2 = layers.GRU(256)
+        self.gru1 = layers.GRU(512)
 
-        self.d1 = layers.Dense(256)
-        self.d2 = layers.Dense(128)
-        self.d3 = layers.Dense(4)
+        self.d1 = layers.Dense(512)
+        self.d2 = layers.Dense(256)
+        self.d3 = layers.Dense(128)
+        self.d4 = layers.Dense(4)
 
     def call(self, x, training: bool):
         """Performs the forward pass in the neural network.
@@ -46,9 +46,8 @@ class GRU(base.Model):
         some operations need to be skipped at evaluation(e.g. Dropout)
         """
         x = self.gru1(x)
-        x = self.gru2(x)
 
-        x = self.flatten(x)
+        # x = self.flatten(x)
 
         x = self.d1(x)
         if training:
@@ -57,6 +56,9 @@ class GRU(base.Model):
         if training:
             x = self.dropout(x)
         x = self.d3(x)
+        if training:
+            x = self.dropout(x)
+        x = self.d4(x)
 
         return x
 

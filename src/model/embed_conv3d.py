@@ -31,6 +31,9 @@ class Conv3D(base.Model):
         self.conv1 = layers.Conv3D(32, kernel_size=(3, 3, 3), padding="same", activation="relu")
         self.conv2 = layers.Conv3D(32, kernel_size=(3, 3, 3), padding="same", activation="relu")
         self.conv3 = layers.Conv3D(32, kernel_size=(3, 3, 3), padding="same", activation="relu")
+        self.conv4 = layers.Conv3D(32, kernel_size=(3, 3, 3), padding="same", activation="relu")
+
+        self.max_pool = layers.MaxPooling3D((2, 2, 2))
 
         self.d1 = layers.Dense(256)
         self.d2 = layers.Dense(128)
@@ -51,7 +54,9 @@ class Conv3D(base.Model):
 
         x = self.conv1(image)
         x = self.conv2(x)
+        x = self.max_pool(x)
         x = self.conv3(x)
+        x = self.conv4(x)
 
         x = self.flatten(x)
 
