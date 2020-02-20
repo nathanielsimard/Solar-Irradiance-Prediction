@@ -34,18 +34,23 @@ class CNN3D(base.Model):
         self.d3 = Dense(256, activation="relu")
         self.d4 = Dense(4)
 
-    def call(self, xin, training: bool):
+    def call(self, x, y, training: bool):
         """Performs the forward pass in the neural network.
 
         Can use a different pass with the optional training boolean if
         some operations need to be skipped at evaluation(e.g. Dropout)
+
+        Args:
+            x: images
+            y: clearsky values
+            training: specify training behaviour
         """
-        x = self.conv1(xin[0])
+        x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv3(x)
 
         x = self.flatten(x)
-        x = tf.concat([x, xin[1]], axis=1)
+        x = tf.concat([x, y], axis=1)
 
         x = self.d1(x)
         x = self.d2(x)
