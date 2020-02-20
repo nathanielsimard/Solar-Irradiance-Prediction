@@ -185,8 +185,8 @@ class SupervisedTraining(object):
 
     def test_evaluation(self, skip_non_cached=False):
         """Test the performance of the model on the unseen dataset."""
-        _, _, test_set = load_data(skip_non_cached=False)
-        self.model.config(training=False)
+        config = self.model.config(training=False)
+        _, _, test_set = load_data(skip_non_cached=False, config=config)
         test_set = self.model.preprocess(test_set)
         self._evaluate("test", epoch=1, dataset=test_set, batch_size=128)
         logger.info("Done.")
