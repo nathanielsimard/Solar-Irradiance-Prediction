@@ -157,12 +157,24 @@ class DataLoader(object):
         for metadata in self.metadata():
             logger.debug(metadata)
             try:
-                yield tuple(
-                    [
-                        self._readers[feature](metadata)
-                        for feature in self.config.features
-                    ]
-                )
+                if len(self.config.features) == 2:
+                    yield tuple(
+                        [
+                            self._readers[feature](metadata)
+                            for feature in self.config.features
+                        ]
+                    )
+                else:
+                    tmp = tuple(
+                        [
+                            self._readers[feature](metadata)
+                            for feature in self.config.features
+                            if feature != Feature.target_ghi
+                        ]
+                    )
+                    yield tuple(
+                        [self.readers[Feature.target_ghi](metadata)].insert(0, tmp)
+                    )
             except AttributeError as e:
                 # This is clearly unhandled! We want a crash here!
                 raise e
