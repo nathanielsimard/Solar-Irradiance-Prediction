@@ -96,7 +96,7 @@ def prepare_model(
     encoder.load("3")
     model = embed_conv3d.Conv3D(encoder)
     model.load("24")
-    logger.info(f"Loaded model: {model.model_name}")
+    logger.info(f"Loaded model: {model.title}")
     return model
 
 
