@@ -118,11 +118,14 @@ def load_data(
     )
 
     dataset_train = dataloader.create_dataset(
-        metadata_train, config, train_datetimes, STATION_COORDINATES)
+        metadata_train, config, train_datetimes, STATION_COORDINATES
+    )
     dataset_valid = dataloader.create_dataset(
-        metadata_valid, config, valid_datetimes, STATION_COORDINATES)
+        metadata_valid, config, valid_datetimes, STATION_COORDINATES
+    )
     dataset_test = dataloader.create_dataset(
-        metadata_test, config, test_datetimes, STATION_COORDINATES)
+        metadata_test, config, test_datetimes, STATION_COORDINATES
+    )
 
     if enable_tf_caching:
         dataset_train = dataset_train.cache(f"{cache_file}/train")

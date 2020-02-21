@@ -10,8 +10,12 @@ from src import logging
 from src.data import image
 from src.data.config import Station, Coordinates
 
-from src.data.image import (CorruptedImage, ImageNotCached,
-                            InvalidImageChannel, InvalidImageOffSet)
+from src.data.image import (
+    CorruptedImage,
+    ImageNotCached,
+    InvalidImageChannel,
+    InvalidImageOffSet,
+)
 from src.data.metadata import Metadata
 
 logger = logging.create_logger(__name__)
@@ -22,7 +26,7 @@ class Feature(Enum):
 
     image = "image"
     target_ghi = "target_ghi"
-    metadata = "metadata",
+    metadata = "metadata"
     target_cloud = "target_cloud"
 
 
@@ -83,7 +87,7 @@ class DataloaderConfig:
         ratio=1,
         target_datetimes=None,
         stations: Dict[Station, Coordinates] = None,
-        precompute_clearsky=False
+        precompute_clearsky=False,
     ):
         """All configurations are optional with default values.
 
@@ -100,6 +104,9 @@ class DataloaderConfig:
             time_interval_min: Number of minutes between images.
                 If num_images is 1, this has no effets.
             ratio: proportion of the data we want.
+            target_datetimes: list of target datetimes for clearsky caching
+            stations: list of station where to pre-compute
+            precompute_clearsky: Will pre-compute clearsky values if set.
         """
         self.local_path = local_path
         self.error_strategy = error_strategy
@@ -155,7 +162,9 @@ class DataLoader(object):
         self.csd = csd.Clearsky(enable_caching=enable_clearsky_caching)
 
         if config.precompute_clearsky:
-            self.csd._precompute_clearsky_values(config.target_datetimes, config.stations)
+            self.csd._precompute_clearsky_values(
+                config.target_datetimes, config.stations
+            )
 
         self.ok = 0
         self.skipped = 0
@@ -178,14 +187,11 @@ class DataLoader(object):
         for metadata in self.metadata():
             logger.debug(metadata)
             try:
-                output = tuple(
-                    [
-                        self._readers[feature](metadata)
-                        for feature in self.config.features
-                    ]
-                )
+                output = [
+                    self._readers[feature](metadata) for feature in self.config.features
+                ]
                 self.ok += 1
-                yield output
+                yield tuple(output)
             except AttributeError as e:
                 # This is clearly unhandled! We want a crash here!
                 raise e
@@ -312,7 +318,8 @@ class DataLoader(object):
         this sample. (T, T+1, T+3, T+6 )
         """
         clearsky_values = self.csd.calculate_clearsky_values(
-            metadata.coordinates, metadata.datetime)
+            metadata.coordinates, metadata.datetime
+        )
         meta[0 : len(clearsky_values)] = clearsky_values
 
         return tf.convert_to_tensor(meta, dtype=tf.float32)
@@ -352,7 +359,8 @@ class DataLoader(object):
 def create_dataset(
     metadata: Callable[[], Iterable[Metadata]],
     config: Union[Dict[str, Any], DataloaderConfig] = DataloaderConfig(),
-        target_datetimes=None, stations: Dict[Station, Coordinates] = None,
+    target_datetimes=None,
+    stations: Dict[Station, Coordinates] = None,
     enable_image_cache=True,
 ) -> tf.data.Dataset:
     """Create a tensorflow Dataset base on the metadata and dataloader's config.

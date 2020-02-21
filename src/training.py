@@ -93,8 +93,7 @@ class Training(object):
         skip_non_cached=False,
         enable_checkpoint=True,
         dry_run=False,
-        categorical=False
-
+        categorical=False,
     ):
         """Performs the training of the model in minibatch.
 
