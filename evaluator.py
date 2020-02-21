@@ -107,7 +107,7 @@ def generate_predictions(
     """Generate and returns model predictions given the data prepared by a data loader."""
     predictions = []
     with tqdm.tqdm("generating predictions", total=pred_count) as pbar:
-        for iter_idx, minibatch in enumerate(data_loader):
+        for iter_idx, minibatch in enumerate(data_loader.batch(32)):
             logger.info(f"Minibatch #{iter_idx}")
             assert (
                 isinstance(minibatch, tuple) and len(minibatch) >= 2
