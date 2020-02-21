@@ -92,6 +92,9 @@ class Training(object):
         enable_tf_caching=False,
         skip_non_cached=False,
         enable_checkpoint=True,
+        dry_run=False,
+        categorical=False
+
     ):
         """Performs the training of the model in minibatch.
 
@@ -121,6 +124,9 @@ class Training(object):
 
         logger.info("Creating loss logs")
 
+        # Fail early!
+        self.model.save(str(0))
+        self._evaluate("test", 0, test_set, valid_batch_size, dry_run=True)
         logger.info("Fitting model.")
         for epoch in range(epochs):
             logger.info("Supervised training...")
