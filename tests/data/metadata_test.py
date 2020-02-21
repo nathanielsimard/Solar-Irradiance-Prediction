@@ -3,8 +3,7 @@ import unittest
 from datetime import datetime
 from typing import Any, Generator
 
-from src.data.metadata import (Coordinates, MetadataLoader, Station,
-                               UnableToLoadMetadata)
+from src.data.metadata import Coordinates, MetadataLoader, Station, UnableToLoadMetadata
 
 CATALOG_PATH = "tests/data/samples/catalog-test.pkl"
 
@@ -329,14 +328,15 @@ class MetadataLoaderTest(unittest.TestCase):
     ):
         loader = MetadataLoader(CATALOG_PATH)
         num_images = 5
+        num_clearsky = 4
         metadata = loader.load(
             Station.BND, A_STATION_COORDINATE, num_images=num_images,
         )
 
         for i in range(1, num_images + 1):
-            expected_path = num_images * [0]
             mt = next(metadata)
-            self.assertEqual(expected_path, mt.clearsky_values)
+            self.assertEqual(num_images, len(mt.clearsky_values))
+            self.assertEqual(num_clearsky, len(mt.clearsky_values[0]))
 
     def test_givenNumImagesAndTimeInterval_whenLoad_shouldReturnCorrectPaths(self):
         loader = MetadataLoader(CATALOG_PATH)
