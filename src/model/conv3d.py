@@ -36,19 +36,34 @@ class CNN3D(base.Model):
         self.d3 = Dense(256, activation="relu")
         self.d4 = Dense(4)
 
-    def call(self, data: Tuple[tf.Tensor], training=False):
+    def call(self, data: Tuple[tf.Tensor, tf.Tensor], training=False):
         """Performs the forward pass in the neural network.
 
         Can use a different pass with the optional training boolean if
         some operations need to be skipped at evaluation(e.g. Dropout)
         """
-        x = data[0]
+        images, clearsky = data
 
-        x = self.conv1(x)
+        # (Batch, images, width, height, channels)
+        image_size_x = images.shape[2]
+        image_size_y = images.shape[3]
+        pixel = 12
+        start_x = image_size_x // 2 - pixel // 2
+        end_x = image_size_x // 2 + pixel // 2
+        start_y = image_size_y // 2 - pixel // 2
+        end_y = image_size_y // 2 + pixel // 2
+
+        logger.info(f"Original images shape: {images.shape}")
+        crop = images[:, :, start_x:end_x, start_y:end_y, :]
+        logger.info(f"Cropped images shape: {crop.shape}")
+
+        x = self.conv1(crop)
         x = self.conv2(x)
         x = self.conv3(x)
 
         x = self.flatten(x)
+
+        x = tf.concat([x, clearsky], 1)
 
         x = self.d1(x)
         x = self.d2(x)
@@ -86,6 +101,9 @@ class CNN3D(base.Model):
 
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Applies the preprocessing to the inputs and the targets."""
-        return dataset.map(
-            lambda image, target_ghi: (self.scaling_image.normalize(image), target_ghi,)
-        )
+
+        def preprocess(images, metadata, target_ghi):
+            images = self.scaling_image.normalize(images)
+            return (images, metadata, target_ghi)
+
+        return dataset.map(preprocess)
