@@ -85,6 +85,12 @@ def load_data(
     valid_datetimes = valid_datetimes[:ratio_valid_datetimes]
     test_datetimes = test_datetimes[:ratio_test_datetimes]
 
+    if dataloader.Feature.metadata in config.features:
+        config.precompute_clearsky = True
+        target_datetimes = train_datetimes + valid_datetimes + test_datetimes
+        config.target_datetimes = target_datetimes
+        config.stations = STATION_COORDINATES
+
     metadata_loader = MetadataLoader(file_name=file_name)
     metadata_train = metadata_station(
         metadata_loader,
@@ -112,11 +118,11 @@ def load_data(
     )
 
     dataset_train = dataloader.create_dataset(
-        metadata_train, dataloader_config, train_datetimes, STATION_COORDINATES)
+        metadata_train, config, train_datetimes, STATION_COORDINATES)
     dataset_valid = dataloader.create_dataset(
-        metadata_valid, dataloader_config, valid_datetimes, STATION_COORDINATES)
+        metadata_valid, config, valid_datetimes, STATION_COORDINATES)
     dataset_test = dataloader.create_dataset(
-        metadata_test, dataloader_config, test_datetimes, STATION_COORDINATES)
+        metadata_test, config, test_datetimes, STATION_COORDINATES)
 
     if enable_tf_caching:
         dataset_train = dataset_train.cache(f"{cache_file}/train")

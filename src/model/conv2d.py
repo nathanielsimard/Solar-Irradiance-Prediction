@@ -1,7 +1,7 @@
 from typing import Tuple
 
 import tensorflow as tf
-from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
+from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D, Dropout
 from tensorflow.keras.models import Sequential
 
 from src import logging
@@ -114,12 +114,15 @@ class CNN2DClearsky(base.Model):
         self.d4 = Dense(256, activation="relu")
         self.d5 = Dense(4)
 
-    def call(self, x, meta, training: bool):
+    def call(self, data: Tuple[tf.Tensor], training=False):
         """Performs the forward pass in the neural network.
 
         Can use a different pass with the optional training boolean if
         some operations need to be skipped at evaluation(e.g. Dropout)
         """
+        x = data[2]
+        meta = data[1]
+
         x = self.conv1(x)
         x = self.dropout2(self.conv2(x), training)
         x = self.conv3(x)
@@ -149,7 +152,8 @@ class CNN2DClearsky(base.Model):
         config = default_config()
         config.num_images = 1
         config.ratio = 1
-        config.features = ALL_FEATURES
+        config.features = [dataloader.Feature.target_ghi, dataloader.Feature.metadata,
+                           dataloader.Feature.image, dataloader.Feature.target_ghi]
         if training:
             config.error_strategy = dataloader.ErrorStrategy.skip
         else:
@@ -161,13 +165,11 @@ class CNN2DClearsky(base.Model):
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Applies the preprocessing to the inputs and the targets."""
         return dataset.map(
-            lambda target_ghi, metadata, image, target_cloudiness, timestamp, location: (
-                target_ghi,
+            lambda target_ghi_dummy, metadata, image, target_ghi: (
+                target_ghi_dummy,
                 metadata,
                 self.scaling_image.normalize(image),
-                target_cloudiness,
-                timestamp,
-                location
+                target_ghi
             ),
             num_parallel_calls=tf.data.experimental.AUTOTUNE,
         )

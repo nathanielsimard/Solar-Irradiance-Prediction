@@ -8,6 +8,8 @@ import tensorflow as tf
 import src.data.clearskydata as csd
 from src import logging
 from src.data import image
+from src.data.config import Station, Coordinates
+
 from src.data.image import (CorruptedImage, ImageNotCached,
                             InvalidImageChannel, InvalidImageOffSet)
 from src.data.metadata import Metadata
@@ -19,11 +21,9 @@ class Feature(Enum):
     """Feature which the dataloader can load."""
 
     image = "image"
-    clearsky = "clearsky"
     target_ghi = "target_ghi"
-    metadata = "metadata"
-    target_csm = "target_clearsky"
-    target_cloud = "target_cloudiness"
+    metadata = "metadata",
+    target_cloud = "target_cloud"
 
 
 class ErrorStrategy(Enum):
@@ -162,10 +162,8 @@ class DataLoader(object):
 
         self._readers = {
             Feature.image: self._read_image,
-            Feature.clearsky: self._read_clearsky,
             Feature.target_ghi: self._read_target,
             Feature.metadata: self._read_metadata,
-            Feature.target_csm: self._read_target_clearsky,
             Feature.target_cloud: self._read_cloudiness,
         }
 
@@ -201,15 +199,6 @@ class DataLoader(object):
                 self.skipped += 1
                 if (self.skipped % 1000) == 0:
                     logger.warning(f"{self.skipped} skipped, {self.ok} ok.")
-    def _read_target_clearsky(self, metadata: Metadata) -> tf.Tensor:
-        return tf.convert_to_tensor(
-            [
-                self._target_value(metadata.target_clearsky),
-                self._target_value(metadata.target_clearsky_1h),
-                self._target_value(metadata.target_clearsky_3h),
-                self._target_value(metadata.target_clearsky_6h),
-            ]
-        )
 
     def _read_cloudiness(self, metadata: Metadata) -> tf.Tensor:
         return tf.convert_to_tensor(
@@ -253,13 +242,6 @@ class DataLoader(object):
             ],
             dtype=tf.float32,
         )
-
-    def _read_clearsky(self, metadata: Metadata) -> tf.Tensor:
-        clearsky_values = []
-        for values in metadata.clearsky_values:
-            clearsky_values.append([self._clearsky_value(value) for value in values])
-
-        return tf.convert_to_tensor(clearsky_values, dtype=tf.float32)
 
     def _read_image(self, metadata: Metadata) -> tf.Tensor:
         try:
@@ -370,7 +352,7 @@ class DataLoader(object):
 def create_dataset(
     metadata: Callable[[], Iterable[Metadata]],
     config: Union[Dict[str, Any], DataloaderConfig] = DataloaderConfig(),
-	target_datetimes=None, stations: Dict[Station, Coordinates] = None,
+        target_datetimes=None, stations: Dict[Station, Coordinates] = None,
     enable_image_cache=True,
 ) -> tf.data.Dataset:
     """Create a tensorflow Dataset base on the metadata and dataloader's config.

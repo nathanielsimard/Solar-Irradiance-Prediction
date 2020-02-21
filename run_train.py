@@ -59,8 +59,7 @@ def main():
         skip_non_cached=args.skip_non_cached,
         enable_checkpoint=not args.no_checkpoint,
         batch_size=args.batch_size,
-        dry_run=args.dry_run,
-        categorical=categorical
+        dry_run=args.dry_run
     )
 
 
