@@ -3,7 +3,7 @@ import argparse
 from tensorflow.keras import losses, optimizers
 
 from src import dry_run, env
-from src.model import conv2d  # autoencoder, embed_conv3d, conv2d
+from src.model import conv3d
 from src.training import Training
 
 
@@ -42,10 +42,7 @@ def main():
         dry_run.run(args.enable_tf_caching, args.skip_non_cached)
         return
 
-    # encoder = autoencoder.Encoder()
-    # encoder.load("3")
-    # model = embed_conv3d.Conv3D(encoder)
-    model = conv2d.CNN2DClearsky()
+    model = conv3d.CNN3D()
 
     optimizer = optimizers.Adam(0.001)
     loss_obj = losses.MeanSquaredError()
