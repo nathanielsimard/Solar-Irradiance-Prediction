@@ -3,7 +3,7 @@ import argparse
 from tensorflow.keras import losses, optimizers
 
 from src import dry_run, env
-from src.model import autoencoder, embed_conv3d
+from src.model import conv2d  # autoencoder, embed_conv3d, conv2d
 from src.training import Training
 
 
@@ -30,6 +30,11 @@ def main():
     parser.add_argument(
         "--no_checkpoint", help="Will not save any checkpoints", action="store_true",
     )
+
+    parser.add_argument("--lr", help="Learning rate", default=0.0001, type=float)
+
+    parser.add_argument("--model", help="Name of the model to train", default="CNN2D")
+    parser.add_argument("--batch_size", help="Batch size", default=128, type=int)
     args = parser.parse_args()
     env.run_local = args.run_local
 
@@ -37,9 +42,10 @@ def main():
         dry_run.run(args.enable_tf_caching, args.skip_non_cached)
         return
 
-    encoder = autoencoder.Encoder()
-    encoder.load("3")
-    model = embed_conv3d.Conv3D(encoder)
+    # encoder = autoencoder.Encoder()
+    # encoder.load("3")
+    # model = embed_conv3d.Conv3D(encoder)
+    model = conv2d.CNN2DClearsky()
 
     optimizer = optimizers.Adam(0.001)
     loss_obj = losses.MeanSquaredError()
@@ -52,6 +58,8 @@ def main():
         enable_tf_caching=args.enable_tf_caching,
         skip_non_cached=args.skip_non_cached,
         enable_checkpoint=not args.no_checkpoint,
+        batch_size=args.batch_size,
+        dry_run=args.dry_run,
     )
 
 
