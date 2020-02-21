@@ -81,6 +81,9 @@ class DataloaderConfig:
         num_images=1,
         time_interval_min=15,
         ratio=1,
+        target_datetimes=None,
+        stations: Dict[Station, Coordinates] = None,
+        precompute_clearsky=False
     ):
         """All configurations are optional with default values.
 
@@ -108,6 +111,9 @@ class DataloaderConfig:
         self.num_images = num_images
         self.time_interval_min = time_interval_min
         self.ratio = ratio
+        self.target_datetimes = target_datetimes
+        self.station = stations
+        self.precompute_clearsky = precompute_clearsky
 
     def __str__(self):
         """Return nice string representation of the config."""
@@ -141,7 +147,18 @@ class DataLoader(object):
         self.metadata = metadata
         self.image_reader = image_reader
         self.config = config
-        self.csd = csd.Clearsky()
+        enable_clearsky_caching = False
+
+        if config.precompute_clearsky:
+            enable_clearsky_caching = True
+
+        self.csd = csd.Clearsky(enable_caching=enable_clearsky_caching)
+
+        if config.precompute_clearsky:
+            self.csd._precompute_clearsky_values(config.target_datetimes, config.stations)
+
+        self.ok = 0
+        self.skipped = 0
 
         self._readers = {
             Feature.image: self._read_image,
@@ -163,12 +180,14 @@ class DataLoader(object):
         for metadata in self.metadata():
             logger.debug(metadata)
             try:
-                yield tuple(
+                output = tuple(
                     [
                         self._readers[feature](metadata)
                         for feature in self.config.features
                     ]
                 )
+                self.ok += 1
+                yield output
             except AttributeError as e:
                 # This is clearly unhandled! We want a crash here!
                 raise e
@@ -179,7 +198,9 @@ class DataLoader(object):
                     logger.error(f"Error while generating data, stopping : {e}")
                     raise e
                 logger.debug(f"Error while generating data, skipping : {e}")
-
+                self.skipped += 1
+                if (self.skipped % 1000) == 0:
+                    logger.warning(f"{self.skipped} skipped, {self.ok} ok.")
     def _read_target_clearsky(self, metadata: Metadata) -> tf.Tensor:
         return tf.convert_to_tensor(
             [
@@ -313,7 +334,7 @@ class DataLoader(object):
         """
         meta[0 : len(clearsky_values)] = clearsky_values
 
-        return tf.convert_to_tensor(meta)
+        return tf.convert_to_tensor(meta, dtype=tf.float32)
 
     def _clearsky_value(self, value):
         if value is not None:
@@ -350,6 +371,7 @@ class DataLoader(object):
 def create_dataset(
     metadata: Callable[[], Iterable[Metadata]],
     config: Union[Dict[str, Any], DataloaderConfig] = DataloaderConfig(),
+	target_datetimes=None, stations: Dict[Station, Coordinates] = None,
     enable_image_cache=True,
 ) -> tf.data.Dataset:
     """Create a tensorflow Dataset base on the metadata and dataloader's config.

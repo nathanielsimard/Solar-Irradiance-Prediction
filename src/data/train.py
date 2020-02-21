@@ -111,9 +111,12 @@ def load_data(
         skip_missing=skip_missing,
     )
 
-    dataset_train = dataloader.create_dataset(metadata_train, config)
-    dataset_valid = dataloader.create_dataset(metadata_valid, config)
-    dataset_test = dataloader.create_dataset(metadata_test, config)
+    dataset_train = dataloader.create_dataset(
+        metadata_train, dataloader_config, train_datetimes, STATION_COORDINATES)
+    dataset_valid = dataloader.create_dataset(
+        metadata_valid, dataloader_config, valid_datetimes, STATION_COORDINATES)
+    dataset_test = dataloader.create_dataset(
+        metadata_test, dataloader_config, test_datetimes, STATION_COORDINATES)
 
     if enable_tf_caching:
         dataset_train = dataset_train.cache(f"{cache_file}/train")
@@ -148,6 +151,12 @@ def load_data_and_create_generators(
         # Both concepts are equivalent. If we force caching, we need to skip non cached images.
     config.force_caching = skip_non_cached
     train_datetimes, valid_datetimes, test_datetimes = split.load()
+
+    if dataloader.Feature.metadata in config.features:
+        config.precompute_clearsky = True
+        target_datetimes = train_datetimes + valid_datetimes + test_datetimes
+        config.target_datetimes = target_datetimes
+        config.stations = STATION_COORDINATES
 
     metadata_loader = MetadataLoader(file_name=file_name)
     metadata_train = metadata_station(
