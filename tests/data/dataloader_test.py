@@ -257,8 +257,7 @@ class DataLoaderTest(unittest.TestCase):
             self.assertCloseTo(meta[MetadataFeatureIndex.GHI_T_1h], 280.165857)
             self.assertCloseTo(meta[MetadataFeatureIndex.GHI_T_3h], 0.397029)
             self.assertCloseTo(meta[MetadataFeatureIndex.GHI_T_6h], 0.0)
-            self.assertCloseTo(meta[MetadataFeatureIndex.SOLAR_TIME], 0.0)
-
+    
     def test_givenFeatures_whenCreateDataset_shouldReturnSameNumberOfFeatures(self):
         features = [
             Feature.image,
