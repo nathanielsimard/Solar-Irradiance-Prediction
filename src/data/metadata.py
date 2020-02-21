@@ -262,7 +262,11 @@ class MetadataLoader:
         clearsky_values = self._find_clearsky_values(
             rows, station, timestamp, num_images, time_interval_min
         )
-        target_ghi = row[f"{station.name}_GHI"]
+        try:
+            target_ghi = row[f"{station.name}_GHI"]
+        except KeyError:
+            target_ghi = 0
+
         target_ghi_1h = self._find_future_value(
             rows, station, timestamp, 1, variable="GHI"
         )
@@ -273,7 +277,11 @@ class MetadataLoader:
             rows, station, timestamp, 6, variable="GHI"
         )
 
-        target_cloudiness = row[f"{station.name}_CLOUDINESS"]
+        try:
+            target_cloudiness = row[f"{station.name}_CLOUDINESS"]
+        except KeyError:
+            target_cloudiness = 0
+
         target_cloudiness_1h = self._find_future_value(
             rows, station, timestamp, 1, variable="CLOUDINESS"
         )
@@ -284,7 +292,11 @@ class MetadataLoader:
             rows, station, timestamp, 6, variable="CLOUDINESS"
         )
 
-        target_clearsky = row[f"{station.name}_CLEARSKY_GHI"]
+        try:
+            target_clearsky = row[f"{station.name}_CLEARSKY_GHI"]
+        except KeyError:
+            target_clearsky = 0
+
         target_clearsky_1h = self._find_future_value(
             rows, station, timestamp, 1, variable="CLEARSKY_GHI"
         )
