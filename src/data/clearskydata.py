@@ -1,21 +1,17 @@
 import datetime
+import pickle
 import typing
 from enum import IntEnum
+from typing import Dict
 
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-import pickle
 from pvlib.location import Location
 
-
-from src.data import metadata
-
-from typing import Dict
-from src.data.metadata import Coordinates, Station
-
 from src import logging
-
+from src.data import metadata
+from src.data.metadata import Coordinates, Station
 
 logger = logging.create_logger(__name__)
 

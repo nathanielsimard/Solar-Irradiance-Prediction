@@ -121,11 +121,6 @@ class Training(object):
         valid_set = self.model.preprocess(valid_set)
         test_set = self.model.preprocess(test_set)
 
-        logger.info("Creating loss logs")
-
-        # Fail early!
-        self.model.save(str(0))
-        self._evaluate("test", 0, test_set, valid_batch_size, dry_run=True)
         logger.info("Fitting model.")
         for epoch in range(epochs):
             logger.info("Supervised training...")

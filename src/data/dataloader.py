@@ -8,8 +8,7 @@ import tensorflow as tf
 import src.data.clearskydata as csd
 from src import logging
 from src.data import image
-from src.data.config import Station, Coordinates
-
+from src.data.config import Coordinates, Station
 from src.data.image import (
     CorruptedImage,
     ImageNotCached,
@@ -153,13 +152,8 @@ class DataLoader(object):
         self.metadata = metadata
         self.image_reader = image_reader
         self.config = config
-        enable_clearsky_caching = False
 
-        if config.precompute_clearsky:
-            enable_clearsky_caching = True
-
-        self.csd = csd.Clearsky(enable_caching=enable_clearsky_caching)
-
+        self.csd = csd.Clearsky(enable_caching=config.precompute_clearsky)
         if config.precompute_clearsky:
             self.csd._precompute_clearsky_values(
                 config.target_datetimes, config.stations
