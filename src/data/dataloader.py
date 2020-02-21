@@ -300,9 +300,6 @@ class DataLoader(object):
 
     def _read_metadata(self, metadata: Metadata) -> tf.Tensor:
         meta = np.zeros(len(MetadataFeatureIndex))
-        clearsky_values = self.csd.calculate_clearsky_values(
-            metadata.coordinates, metadata.datetime
-        )
         """This reader will read all information that is not contained
         in the image. It will allow to train using the computed clearsky values.
 
@@ -311,6 +308,8 @@ class DataLoader(object):
         It will yield a single vector containing all values side by side for
         this sample. (T, T+1, T+3, T+6 )
         """
+        clearsky_values = self.csd.calculate_clearsky_values(
+            metadata.coordinates, metadata.datetime)
         meta[0 : len(clearsky_values)] = clearsky_values
 
         return tf.convert_to_tensor(meta)
