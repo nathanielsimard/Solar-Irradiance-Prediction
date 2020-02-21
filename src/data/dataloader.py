@@ -19,6 +19,7 @@ class Feature(Enum):
     """Feature which the dataloader can load."""
 
     image = "image"
+    clearsky = "clearsky"
     target_ghi = "target_ghi"
     metadata = "metadata"
     target_csm = "target_clearsky"
@@ -144,9 +145,10 @@ class DataLoader(object):
 
         self._readers = {
             Feature.image: self._read_image,
+            Feature.clearsky: self._read_clearsky,
             Feature.target_ghi: self._read_target,
             Feature.metadata: self._read_metadata,
-            Feature.target_csm: self._read_clearsky,
+            Feature.target_csm: self._read_target_clearsky,
             Feature.target_cloud: self._read_cloudiness,
         }
 
@@ -178,7 +180,7 @@ class DataLoader(object):
                     raise e
                 logger.debug(f"Error while generating data, skipping : {e}")
 
-    def _read_clearsky(self, metadata: Metadata) -> tf.Tensor:
+    def _read_target_clearsky(self, metadata: Metadata) -> tf.Tensor:
         return tf.convert_to_tensor(
             [
                 self._target_value(metadata.target_clearsky),
@@ -230,6 +232,13 @@ class DataLoader(object):
             ],
             dtype=tf.float32,
         )
+
+    def _read_clearsky(self, metadata: Metadata) -> tf.Tensor:
+        clearsky_values = []
+        for values in metadata.clearsky_values:
+            clearsky_values.append([self._clearsky_value(value) for value in values])
+
+        return tf.convert_to_tensor(clearsky_values, dtype=tf.float32)
 
     def _read_image(self, metadata: Metadata) -> tf.Tensor:
         try:
@@ -305,6 +314,12 @@ class DataLoader(object):
         meta[0 : len(clearsky_values)] = clearsky_values
 
         return tf.convert_to_tensor(meta)
+
+    def _clearsky_value(self, value):
+        if value is not None:
+            return value
+
+        return -1
 
     def _target_value(self, target):
         if target is not None:

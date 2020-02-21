@@ -3,7 +3,7 @@ import argparse
 from tensorflow.keras import losses, optimizers
 
 from src import dry_run, env
-from src.model import autoencoder, clearsky1
+from src.model import autoencoder, embed_conv3d
 from src.training import Training
 
 
@@ -39,7 +39,7 @@ def main():
 
     encoder = autoencoder.Encoder()
     encoder.load("3")
-    model = clearsky1.Clearsky(encoder)
+    model = embed_conv3d.Conv3D(encoder)
 
     optimizer = optimizers.Adam(0.001)
     loss_obj = losses.MeanSquaredError()

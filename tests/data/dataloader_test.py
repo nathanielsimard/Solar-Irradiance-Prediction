@@ -239,6 +239,7 @@ class DataLoaderTest(unittest.TestCase):
         config = cf.read_configuration_file(config_test.DUMMY_TEST_CFG_PATH)
         metadata = Metadata(
             "",
+            [],
             "",
             0,
             datetime=datetime(2010, 6, 19, 22, 15),
@@ -305,6 +306,7 @@ class DataLoaderTest(unittest.TestCase):
     def _metadata(
         self,
         image_paths: List[str] = [IMAGE_PATH],
+        clearsky_values=[400],
         target_ghi: Optional[float] = 100,
         target_ghi_1h: Optional[float] = 100,
         target_ghi_3h: Optional[float] = 100,
@@ -312,6 +314,7 @@ class DataLoaderTest(unittest.TestCase):
     ):
         return Metadata(
             image_paths,
+            clearsky_values,
             ANY_COMPRESSION,
             len(image_paths) * [ANY_IMAGE_OFFSET],
             ANY_DATETIME,

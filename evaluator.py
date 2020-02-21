@@ -56,7 +56,7 @@ def prepare_dataloader(
         by ``target_sequences``.
 
     """
-    metadata_loader = MetadataLoader(dataframe=dataframe)
+    metadata_loader = MetadataLoader(dataframe=dataframe, training=False)
     metadata_generator = metadata_loader.load(
         Station(station),
         Coordinates(coordinates[0], coordinates[1], coordinates[2]),
