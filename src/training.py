@@ -130,14 +130,9 @@ class Training(object):
         for epoch in range(epochs):
             logger.info("Supervised training...")
 
-<<<<<<< HEAD
-            for i, (inputs, targets) in enumerate(train_set.batch(batch_size, drop_remainder=True)):
-=======
             for i, data in enumerate(train_set.batch(batch_size)):
                 inputs = data[:-1]
                 targets = data[-1]
-
->>>>>>> master
                 logger.info(f"Batch #{i+1}")
 
                 self._train_step(inputs, targets)

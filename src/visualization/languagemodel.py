@@ -29,8 +29,6 @@ def plot_comparison(
     images = _first_images(dataset)
     images_originals = _first_images(valid_dataset)
     image_pred = _predict_images(model, decoder, images)
-    print("End Pred")
-    print(f"Pred {len(image_pred)}")
 
     generateds = []
     originals = []
@@ -77,24 +75,18 @@ def _plt_images(
 
 
 def _predict_images(model: LanguageModel, decoder: Decoder, images_features):
-    print("PREDICTING")
     preds = []
     inputs = images_features
     num_generate = 6
 
     for i in range(num_generate):
         pred_features = model(inputs, False)
-        print(inputs.shape)
-        inputs = tf.concat([inputs[0,1:], pred_features[0, -1:]],0)
-        inputs = tf.expand_dims(inputs, 0)
-
-
-        print(inputs.shape)
+        inputs = tf.concat([inputs[:, :], pred_features[:, -1:]], 0)
 
         pred_features = tf.squeeze(pred_features, 0)
         next_feature = pred_features[-1]
         # Remove the batch dim
-        next_feature =tf.reshape(next_feature,(1,8,8,32))
+        next_feature = tf.reshape(next_feature, (1, 8, 8, 32))
         pred_images = decoder((next_feature), False)
         pred = model.scaling_image.original(pred_images)
         preds.append(pred[0])

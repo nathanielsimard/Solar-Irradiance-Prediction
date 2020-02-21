@@ -26,16 +26,9 @@ class LanguageModel(base.Model):
 
         self.flatten = Flatten()
 
-        self.gru1 = GRU(
-            512,
-            return_sequences=True,
-        )
+        self.gru1 = GRU(512, return_sequences=True,)
 
-        self.gru2 = GRU(
-            num_features,
-            return_sequences=True,
-        )
-
+        self.gru2 = GRU(num_features, return_sequences=True,)
 
     def call(self, x, training: bool):
         """Performs the forward pass in the neural network.
@@ -72,7 +65,6 @@ class LanguageModel(base.Model):
         """
 
         def encoder(images):
-            logger.info(f"Image dim {images.shape}")
             images_encoded = self.encoder((images), False)
             return self.flatten(images_encoded)
 
