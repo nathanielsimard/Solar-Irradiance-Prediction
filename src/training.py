@@ -93,8 +93,7 @@ class Training(object):
         skip_non_cached=False,
         enable_checkpoint=True,
         dry_run=False,
-        categorical=False
-
+        categorical=False,
     ):
         """Performs the training of the model in minibatch.
 
@@ -168,7 +167,7 @@ class Training(object):
         train_metric.reset_states()
         valid_metric.reset_states()
 
-    def _evaluate(self, name, epoch, dataset, batch_size):
+    def _evaluate(self, name, epoch, dataset, batch_size, dry_run=False):
         metric = self.metrics[name]
         writer = self.writer[name]
 
@@ -179,6 +178,8 @@ class Training(object):
 
             loss = self._calculate_loss(inputs, targets)
             metric(loss)
+            if dry_run:
+                break
 
         with writer.as_default():
             tf.summary.scalar(name, metric.result(), step=epoch)

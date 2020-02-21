@@ -5,7 +5,6 @@ from enum import IntEnum
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-import diskcache
 import pickle
 from pvlib.location import Location
 
@@ -60,7 +59,9 @@ class Clearsky:
             # self.cache = diskcache.Cache("/tmp/clearsky")
             try:
                 with open(self.cache_filename, "rb") as file:
-                    logger.info(f"Loading precomputed clearsky values from {self.cache_filename}")
+                    logger.info(
+                        f"Loading precomputed clearsky values from {self.cache_filename}"
+                    )
                     self.cache = pickle.load(file)
             except (FileNotFoundError, EOFError):
                 logger.info("No clearsky cache found or corrupted cache!")
@@ -90,7 +91,9 @@ class Clearsky:
     ):
         if len(self.cache) > 1000000:
             logger.info(
-                "1000000 values already cached. Assuming everything is cached, skipping pre-computing. Flush the cache to force precomputation")
+                """1000000 values already cached. Assuming everything is cached, skipping pre-computing.
+                   Flush the cache to force precomputation"""
+            )
             return
         if target_datetimes is not None:
             if stations is None:
@@ -110,15 +113,22 @@ class Clearsky:
                 )
                 # Computing values for 4 increments of time. (0, +1h, +3h, +6h)
                 target_datetimes = pd.Series(target_datetimes)
-                clearsky_values_t0 = location.get_clearsky(pd.DatetimeIndex(target_datetimes))
+                clearsky_values_t0 = location.get_clearsky(
+                    pd.DatetimeIndex(target_datetimes)
+                )
                 clearsky_values_t1 = location.get_clearsky(
-                    pd.DatetimeIndex(target_datetimes + pd.Timedelta(1, unit='h')))
+                    pd.DatetimeIndex(target_datetimes + pd.Timedelta(1, unit="h"))
+                )
                 clearsky_values_t3 = location.get_clearsky(
-                    pd.DatetimeIndex(target_datetimes + pd.Timedelta(3, unit='h')))
+                    pd.DatetimeIndex(target_datetimes + pd.Timedelta(3, unit="h"))
+                )
                 clearsky_values_t6 = location.get_clearsky(
-                    pd.DatetimeIndex(target_datetimes + pd.Timedelta(6, unit='h')))
+                    pd.DatetimeIndex(target_datetimes + pd.Timedelta(6, unit="h"))
+                )
 
-                clearsky_values_t0["cache_key"] = clearsky_values_t0.index.to_series().apply(
+                clearsky_values_t0[
+                    "cache_key"
+                ] = clearsky_values_t0.index.to_series().apply(
                     self._generate_cache_key, args=[coordinates]
                 )
                 clearsky_values = clearsky_values_t0.reset_index()
@@ -127,7 +137,9 @@ class Clearsky:
                 clearsky_values["ghi_t6"] = clearsky_values_t6.reset_index()["ghi"]
                 clearsky_values.apply(self._load_values_to_cache, axis=1)
             with open(self.cache_filename, "wb") as file:
-                logger.info(f"Saving precomputed clearsky values to {self.cache_filename}")
+                logger.info(
+                    f"Saving precomputed clearsky values to {self.cache_filename}"
+                )
                 pickle.dump(self.cache, file)
 
     def _generate_cache_key(self, timestamp, coordinates):
