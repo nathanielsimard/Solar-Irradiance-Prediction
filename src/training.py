@@ -68,6 +68,8 @@ class SupervisedTraining(object):
         self.model = model
         self.train_rmse = tf.keras.metrics.RootMeanSquaredError()
         self.valid_rmse = tf.keras.metrics.RootMeanSquaredError()
+        self.epoch_train_rmse = tf.keras.metrics.RootMeanSquaredError()
+        self.epoch_valid_rmse = tf.keras.metrics.RootMeanSquaredError()
         # self.train_accuracy = tf.keras.metrics.Accuracy()
         self.train_accuracy = tf.keras.metrics.CategoricalAccuracy()
         self.valid_accuracy = tf.keras.metrics.CategoricalAccuracy()
@@ -156,7 +158,7 @@ class SupervisedTraining(object):
                     # Highly inefficient, but should not slow down training.
                     epoch_results = np.append(epoch_results, train_step_results, axis=0)
                 if (i % 10 == 0):
-                    self._update_progress(i)
+                    self._show_progress(i)
 
             np.save(f"epoch_results{epoch}.npy", epoch_results)
 
@@ -175,30 +177,39 @@ class SupervisedTraining(object):
         self.history.save(f"{self.model.title}-{epochs}")
         logger.info("Done.")
 
-    def _update_progress(self, epoch):
+    def _show_progress(self, step):
+        logger.info(
+            f"Step: {step + 1}, Train acc: {self.train_accuracy.result()} Train RMSE: {self.train_rmse.result()}, Valid RMSE: {self.valid_rmse.result()}"
+        )
+        self.train_rmse.reset_states()
+        self.valid_rmse.reset_states()
+
+    def _update_progress(self, epoch, tensorboard=False):
         train_metric = self.metrics["train"]
         valid_metric = self.metrics["valid"]
         train_writer = self.writer["train"]
 
         logger.info(
-            f"Step: {epoch + 1}, Train acc: {self.train_accuracy.result()} Train loss: {train_metric.result()}, Train RMSE: {self.train_rmse.result()}, Valid loss: {valid_metric.result()} "
+            f"Epoch: {epoch + 1}, Train acc: {self.train_accuracy.result()} Train loss: {train_metric.result()}, Train RMSE: {self.epoch_train_rmse.result()}, Valid RMSE: {self.epoch_valid_rmse.result()},Valid loss: {valid_metric.result()} "
         )
 
         with train_writer.as_default():
             tf.summary.scalar("train", train_metric.result(), step=epoch)
 
         # Reset the cumulative metrics after each epoch
-        self.history.record("train", train_metric.result())
+        if tensorboard:
+            self.history.record("train", train_metric.result())
         train_metric.reset_states()
         valid_metric.reset_states()
-        self.train_rmse.reset_states()
-        self.valid_rmse.reset_states()
+
+        self.epoch_train_rmse.reset_states()
+        self.epoch_train_rmse.reset_states()
         self.train_accuracy.reset_states()
 
     def _evaluate(self, name, epoch, dataset, batch_size, dry_run=False):
         metric = self.metrics[name]
         writer = self.writer[name]
-        for targets, meta, image, target_cloudiness, timestamp, location in dataset.batch(batch_size):
+        for i, (targets, meta, image, target_cloudiness, timestamp, location) in enumerate(dataset.batch(batch_size)):
             clearsky = meta[:, 0:4]  # TODO: Do something better.
             # clearsky = clearsky / 1000  # Cheap normalization
             adjusted_target = tf.clip_by_value(targets, 0, 2000) / tf.clip_by_value(clearsky, 1, 2000)
@@ -206,6 +217,8 @@ class SupervisedTraining(object):
             loss = self._valid_step(adjusted_target, targets, clearsky, image,
                                     target_cloudiness, timestamp, location, training=True)
             metric(loss)
+            if (i % 10 == 0):
+                self._show_progress(i)
             if dry_run:
                 break
 
@@ -262,6 +275,7 @@ class SupervisedTraining(object):
             if self.categorical:
                 output_ghi, outputs_onehot, penalty = self._categorical_to_ghi(outputs, clearsky)
                 self.train_accuracy.update_state(target_cloudiness, outputs)
+
                 loss = tf.nn.softmax_cross_entropy_with_logits(labels=target_cloudiness, logits=outputs)
                 results = tf.concat([tf.expand_dims(timestamp, axis=1), location, clearsky, outputs,
                                      outputs_onehot, target_cloudiness, tf.expand_dims(penalty, axis=1),
@@ -277,6 +291,7 @@ class SupervisedTraining(object):
                                      target_cloudiness, adjusted_targets, targets, output_ghi], axis=1).numpy()
 
             self.train_rmse.update_state(targets, output_ghi)
+            self.epoch_train_rmse.update_state(targets, output_ghi)
 
             # loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
             #    labels=tf.argmax(target_cloudiness, 1), logits=outputs)
@@ -301,9 +316,10 @@ class SupervisedTraining(object):
             loss = tf.nn.softmax_cross_entropy_with_logits(labels=target_cloudiness, logits=outputs)
 
         else:
-            output_ghi = outputs * clearsky
+            output_ghi = outputs  # * clearsky
             loss = self.loss_fn(adjusted_targets, outputs)
 
+        self.epoch_valid_rmse.update_state(targets, output_ghi)
         self.valid_rmse.update_state(targets, output_ghi)
 
         return loss
