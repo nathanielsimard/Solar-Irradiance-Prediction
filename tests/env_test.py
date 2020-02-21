@@ -31,9 +31,9 @@ class EnvTest(unittest.TestCase):
 
     def test_default_tf_cache_file(self):
         env.run_local = False
+        os.environ["SLURM_TMPDIR"] = "/test"
         self.assertEqual(
-            env.get_tf_cache_file(),
-            "/project/cq-training-1/project1/teams/team10/cached/cached",
+            env.get_tf_cache_file(), "/test",
         )
 
     def test_default_image_reader_directory(self):

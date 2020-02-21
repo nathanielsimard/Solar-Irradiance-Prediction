@@ -4,7 +4,7 @@ from tensorflow.keras import losses, optimizers
 
 from src import dry_run, env
 from src.model import autoencoder, languagemodel
-from src.training import SupervisedTraining
+from src.training import Training
 
 
 def main():
@@ -30,6 +30,11 @@ def main():
     parser.add_argument(
         "--no_checkpoint", help="Will not save any checkpoints", action="store_true",
     )
+
+    parser.add_argument("--lr", help="Learning rate", default=0.0001, type=float)
+
+    parser.add_argument("--model", help="Name of the model to train", default="CNN2D")
+    parser.add_argument("--batch_size", help="Batch size", default=128, type=int)
     args = parser.parse_args()
     env.run_local = args.run_local
 
@@ -47,13 +52,13 @@ def main():
     def rmse(pred, target):
         return loss_obj(pred, target) ** 0.5
 
-    training_session = SupervisedTraining(
-        optimizer=optimizer, model=model, loss_fn=rmse
-    )
+    training_session = Training(optimizer=optimizer, model=model, loss_fn=rmse)
     training_session.run(
         enable_tf_caching=args.enable_tf_caching,
         skip_non_cached=args.skip_non_cached,
         enable_checkpoint=not args.no_checkpoint,
+        batch_size=args.batch_size,
+        dry_run=args.dry_run,
     )
 
 

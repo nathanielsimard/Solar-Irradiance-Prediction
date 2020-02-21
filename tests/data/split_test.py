@@ -13,22 +13,34 @@ class SplitTest(unittest.TestCase):
             datetime(2015, 2, 1),
         ]
 
-        train_set, valid_set, test_set = split.create_split(datetimes)
+        _, _, test_set = split.create_split(datetimes)
 
         self.assertEqual(len(test_set), 2)
+
+    def test_whenCreateSplit_shouldCreate2014AsValidData(self):
+        datetimes = [
+            datetime(2013, 2, 1),
+            datetime(2014, 2, 1),
+            datetime(2014, 2, 1),
+            datetime(2015, 2, 1),
+        ]
+
+        _, valid_set, _ = split.create_split(datetimes)
+
+        self.assertEqual(len(valid_set), 2)
+
+    def test_whenCreateSplit_eachSetIsUnique(self):
+        datetimes = self._create_datetimes()
+        train_set, valid_set, test_set = split.create_split(datetimes)
+
+        # Important to counter the shuffle.
+        train_set = sorted(train_set)
+        valid_set = sorted(valid_set)
+        test_set = sorted(test_set)
+
+        self.assertTrue(valid_set not in train_set)
         self.assertTrue(test_set not in train_set)
         self.assertTrue(test_set not in valid_set)
-
-    def test_whenCreateSplit_shouldSplit8020TrainValid(self):
-        datetimes = self._create_datetimes()
-        train_set, valid_set, _ = split.create_split(datetimes)
-
-        valid_ratio = len(valid_set) / (len(train_set) + len(valid_set))
-        train_ratio = len(train_set) / (len(train_set) + len(valid_set))
-
-        self.assertAlmostEqual(valid_ratio, 0.2, delta=0.001)
-        self.assertAlmostEqual(train_ratio, 0.8, delta=0.001)
-        self.assertTrue(valid_set not in train_set)
 
     def test_whenCreateSplit_shouldUseAllValues(self):
         datetimes = self._create_datetimes()

@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import tensorflow as tf
 from tensorflow.keras.layers import Conv3D, Dense, Flatten, MaxPooling3D
 from tensorflow.keras.models import Sequential
@@ -34,12 +36,14 @@ class CNN3D(base.Model):
         self.d3 = Dense(256, activation="relu")
         self.d4 = Dense(4)
 
-    def call(self, x, training: bool):
+    def call(self, data: Tuple[tf.Tensor], training=False):
         """Performs the forward pass in the neural network.
 
         Can use a different pass with the optional training boolean if
         some operations need to be skipped at evaluation(e.g. Dropout)
         """
+        x = data[0]
+
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv3(x)
@@ -65,6 +69,8 @@ class CNN3D(base.Model):
         """Configuration."""
         config = default_config()
         config.num_images = self.num_images
+        config.ratio = 0.1
+        config.time_interval_min = 30
         config.features = [dataloader.Feature.image, dataloader.Feature.target_ghi]
 
         if training:
