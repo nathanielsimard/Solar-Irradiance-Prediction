@@ -56,7 +56,6 @@ class Clearsky:
         self.enable_caching = enable_caching
         self.cache_filename = "clearcky_cache.pkl"
         if enable_caching:
-            # self.cache = diskcache.Cache("/tmp/clearsky")
             try:
                 with open(self.cache_filename, "rb") as file:
                     logger.info(
@@ -70,8 +69,6 @@ class Clearsky:
 
     def __del__(self):
         """Delete the objects and close the cache."""
-        # if self.enable_caching:
-        #    self.cache.close()
 
     def clear_cache(self):
         """Forces clearing the cache."""

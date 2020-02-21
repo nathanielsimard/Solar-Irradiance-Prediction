@@ -138,7 +138,6 @@ class MetadataFeatureIndex(IntEnum):
     GHI_T_1h = 1
     GHI_T_3h = 2
     GHI_T_6h = 3
-    # SOLAR_TIME = 4
 
 
 class DataLoader(object):
