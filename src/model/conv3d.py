@@ -17,7 +17,7 @@ NAME = "Conv3D"
 class CNN3D(base.Model):
     """Create Conv3D model."""
 
-    def __init__(self, num_images=8):
+    def __init__(self, num_images=6):
         """Initialize the architecture."""
         super().__init__(NAME)
         self.scaling_image = preprocessing.MinMaxScaling(
@@ -31,7 +31,7 @@ class CNN3D(base.Model):
 
         self.flatten = Flatten()
 
-        self.d1 = Dense(1048, activation="relu")
+        self.d1 = Dense(1024, activation="relu")
         self.d2 = Dense(512, activation="relu")
         self.d3 = Dense(256, activation="relu")
         self.d4 = Dense(4)
@@ -70,8 +70,12 @@ class CNN3D(base.Model):
         config = default_config()
         config.num_images = self.num_images
         config.ratio = 0.1
-        config.time_interval_min = 30
-        config.features = [dataloader.Feature.image, dataloader.Feature.target_ghi]
+        config.time_interval_min = 60
+        config.features = [
+            dataloader.Feature.image,
+            dataloader.Feature.metadata,
+            dataloader.Feature.target_ghi,
+        ]
 
         if training:
             config.error_strategy = dataloader.ErrorStrategy.skip
