@@ -18,7 +18,7 @@ NAME = "Conv3D"
 class CNN3D(base.Model):
     """Create Conv3D model."""
 
-    def __init__(self, num_images=6, crop_size=16, dropout=0.25):
+    def __init__(self, num_images=6, crop_size=64, dropout=0.1):
         """Initialize the architecture."""
         super().__init__(NAME)
         self.scaling_image = preprocessing.MinMaxScaling(
@@ -27,9 +27,9 @@ class CNN3D(base.Model):
         self.num_images = num_images
         self.crop_size = crop_size
 
-        self.conv1 = self._convolution_step((3, 3, 3), 32)
-        self.conv2 = self._convolution_step((3, 3, 3), 64)
-        self.conv3 = self._convolution_step((3, 3, 3), 128)
+        self.conv1 = self._convolution_step((1, 3, 3), 32)
+        self.conv2 = self._convolution_step((1, 3, 3), 64)
+        self.conv3 = self._convolution_step((1, 3, 3), 128)
 
         self.flatten = Flatten()
         self.dropout = Dropout(dropout)
