@@ -142,7 +142,7 @@ class Training(object):
             self._update_progress(epoch)
             self.history.save(f"{self.model.title}-{epoch}")
 
-        # self._evaluate("test", epoch, test_set, valid_batch_size)
+        self._evaluate("test", epoch, test_set, valid_batch_size)
         logger.info("Done.")
 
     def _update_progress(self, epoch):

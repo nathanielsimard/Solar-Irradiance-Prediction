@@ -14,7 +14,7 @@ NAME = "EmbedConv3D"
 
 
 class Conv3D(base.Model):
-    """Create Language Model to predict the futur images."""
+    """Create Conv3D Model based on the embeddings created with the Encoder."""
 
     def __init__(self, encoder, num_images=6, time_interval_min=30, dropout=0.25):
         """Initialize the architecture."""
@@ -107,9 +107,6 @@ class Conv3D(base.Model):
         """Apply preprocessing specifitly for this model.
 
         Extract the features from the image with the encoder.
-        Flatten and concatenate them with the clearsky.
-        Change target to only consider present time.
-        Data is now (features, target).
         """
 
         def encoder(images):

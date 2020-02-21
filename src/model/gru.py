@@ -14,7 +14,7 @@ NAME = "GRU"
 
 
 class GRU(base.Model):
-    """Create Language Model to predict the futur images."""
+    """Create GRU Model based on the embeddings created with the encoder."""
 
     def __init__(self, encoder, num_images=6, time_interval_min=30, dropout=0.20):
         """Initialize the architecture."""
@@ -49,8 +49,6 @@ class GRU(base.Model):
         """
         x = data[0]
         x = self.gru1(x)
-
-        # x = self.flatten(x)
 
         x = self.d1(x)
         if training:
@@ -88,7 +86,6 @@ class GRU(base.Model):
 
         Extract the features from the image with the encoder.
         Flatten and concatenate them with the clearsky.
-        Change target to only consider present time.
         Data is now (features, target).
         """
 
