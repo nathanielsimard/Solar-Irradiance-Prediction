@@ -44,7 +44,6 @@ class LanguageModel(base.Model):
         """
         x = x[0]
         shape = x.shape
-
         x = tf.reshape(x, (shape[0], shape[1], self.num_features))
 
         x = self.l1(x)
@@ -79,7 +78,7 @@ class LanguageModel(base.Model):
         images = self._preprocess_images(images)
 
         for _ in range(num_images):
-            predictions = self.call((images))
+            predictions = self.call((images,))
             images = tf.concat([images[:, 0:1], predictions[:, :]], 1)
 
         # Remove batch size
@@ -115,15 +114,15 @@ class LanguageModel(base.Model):
             else:
                 inputs.append(image)
 
-        images = tf.constant(inputs)
+        images = tf.constant(inputs, dtype=tf.float32)
         # Introduce batch size dim
-        return tf.expand_dims(images)
+        return tf.expand_dims(images, 0)
 
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Encode images and return it as input and target."""
 
         def encoder(images):
-            return self.encoder((images), False)
+            return self.encoder(images, training=False)
 
         def preprocess(images):
             images = self.scaling_image.normalize(images)
