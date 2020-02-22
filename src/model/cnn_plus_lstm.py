@@ -10,8 +10,7 @@ from tensorflow.keras.layers import (
     Dropout,
     PReLU,
 )
-from tensorflow.keras.models import Sequential, Model
-from tensorflow.keras import Input
+from tensorflow.keras.models import Sequential
 
 from src import logging
 from src.data import dataloader, preprocessing
@@ -82,9 +81,6 @@ class CNNLSTM(base.Model):
         x = self.d3(x)
         x = self.d4(x)
 
-        if not training:
-            return self.scaling_target.original(x)
-
         return x
 
     def _convolution_step(self, kernel_size, channels, first=False):
@@ -125,13 +121,10 @@ class CNNLSTM(base.Model):
     def preprocess(self, dataset: tf.data.Dataset, training=True) -> tf.data.Dataset:
         """Applies the preprocessing to the inputs and the targets."""
 
-        def preprocess(images, target_csm, target_ghi, training):
+        def preprocess(images, target_csm, target_ghi):
             images = self.scaling_image.normalize(images)
             target_csm = self.scaling_target.normalize(target_csm)
-            if training:
-                target_ghi = self.scaling_target.normalize(target_ghi)
-            else:
-                target_ghi = target_ghi
+            target_ghi = self.scaling_target.normalize(target_ghi)
 
             return images, target_csm, target_ghi
 
