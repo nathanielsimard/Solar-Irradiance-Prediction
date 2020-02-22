@@ -28,20 +28,28 @@ class Conv3DTest(unittest.TestCase):
             return images[:num_images]
 
         language_model.predict_next_images = predict_next_images
-        self.model = conv3d_lm.Conv3D(language_model)
 
-    def test_call(self):
         def gen():
             for images in self.images:
                 yield (
                     images,
-                    tf.constant([100, 100, 100, 100]),
-                    tf.constant([100, 100, 100, 100]),
+                    tf.constant([100, 100, 100, 100], dtype=tf.float32),
+                    tf.constant([100, 100, 100, 100], dtype=tf.float32),
                 )
 
-        dataset = tf.data.Dataset.from_generator(
+        self.dataset = tf.data.Dataset.from_generator(
             gen, (tf.float32, tf.float32, tf.float32)
         )
-        dt = self.model.preprocess(dataset)
-        for d in dt:
-            continue
+
+        self.model = conv3d_lm.Conv3D(language_model)
+
+    def test_preprocessing(self):
+        dataset = self.model.preprocess(self.dataset)
+        for data in dataset:
+            self.assertEqual(data[0].shape, (4, self.x, self.y, self.num_channels))
+
+    def test_call(self):
+        dataset = self.model.preprocess(self.dataset)
+        for data in dataset.batch(1):
+            pred = self.model(data[:-1])
+            self.assertEqual(pred.shape, (1, 4))

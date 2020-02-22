@@ -49,7 +49,7 @@ class Conv3D(base.Model):
         Can use a different pass with the optional training boolean if
         some operations need to be skipped at evaluation(e.g. Dropout)
         """
-        images, clearsky = data[0]
+        images, clearsky = data
 
         x = self.conv1(images)
         x = self.conv2(x)
@@ -97,7 +97,13 @@ class Conv3D(base.Model):
             print(futur_images.shape)
             # Return images at t0, t1, t3, t6
             im = tf.concat(
-                [futur_images[0], futur_images[1], futur_images[2], futur_images[5]], 0
+                [
+                    futur_images[0:1],
+                    futur_images[1:2],
+                    futur_images[2:3],
+                    futur_images[5:6],
+                ],
+                0,
             )
             print(im.shape)
             return im
