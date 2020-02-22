@@ -86,9 +86,9 @@ class Training(object):
 
     def run(
         self,
-        batch_size=64,
-        epochs=100,
-        valid_batch_size=64,
+        batch_size=128,
+        epochs=25,
+        valid_batch_size=128,
         enable_tf_caching=False,
         skip_non_cached=False,
         enable_checkpoint=True,
@@ -117,8 +117,8 @@ class Training(object):
         )
 
         logger.info("Apply Preprocessing")
-        train_set = self.model.preprocess(train_set)
-        valid_set = self.model.preprocess(valid_set)
+        train_set = self.model.preprocess(train_set).cache("aa-train")
+        valid_set = self.model.preprocess(valid_set).cache("aa-valid")
         test_set = self.model.preprocess(test_set)
 
         logger.info("Creating loss logs")
