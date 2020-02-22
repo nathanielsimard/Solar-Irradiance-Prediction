@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tensorflow.keras.layers import GRU, Dense, Flatten
+from tensorflow.keras.layers import ConvLSTM2D, Dense, Flatten, GRU
 
 from src import logging
 from src.data import dataloader, preprocessing
@@ -23,30 +23,42 @@ class LanguageModel(base.Model):
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
         )
         self.encoder = encoder
+        self.num_features = num_features
+
+        self.l1 = ConvLSTM2D(16, kernel_size=(3,3), padding="same", return_sequences=True)
+        self.l2 = ConvLSTM2D(16, kernel_size=(3,3), padding="same", return_sequences=True)
+        self.l3 = ConvLSTM2D(5, kernel_size=(3,3), padding="same", return_sequences=True)
 
         self.flatten = Flatten()
 
-        self.gru1 = GRU(512, return_sequences=True,)
+        # self.l1 = GRU(num_features, return_sequences=True,)
+        # self.l2 = GRU(num_features, return_sequences=True,)
+        # self.l3 = GRU(num_features, return_sequences=True,)
 
-        self.gru2 = GRU(num_features, return_sequences=True,)
-
-    def call(self, x, training: bool):
+    def call(self, x, training=False):
         """Performs the forward pass in the neural network.
 
         Can use a different pass with the optional training boolean if
         some operations need to be skipped at evaluation(e.g. Dropout)
         """
-        x = self.gru1(x)
-        x = self.gru2(x)
+        x = x[0]
+        #shape = x.shape
 
+        #x = tf.reshape(x, (shape[0], shape[1], self.num_features))
+
+        x = self.l1(x)
+        x = self.l2(x)
+        x = self.l3(x)
+
+        #x = tf.reshape(x, shape)
         return x
 
     def config(self, training=False) -> dataloader.DataloaderConfig:
         """Configuration."""
         config = default_config()
         config.num_images = self.num_images
-        config.ratio = 0.1
-        config.features = [dataloader.Feature.image, dataloader.Feature.target_ghi]
+        config.time_interval_min = 60
+        config.features = [dataloader.Feature.image]
 
         if training:
             config.error_strategy = dataloader.ErrorStrategy.skip
@@ -65,12 +77,11 @@ class LanguageModel(base.Model):
         """
 
         def encoder(images):
-            images_encoded = self.encoder((images), False)
-            return self.flatten(images_encoded)
+            return self.encoder((images), False)
 
-        def preprocess(images, target):
+        def preprocess(images):
             images = self.scaling_image.normalize(images)
-            image_features = tf.py_function(func=encoder, inp=[images], Tout=tf.float32)
-            return (image_features[0:-1], image_features[1:])
+            # image_features = tf.py_function(func=encoder, inp=[images], Tout=tf.float32)
+            return (images[0:-1], images[1:])
 
         return dataset.map(preprocess).cache()

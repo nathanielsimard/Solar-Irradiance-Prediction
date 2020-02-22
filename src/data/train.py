@@ -51,6 +51,7 @@ def load_data(
     cache_file=None,
     skip_non_cached=False,
 ) -> Tuple[tf.data.Dataset, tf.data.Dataset, tf.data.Dataset]:
+    print(config)
     """Load train, valid and test datasets.
 
     Return: (train_dataset, valid_dataset, test_dataset)

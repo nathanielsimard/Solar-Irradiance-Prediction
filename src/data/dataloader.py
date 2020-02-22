@@ -301,6 +301,7 @@ class DataLoader(object):
                 )
                 images.append(image)
             except Exception as e:
+                raise e
                 logger.debug(f"Error while generating past images, ignoring : {e}")
                 images.append(np.zeros(shape))
 

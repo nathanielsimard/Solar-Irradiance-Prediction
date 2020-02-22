@@ -14,32 +14,42 @@ def plot_comparison(
 ):
     """Show original and generated futur images in a grid."""
     encoder = Encoder()
-    encoder.load("3")
+    encoder.load(encoder_instance)
     model = LanguageModel(encoder)
-    model.load("22")
+    model.load(language_model_instance)
 
     decoder = Decoder(num_channels)
     decoder.load(encoder_instance)
 
     config = model.config(training=False)
+    config.num_images = 6
+
 
     _, valid_dataset, _ = load_data(config=config)
-    dataset = model.preprocess(valid_dataset)
 
-    images = _first_images(dataset)
     images_originals = _first_images(valid_dataset)
-    image_pred = _predict_images(model, decoder, images)
+    images_originals = model.scaling_image.normalize(images_originals)
+
+    image_pred = _predict_images(model, encoder, decoder, images_originals[:, :3])
+    #images_originals = images_originals[:, 3:]
+
+    images_originals = encoder(images_originals[0], training=False)
+    images_originals = decoder(images_originals, training=False)
+
+    images_originals = model.scaling_image.original(images_originals)
+    image_pred = model.scaling_image.original(np.array(image_pred))
 
     generateds = []
     originals = []
 
-    for i in range(6):
+    for i in range(3):
         generated = image_pred[i]
-        original = images_originals[0, i]
+        print(images_originals.shape)
+        original = images_originals[i]
+        channel = 0
 
-        num_channels = original.shape[-1]
-        originals.append(original[:, :, 1])
-        generateds.append(generated[:, :, 1])
+        originals.append(original[:, :, channel])
+        generateds.append(generated[:, :, channel])
 
     _plt_images(originals, generateds, config.crop_size)
     plt.savefig(f"assets/languagemodel.png")
@@ -74,27 +84,32 @@ def _plt_images(
         ax_gen.imshow(gen, cmap="gray")
 
 
-def _predict_images(model: LanguageModel, decoder: Decoder, images_features):
+def _predict_images(model: LanguageModel,encoder: Encoder, decoder: Decoder, images_features):
+    flatten = tf.keras.layers.Flatten()
     preds = []
-    inputs = images_features
-    num_generate = 6
+    inputs = encoder(images_features[0], training=False)
+    inputs = tf.expand_dims(inputs,0)
+    num_generate = 3
 
     for i in range(num_generate):
-        pred_features = model(inputs, False)
-        inputs = tf.concat([inputs[:, :], pred_features[:, -1:]], 0)
+        pred_features = model((inputs,), training=False)
+        inputs = tf.concat([inputs[:, :], pred_features[:, -1:]], 1)
 
         pred_features = tf.squeeze(pred_features, 0)
-        next_feature = pred_features[-1]
-        # Remove the batch dim
-        next_feature = tf.reshape(next_feature, (1, 8, 8, 32))
+        # Last batch dim
+        next_feature = pred_features[-1:]
         pred_images = decoder((next_feature), False)
-        pred = model.scaling_image.original(pred_images)
-        preds.append(pred[0])
+        # Remove the batch dim
+        preds.append(pred_images[0])
 
     return preds
 
 
 def _first_images(dataset, index=3):
-    for i, data in enumerate(dataset.batch(1)):
-        if i == index:
+    a = 0
+    for data in dataset.batch(1):
+        if data[0].shape != (1, 6, 64, 64, 5):
+            continue
+        a += 1
+        if a == 100:
             return data[0]

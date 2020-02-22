@@ -1,4 +1,5 @@
 from typing import List
+import tensorflow as tf
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -62,11 +63,12 @@ def _plt_images(
 
 def _predict_image(autoencoder, images):
     images_scaled = autoencoder.scaling_image.normalize(images)
+    images_scaled = tf.expand_dims(images_scaled, 0)
     images_scaled_pred = autoencoder((images_scaled), False)
     return autoencoder.scaling_image.original(images_scaled_pred)
 
 
-def _first_image(dataset, index=3):
+def _first_image(dataset, index=2):
     for i, data in enumerate(dataset.batch(1)):
         if i == index:
             return data[0]
