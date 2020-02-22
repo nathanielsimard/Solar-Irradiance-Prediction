@@ -25,13 +25,11 @@ def plot_comparison(
     config.num_images = 6
 
     _, valid_dataset, _ = load_data(config=config)
-
     images_originals = _first_images(valid_dataset)
-    images_originals = model.scaling_image.normalize(images_originals)
 
-    image_pred = _predict_images(model, encoder, decoder, images_originals[:, :3])
-    images_originals = images_originals[:, 3:]
+    image_pred = model.predict_next_images(images_originals[:, :3], 3)
 
+    images_originals = model.scaling_image.normalize(images_originals[:, 3:])
     images_originals = encoder(images_originals[0], training=False)
     images_originals = decoder(images_originals, training=False)
 
@@ -43,7 +41,6 @@ def plot_comparison(
 
     for i in range(3):
         generated = image_pred[i]
-        print(images_originals.shape)
         original = images_originals[i]
         channel = 0
 
@@ -69,6 +66,7 @@ def _plt_images(
     fig, axs = plt.subplots(
         nrows=num_rows, ncols=num_col, figsize=(figsize_x, figsize_y)
     )
+    fig.tight_layout()
     for row, (original, gen) in enumerate(zip(originals, generated)):
         ax_original = axs[row][0]
         ax_gen = axs[row][1]
@@ -86,7 +84,6 @@ def _plt_images(
 def _predict_images(
     model: LanguageModel, encoder: Encoder, decoder: Decoder, images_features
 ):
-    flatten = tf.keras.layers.Flatten()
     preds = []
     inputs = encoder(images_features[0], training=False)
     inputs = tf.expand_dims(inputs, 0)
