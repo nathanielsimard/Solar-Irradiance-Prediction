@@ -3,7 +3,7 @@ from datetime import datetime
 
 import tensorflow as tf
 
-from src import logging
+from src import env, logging
 from src.data.train import load_data
 from src.model.base import Model
 
@@ -51,7 +51,7 @@ class History(object):
             return pickle.load(file)
 
 
-class SupervisedTraining(object):
+class Training(object):
     """Train a model in a supervised way.
 
     It assumes that the data is labeled (inputs, targets).
@@ -71,21 +71,35 @@ class SupervisedTraining(object):
             "test": tf.keras.metrics.Mean("test loss", dtype=tf.float32),
         }
         self.writer = {
-            "train": tf.summary.create_file_writer(TRAIN_LOG_DIR),
-            "valid": tf.summary.create_file_writer(VALID_LOG_DIR),
-            "test": tf.summary.create_file_writer(TEST_LOG_DIR),
+            "train": tf.summary.create_file_writer(
+                env.get_tensorboard_log_directory() + "/train/"
+            ),
+            "valid": tf.summary.create_file_writer(
+                env.get_tensorboard_log_directory() + "/valid/"
+            ),
+            "test": tf.summary.create_file_writer(
+                env.get_tensorboard_log_directory() + "/test/"
+            ),
         }
 
         self.history = History()
 
     def run(
         self,
+<<<<<<< HEAD
         batch_size=64,
         epochs=100,
         valid_batch_size=64,
+=======
+        batch_size=128,
+        epochs=25,
+        valid_batch_size=128,
+>>>>>>> master
         enable_tf_caching=False,
         skip_non_cached=False,
         enable_checkpoint=True,
+        dry_run=False,
+        categorical=False,
     ):
         """Performs the training of the model in minibatch.
 
@@ -95,8 +109,13 @@ class SupervisedTraining(object):
             valid_batch_size: should be as large as the GPU can handle.
             caching: if temporary caching is desired.
         """
-        logger.info(f"Starting supervised training with model {self.model.title}")
         config = self.model.config(training=True)
+        logger.info(
+            f"Starting training\n"
+            + f" - Model: {self.model.title}\n"
+            + f" - Config: {config}"
+        )
+
         train_set, valid_set, test_set = load_data(
             enable_tf_caching=enable_tf_caching,
             config=config,
@@ -106,31 +125,35 @@ class SupervisedTraining(object):
         logger.info("Apply Preprocessing")
         train_set = self.model.preprocess(train_set)
         valid_set = self.model.preprocess(valid_set)
-        test_set = self.model.preprocess(valid_set)
+        test_set = self.model.preprocess(test_set)
 
         logger.info("Creating loss logs")
 
+        # Fail early!
+        self.model.save(str(0))
+        self._evaluate("test", 0, test_set, valid_batch_size, dry_run=True)
         logger.info("Fitting model.")
         for epoch in range(epochs):
             logger.info("Supervised training...")
 
-            for i, (inputs, targets) in enumerate(train_set.batch(batch_size)):
+            for i, data in enumerate(train_set.batch(batch_size)):
+                inputs = data[:-1]
+                targets = data[-1]
+
                 logger.info(f"Batch #{i+1}")
 
-                self._train_step(inputs, targets, training=True)
+                self._train_step(inputs, targets)
 
             logger.info("Evaluating validation loss")
             self._evaluate("valid", epoch, valid_set, valid_batch_size)
 
-            if enable_checkpoint and epoch % CHECKPOINT_TIMESTAMP == 0:
-                logger.info("Checkpointing...")
-                self.model.save(str(epoch))
+            logger.info("Checkpointing...")
+            self.model.save(str(epoch))
 
             self._update_progress(epoch)
+            self.history.save(f"{self.model.title}-{epoch}")
 
         self._evaluate("test", epoch, test_set, valid_batch_size)
-
-        self.history.save(f"{self.model.title}-{epochs}")
         logger.info("Done.")
 
     def _update_progress(self, epoch):
@@ -150,13 +173,19 @@ class SupervisedTraining(object):
         train_metric.reset_states()
         valid_metric.reset_states()
 
-    def _evaluate(self, name, epoch, dataset, batch_size):
+    def _evaluate(self, name, epoch, dataset, batch_size, dry_run=False):
         metric = self.metrics[name]
         writer = self.writer[name]
 
-        for inputs, targets in dataset.batch(batch_size):
-            loss = self._calculate_loss(inputs, targets, training=False)
+        for i, data in enumerate(dataset.batch(batch_size)):
+            logger.info(f"Evaluation batch #{i}")
+            inputs = data[:-1]
+            targets = data[-1]
+
+            loss = self._calculate_loss(inputs, targets)
             metric(loss)
+            if dry_run:
+                break
 
         with writer.as_default():
             tf.summary.scalar(name, metric.result(), step=epoch)
@@ -164,9 +193,9 @@ class SupervisedTraining(object):
         self.history.record(name, metric.result())
 
     @tf.function
-    def _train_step(self, train_inputs, train_targets, training: bool):
+    def _train_step(self, train_inputs, train_targets):
         with tf.GradientTape() as tape:
-            outputs = self.model(train_inputs, training)
+            outputs = self.model(train_inputs, training=True)
             loss = self.loss_fn(train_targets, outputs)
         gradients = tape.gradient(loss, self.model.trainable_variables)
         self.optim.apply_gradients(zip(gradients, self.model.trainable_variables))
@@ -174,6 +203,6 @@ class SupervisedTraining(object):
         self.metrics["train"](loss)
 
     @tf.function
-    def _calculate_loss(self, valid_inputs, valid_targets, training: bool):
-        outputs = self.model(valid_inputs, training)
+    def _calculate_loss(self, valid_inputs, valid_targets):
+        outputs = self.model(valid_inputs)
         return self.loss_fn(valid_targets, outputs)

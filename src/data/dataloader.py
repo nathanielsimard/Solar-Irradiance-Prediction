@@ -8,6 +8,8 @@ import tensorflow as tf
 import src.data.clearskydata as csd
 from src import logging
 from src.data import image
+from src.data.config import Station, Coordinates
+
 from src.data.image import (
     CorruptedImage,
     ImageNotCached,
@@ -25,6 +27,7 @@ class Feature(Enum):
     image = "image"
     target_ghi = "target_ghi"
     metadata = "metadata"
+    target_cloud = "target_cloud"
 
 
 class ErrorStrategy(Enum):
@@ -82,6 +85,9 @@ class DataloaderConfig:
         num_images=1,
         time_interval_min=15,
         ratio=1,
+        target_datetimes=None,
+        stations: Dict[Station, Coordinates] = None,
+        precompute_clearsky=False,
     ):
         """All configurations are optional with default values.
 
@@ -98,6 +104,9 @@ class DataloaderConfig:
             time_interval_min: Number of minutes between images.
                 If num_images is 1, this has no effets.
             ratio: proportion of the data we want.
+            target_datetimes: list of target datetimes for clearsky caching
+            stations: list of station where to pre-compute
+            precompute_clearsky: Will pre-compute clearsky values if set.
         """
         self.local_path = local_path
         self.error_strategy = error_strategy
@@ -109,6 +118,17 @@ class DataloaderConfig:
         self.num_images = num_images
         self.time_interval_min = time_interval_min
         self.ratio = ratio
+        self.target_datetimes = target_datetimes
+        self.station = stations
+        self.precompute_clearsky = precompute_clearsky
+
+    def __str__(self):
+        """Return nice string representation of the config."""
+        string = "{\n"
+        attributes = vars(self)
+        for key, value in attributes.items():
+            string += f"  {key}: {value}\n"
+        return string + "}\n"
 
 
 class MetadataFeatureIndex(IntEnum):
@@ -118,7 +138,6 @@ class MetadataFeatureIndex(IntEnum):
     GHI_T_1h = 1
     GHI_T_3h = 2
     GHI_T_6h = 3
-    SOLAR_TIME = 4
 
 
 class DataLoader(object):
@@ -134,12 +153,26 @@ class DataLoader(object):
         self.metadata = metadata
         self.image_reader = image_reader
         self.config = config
-        self.csd = csd.Clearsky()
+        enable_clearsky_caching = False
+
+        if config.precompute_clearsky:
+            enable_clearsky_caching = True
+
+        self.csd = csd.Clearsky(enable_caching=enable_clearsky_caching)
+
+        if config.precompute_clearsky:
+            self.csd._precompute_clearsky_values(
+                config.target_datetimes, config.stations
+            )
+
+        self.ok = 0
+        self.skipped = 0
 
         self._readers = {
             Feature.image: self._read_image,
             Feature.target_ghi: self._read_target,
             Feature.metadata: self._read_metadata,
+            Feature.target_cloud: self._read_cloudiness,
         }
 
     def generator(self):
@@ -153,12 +186,11 @@ class DataLoader(object):
         for metadata in self.metadata():
             logger.debug(metadata)
             try:
-                yield tuple(
-                    [
-                        self._readers[feature](metadata)
-                        for feature in self.config.features
-                    ]
-                )
+                output = [
+                    self._readers[feature](metadata) for feature in self.config.features
+                ]
+                self.ok += 1
+                yield tuple(output)
             except AttributeError as e:
                 # This is clearly unhandled! We want a crash here!
                 raise e
@@ -169,6 +201,41 @@ class DataLoader(object):
                     logger.error(f"Error while generating data, stopping : {e}")
                     raise e
                 logger.debug(f"Error while generating data, skipping : {e}")
+                self.skipped += 1
+                if (self.skipped % 1000) == 0:
+                    logger.warning(f"{self.skipped} skipped, {self.ok} ok.")
+
+    def _read_cloudiness(self, metadata: Metadata) -> tf.Tensor:
+        return tf.convert_to_tensor(
+            [
+                self._convert_cloud_to_oneHot(
+                    self._target_cloud(metadata.target_cloudiness)
+                ),
+                self._convert_cloud_to_oneHot(
+                    self._target_cloud(metadata.target_cloudiness_1h)
+                ),
+                self._convert_cloud_to_oneHot(
+                    self._target_cloud(metadata.target_cloudiness_3h)
+                ),
+                self._convert_cloud_to_oneHot(
+                    self._target_cloud(metadata.target_cloudiness_6h)
+                ),
+            ]
+        )
+
+    def _convert_cloud_to_oneHot(self, cloud):
+        one_hot = {
+            "night": np.array([1, 0, 0, 0, 0]),
+            "cloudy": np.array([0, 1, 0, 0, 0]),
+            "slightly cloudy": np.array([0, 0, 1, 0, 0]),
+            "clear": np.array([0, 0, 0, 1, 0]),
+            "variable": np.array([0, 0, 0, 0, 1]),
+        }
+
+        try:
+            return one_hot[cloud]
+        except KeyError:
+            return [0, 0, 0, 0, 0]
 
     def _read_target(self, metadata: Metadata) -> tf.Tensor:
         return tf.convert_to_tensor(
@@ -241,9 +308,6 @@ class DataLoader(object):
 
     def _read_metadata(self, metadata: Metadata) -> tf.Tensor:
         meta = np.zeros(len(MetadataFeatureIndex))
-        clearsky_values = self.csd.calculate_clearsky_values(
-            metadata.coordinates, metadata.datetime
-        )
         """This reader will read all information that is not contained
         in the image. It will allow to train using the computed clearsky values.
 
@@ -252,9 +316,18 @@ class DataLoader(object):
         It will yield a single vector containing all values side by side for
         this sample. (T, T+1, T+3, T+6 )
         """
+        clearsky_values = self.csd.calculate_clearsky_values(
+            metadata.coordinates, metadata.datetime
+        )
         meta[0 : len(clearsky_values)] = clearsky_values
 
-        return tf.convert_to_tensor(meta)
+        return tf.convert_to_tensor(meta, dtype=tf.float32)
+
+    def _clearsky_value(self, value):
+        if value is not None:
+            return value
+
+        return -1
 
     def _target_value(self, target):
         if target is not None:
@@ -262,6 +335,15 @@ class DataLoader(object):
 
         if self.config.error_strategy == ErrorStrategy.ignore:
             return 0.0
+
+        raise MissingTargetException()
+
+    def _target_cloud(self, target):
+        if target is not None:
+            return target
+
+        if self.config.error_strategy == ErrorStrategy.ignore:
+            return "variable"
 
         raise MissingTargetException()
 
@@ -276,6 +358,9 @@ class DataLoader(object):
 def create_dataset(
     metadata: Callable[[], Iterable[Metadata]],
     config: Union[Dict[str, Any], DataloaderConfig] = DataloaderConfig(),
+    target_datetimes=None,
+    stations: Dict[Station, Coordinates] = None,
+    enable_image_cache=True,
 ) -> tf.data.Dataset:
     """Create a tensorflow Dataset base on the metadata and dataloader's config.
 
@@ -291,6 +376,7 @@ def create_dataset(
         channels=config.channels,
         cache_dir=config.image_cache_dir,
         force_caching=config.force_caching,
+        enable_caching=enable_image_cache,
     )
     dataloader = DataLoader(metadata, image_reader, config=config)
 

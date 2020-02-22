@@ -59,6 +59,7 @@ class Metadata:
     """
 
     image_paths: List[str]
+    clearsky_values: List[float]
     image_compression: str
     image_offsets: List[int]
     datetime: datetime
@@ -71,6 +72,10 @@ class Metadata:
     target_cloudiness_1h: Optional[str] = None
     target_cloudiness_3h: Optional[str] = None
     target_cloudiness_6h: Optional[str] = None
+    target_clearsky: Optional[float] = None
+    target_clearsky_1h: Optional[float] = None
+    target_clearsky_3h: Optional[float] = None
+    target_clearsky_6h: Optional[float] = None
 
     def __str__(self):
         """Converts metadata to string for logging. Not all info is output."""
@@ -83,7 +88,7 @@ class MetadataLoader:
     # Dictionnary of all SURFRAD station names and locations
     # Given as (latitude, longitude, altitude) tuples
 
-    def __init__(self, file_name=None, dataframe=None) -> None:
+    def __init__(self, file_name=None, dataframe=None, training=True) -> None:
         """Create a metadata loader.
 
         :param file_name: Path to the catalog file.
@@ -96,6 +101,7 @@ class MetadataLoader:
             Those parameters are mutually exclusive and should not be provided at the same time.
 
         """
+        self.training = training
         if (
             not isinstance(file_name, str) and file_name is not None
         ):  # Calling this with a bool (I made the mistake)
@@ -154,9 +160,12 @@ class MetadataLoader:
         image_column = self._image_column(compression)
         image_offset_column = self._image_column(compression, variable="offset")
 
-        catalog = self._filter_null(catalog, image_column)
-        catalog = self._filter_null(catalog, f"{station.name}_GHI")
-        catalog = self._filter_night(catalog, station, night_time)
+        if self.training:
+            catalog = self._filter_null(catalog, image_column)
+            catalog = self._filter_null(catalog, f"{station.name}_GHI")
+            catalog = self._filter_null(catalog, f"{station.name}_CLEARSKY_GHI")
+            catalog = self._filter_null(catalog, f"{station.name}_CLOUDINESS")
+            catalog = self._filter_night(catalog, station, night_time)
 
         target_timestamps = self._target_timestamps(catalog, target_datetimes)
         catalog = catalog.drop_duplicates()
@@ -242,7 +251,7 @@ class MetadataLoader:
         num_images: int,
         time_interval_min: int,
     ) -> Metadata:
-        image_paths, image_offsets = self._find_additional_image_paths(
+        image_paths, image_offsets = self._find_image_paths(
             rows,
             image_column,
             image_offset_column,
@@ -250,8 +259,14 @@ class MetadataLoader:
             num_images,
             time_interval_min,
         )
+        clearsky_values = self._find_clearsky_values(
+            rows, station, timestamp, num_images, time_interval_min
+        )
+        try:
+            target_ghi = row[f"{station.name}_GHI"]
+        except KeyError:
+            target_ghi = 0
 
-        target_ghi = row[f"{station.name}_GHI"]
         target_ghi_1h = self._find_future_value(
             rows, station, timestamp, 1, variable="GHI"
         )
@@ -262,7 +277,11 @@ class MetadataLoader:
             rows, station, timestamp, 6, variable="GHI"
         )
 
-        target_cloudiness = row[f"{station.name}_CLOUDINESS"]
+        try:
+            target_cloudiness = row[f"{station.name}_CLOUDINESS"]
+        except KeyError:
+            target_cloudiness = 0
+
         target_cloudiness_1h = self._find_future_value(
             rows, station, timestamp, 1, variable="CLOUDINESS"
         )
@@ -273,10 +292,26 @@ class MetadataLoader:
             rows, station, timestamp, 6, variable="CLOUDINESS"
         )
 
+        try:
+            target_clearsky = row[f"{station.name}_CLEARSKY_GHI"]
+        except KeyError:
+            target_clearsky = 0
+
+        target_clearsky_1h = self._find_future_value(
+            rows, station, timestamp, 1, variable="CLEARSKY_GHI"
+        )
+        target_clearsky_3h = self._find_future_value(
+            rows, station, timestamp, 3, variable="CLEARSKY_GHI"
+        )
+        target_clearsky_6h = self._find_future_value(
+            rows, station, timestamp, 6, variable="CLEARSKY_GHI"
+        )
+
         datetime = timestamp.to_pydatetime()
 
         return Metadata(
             image_paths=image_paths,
+            clearsky_values=clearsky_values,
             datetime=datetime,
             image_compression=compression,
             image_offsets=image_offsets,
@@ -289,9 +324,13 @@ class MetadataLoader:
             target_cloudiness_1h=target_cloudiness_1h,
             target_cloudiness_3h=target_cloudiness_3h,
             target_cloudiness_6h=target_cloudiness_6h,
+            target_clearsky=target_clearsky,
+            target_clearsky_1h=target_clearsky_1h,
+            target_clearsky_3h=target_clearsky_3h,
+            target_clearsky_6h=target_clearsky_6h,
         )
 
-    def _find_additional_image_paths(
+    def _find_image_paths(
         self,
         rows,
         image_column,
@@ -317,10 +356,36 @@ class MetadataLoader:
 
         return image_paths, image_offsets
 
-    def _find_image_path(
-        self, rows: Dict[pd.Timestamp, Any], num_images, time_interval_min
+    def _find_clearsky_values(
+        self, rows, station, timestamp, num_clearsky, time_interval_min,
     ):
-        pass
+        clearsky_values = []
+        # Iterate in reverse to add the oldest images first.
+        for i in range(num_clearsky - 1, -1, -1):
+            index = timestamp - pd.to_timedelta(i * time_interval_min, unit="min")
+
+            target_clearsky = self._find_future_value(
+                rows, station, index, 0, variable="CLEARSKY_GHI"
+            )
+            target_clearsky_1h = self._find_future_value(
+                rows, station, index, 1, variable="CLEARSKY_GHI"
+            )
+            target_clearsky_3h = self._find_future_value(
+                rows, station, index, 3, variable="CLEARSKY_GHI"
+            )
+            target_clearsky_6h = self._find_future_value(
+                rows, station, index, 6, variable="CLEARSKY_GHI"
+            )
+            clearsky_values.append(
+                [
+                    target_clearsky,
+                    target_clearsky_1h,
+                    target_clearsky_3h,
+                    target_clearsky_6h,
+                ]
+            )
+
+        return clearsky_values
 
     def _target_timestamps(
         self, catalog: pd.DataFrame, target_datetimes: Optional[List[datetime]]

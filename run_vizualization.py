@@ -124,4 +124,8 @@ def visualize():
 
 
 if __name__ == "__main__":
+<<<<<<< HEAD
     training.plot_learning_curve("Conv3D-100")
+=======
+    training.plot_learning_curve("GRU-24")
+>>>>>>> master

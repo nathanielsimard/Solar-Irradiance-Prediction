@@ -323,6 +323,21 @@ class MetadataLoaderTest(unittest.TestCase):
             mt = next(metadata)
             self.assertEqual(expected_offset, mt.image_offsets)
 
+    def test_givenNumImagesAndTimeInterval_whenLoad_shouldReturnCorrectClearskyValues(
+        self,
+    ):
+        loader = MetadataLoader(CATALOG_PATH)
+        num_images = 5
+        num_clearsky = 4
+        metadata = loader.load(
+            Station.BND, A_STATION_COORDINATE, num_images=num_images,
+        )
+
+        for i in range(1, num_images + 1):
+            mt = next(metadata)
+            self.assertEqual(num_images, len(mt.clearsky_values))
+            self.assertEqual(num_clearsky, len(mt.clearsky_values[0]))
+
     def test_givenNumImagesAndTimeInterval_whenLoad_shouldReturnCorrectPaths(self):
         loader = MetadataLoader(CATALOG_PATH)
         num_images = 5

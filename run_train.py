@@ -3,8 +3,13 @@ import argparse
 from tensorflow.keras import losses, optimizers
 
 from src import dry_run, env
+<<<<<<< HEAD
 from src.model import cnn_plus_lstm
 from src.training import SupervisedTraining
+=======
+from src.model import conv2d  # autoencoder, embed_conv3d, conv2d
+from src.training import Training
+>>>>>>> master
 
 
 def main():
@@ -30,6 +35,11 @@ def main():
     parser.add_argument(
         "--no_checkpoint", help="Will not save any checkpoints", action="store_true",
     )
+
+    parser.add_argument("--lr", help="Learning rate", default=0.0001, type=float)
+
+    parser.add_argument("--model", help="Name of the model to train", default="CNN2D")
+    parser.add_argument("--batch_size", help="Batch size", default=128, type=int)
     args = parser.parse_args()
     env.run_local = args.run_local
 
@@ -37,20 +47,29 @@ def main():
         dry_run.run(args.enable_tf_caching, args.skip_non_cached)
         return
 
+<<<<<<< HEAD
     model = cnn_plus_lstm.CNNLSTM()
     optimizer = optimizers.Adam(0.01)
+=======
+    # encoder = autoencoder.Encoder()
+    # encoder.load("3")
+    # model = embed_conv3d.Conv3D(encoder)
+    model = conv2d.CNN2DClearsky()
+
+    optimizer = optimizers.Adam(0.001)
+>>>>>>> master
     loss_obj = losses.MeanSquaredError()
 
     def rmse(pred, target):
         return loss_obj(pred, target) ** 0.5
 
-    training_session = SupervisedTraining(
-        optimizer=optimizer, model=model, loss_fn=rmse
-    )
+    training_session = Training(optimizer=optimizer, model=model, loss_fn=rmse)
     training_session.run(
         enable_tf_caching=args.enable_tf_caching,
         skip_non_cached=args.skip_non_cached,
         enable_checkpoint=not args.no_checkpoint,
+        batch_size=args.batch_size,
+        dry_run=args.dry_run,
     )
 
 

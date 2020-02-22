@@ -10,9 +10,12 @@ import pandas as pd
 import tensorflow as tf
 import tqdm
 
+from src import logging
 from src.data import dataloader
 from src.data.metadata import Coordinates, MetadataLoader, Station
-from src.model import conv2d
+from src.model import autoencoder, base, embed_conv3d
+
+logger = logging.create_logger(__name__)
 
 
 def prepare_dataloader(
@@ -56,20 +59,27 @@ def prepare_dataloader(
         by ``target_sequences``.
 
     """
-    metadata_loader = MetadataLoader(dataframe=dataframe)
+
+    logger.info(f"Prepare dataloader for station {station} and config {config}")
+    metadata_loader = MetadataLoader(dataframe=dataframe, training=False)
     metadata_generator = metadata_loader.load(
         Station(station),
         Coordinates(coordinates[0], coordinates[1], coordinates[2]),
         target_datetimes=target_datetimes,
+        skip_missing=False,
+        num_images=config.num_images,
+        time_interval_min=config.time_interval_min,
     )
 
-    return dataloader.create_dataset(metadata_generator, config)
+    return dataloader.create_dataset(
+        lambda: metadata_generator, config=config, enable_image_cache=False,
+    )
 
 
 def prepare_model(
     target_time_offsets: typing.List[datetime.timedelta],
     config: typing.Dict[typing.AnyStr, typing.Any],
-) -> tf.keras.Model:
+) -> base.Model:
     """Model for the data.
 
     See https://github.com/mila-iqia/ift6759/tree/master/projects/project1/evaluation.md for more information.
@@ -80,11 +90,14 @@ def prepare_model(
             such a JSON file is completely optional, and this argument can be ignored if not needed.
 
     Returns:
-        A ``tf.keras.Model`` object that can be used to generate new GHI predictions given imagery tensors.
+        A ``base.Model`` object that can be used to generate new GHI predictions given imagery tensors.
 
     """
-    model = conv2d.CNN2D()
-    model.load("Conv2D-100")  # Just an example how to load weights.
+    encoder = autoencoder.Encoder()
+    encoder.load("3")
+    model = embed_conv3d.Conv3D(encoder)
+    model.load("24")
+    logger.info(f"Loaded model: {model.title}")
     return model
 
 
@@ -94,21 +107,13 @@ def generate_predictions(
     """Generate and returns model predictions given the data prepared by a data loader."""
     predictions = []
     with tqdm.tqdm("generating predictions", total=pred_count) as pbar:
-        for iter_idx, minibatch in enumerate(data_loader):
+        for iter_idx, minibatch in enumerate(data_loader.batch(32)):
+            logger.info(f"Minibatch #{iter_idx}")
             assert (
                 isinstance(minibatch, tuple) and len(minibatch) >= 2
             ), "the data loader should load each minibatch as a tuple with model input(s) and target tensors"
-            # remember: the minibatch should contain the input tensor(s) for the model as well as the GT (target)
-            # values, but since we are not training (and the GT is unavailable), we discard the last element
-            # see https://github.com/mila-iqia/ift6759/blob/master/projects/project1/datasources.md#pipeline-formatting
-            if (
-                len(minibatch) == 2
-            ):  # there is only one input + groundtruth, give the model the input directly
-                pred = model(minibatch[0])
-            else:  # the model expects multiple inputs, give them all at once using the tuple
-                pred = model(minibatch[:-1])
-            if isinstance(pred, tf.Tensor):
-                pred = pred.numpy()
+            # Call the model without the target and with training = False.
+            pred = model(minibatch[0:-1]).numpy()
             assert (
                 pred.ndim == 2
             ), "prediction tensor shape should be BATCH x SEQ_LENGTH"
@@ -126,6 +131,7 @@ def generate_all_predictions(
 ) -> np.ndarray:
     """Generate and returns model predictions given the data prepared by a data loader."""
     # we will create one data loader per station to make sure we avoid mixups in predictions
+    logger.info("Generating all prefictions")
     predictions = []
     for station_idx, station_name in enumerate(target_stations):
         # usually, we would create a single data loader for all stations, but we just want to avoid trouble...
@@ -134,10 +140,12 @@ def generate_all_predictions(
         )
         coordinates = target_stations[station_name]
 
+        # Create the model
         model = prepare_model(target_time_offsets, user_config)
+        # Get the configuration from the model to load the proper dataset.
         model_config = model.config(training=False)
 
-        data_loader = prepare_dataloader(
+        dataset = prepare_dataloader(
             dataframe,
             target_datetimes,
             station_name,
@@ -145,8 +153,11 @@ def generate_all_predictions(
             target_time_offsets,
             model_config,
         )
+        # Apply the preprocessing needed for the model.
+        dataset = model.preprocess(dataset)
+
         station_preds = generate_predictions(
-            data_loader, model, pred_count=len(target_datetimes)
+            dataset, model, pred_count=len(target_datetimes)
         )
         assert len(station_preds) == len(
             target_datetimes
