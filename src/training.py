@@ -117,7 +117,7 @@ class Training(object):
         )
 
         logger.info("Apply Preprocessing")
-        train_set = self.model.preprocess(train_set).cache("aa-train")
+        train_set = self.model.preprocess(train_set, training=True).cache("aa-train")
         valid_set = self.model.preprocess(valid_set, training=False).cache("aa-valid")
         test_set = self.model.preprocess(test_set)
 
