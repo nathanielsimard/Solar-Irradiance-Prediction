@@ -3,13 +3,8 @@ import argparse
 from tensorflow.keras import losses, optimizers
 
 from src import dry_run, env
-<<<<<<< HEAD
 from src.model import cnn_plus_lstm
-from src.training import SupervisedTraining
-=======
-from src.model import conv2d  # autoencoder, embed_conv3d, conv2d
 from src.training import Training
->>>>>>> master
 
 
 def main():

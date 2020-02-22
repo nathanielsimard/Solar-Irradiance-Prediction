@@ -8,6 +8,7 @@ from tensorflow.keras.layers import (
     LSTM,
     Conv2D,
     Dropout,
+    PReLU
 )
 from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras import Input
@@ -119,18 +120,21 @@ class CNNLSTM(base.Model):
         return training_model, encoder_model, decoder_model
 
     def _convolution_step(self, kernel_size, channels, first=False):
-        conv2 = TimeDistributed(Conv2D(channels, kernel_size, activation="relu"))
+        conv2 = TimeDistributed(Conv2D(channels, kernel_size))
+        act2 = PReLU()
         max_pool = TimeDistributed(MaxPooling2D(pool_size=(2, 2)))
 
         if first:
             conv1 = TimeDistributed(
-                Conv2D(channels, kernel_size, activation="relu"),
+                Conv2D(channels, kernel_size),
                 input_shape=(self.num_images, 64, 64, 5),
             )
+            act1 = PReLU()
         else:
-            conv1 = TimeDistributed(Conv2D(channels, kernel_size, activation="relu"))
+            conv1 = TimeDistributed(Conv2D(channels, kernel_size))
+            act1 = PReLU()
 
-        return Sequential([conv1, conv2, max_pool])
+        return Sequential([conv1, act1, conv2, act2, max_pool])
 
     def config(self, training=False) -> dataloader.DataloaderConfig:
         """Configuration."""
