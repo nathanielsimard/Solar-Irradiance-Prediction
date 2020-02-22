@@ -14,7 +14,10 @@ NAME = "Conv3D-LanguageModel"
 
 
 class Conv3D(base.Model):
-    """Create Conv3D model."""
+    """Create Conv3D model to be used with the language model.
+
+    Generated futur images are used instead of past image.
+    """
 
     def __init__(self, language_model: languagemodel.LanguageModel):
         """Initialize the architecture."""
@@ -43,11 +46,7 @@ class Conv3D(base.Model):
         self.d3 = layers.Dense(4)
 
     def call(self, data: Tuple[tf.Tensor, tf.Tensor], training=False):
-        """Performs the forward pass in the neural network.
-
-        Can use a different pass with the optional training boolean if
-        some operations need to be skipped at evaluation(e.g. Dropout)
-        """
+        """Performs the forward pass in the neural network."""
         images, clearsky = data
 
         x = self.conv1(images)
@@ -91,11 +90,9 @@ class Conv3D(base.Model):
         """Applies the preprocessing to the inputs and the targets."""
 
         def generate(images):
-            print(images.shape)
             futur_images = self.language_model.predict_next_images(images, num_images=6)
-            print(futur_images.shape)
             # Return images at t0, t1, t3, t6
-            im = tf.concat(
+            return tf.concat(
                 [
                     futur_images[0:1],
                     futur_images[1:2],
@@ -104,8 +101,6 @@ class Conv3D(base.Model):
                 ],
                 0,
             )
-            print(im.shape)
-            return im
 
         def preprocess(images, target_csm, target_ghi):
             target_csm = self.scaling_ghi.normalize(target_csm)

@@ -107,7 +107,7 @@ class DataloaderConfig:
             target_datetimes: list of target datetimes for clearsky caching
             stations: list of station where to pre-compute
             precompute_clearsky: Will pre-compute clearsky values if set.
-            skip_missing_past_images: is past image is missing, skip.
+            skip_missing_past_images: if past image is missing, skip.
         """
         self.local_path = local_path
         self.error_strategy = error_strategy

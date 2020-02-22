@@ -37,11 +37,7 @@ class LanguageModel(base.Model):
         self.l3 = layers.GRU(num_features, return_sequences=True)
 
     def call(self, x: Tuple[tf.Tensor], training=False):
-        """Performs the forward pass in the neural network.
-
-        Can use a different pass with the optional training boolean if
-        some operations need to be skipped at evaluation(e.g. Dropout)
-        """
+        """Performs the forward pass in the neural network."""
         x = x[0]
         shape = x.shape  # type: ignore
         x = tf.reshape(x, (shape[0], shape[1], self.num_features))
@@ -74,7 +70,7 @@ class LanguageModel(base.Model):
         Args:
             images: Tensor of shape (num_images, width, height, channels)
                 Images must not be scaled, crop or anything special.
-            num_images: Numbre of futur images to generate.
+            num_images: Number of futur images to generate.
         """
         images = self._preprocess_images(images)
 
