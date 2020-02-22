@@ -55,7 +55,7 @@ class CNNLSTM(base.Model):
         self.d3 = Dense(128, activation="relu")
         self.d4 = Dense(self.num_outputs)
 
-    def call(self, data: Tuple[tf.Tensor, tf.Tensor], training: bool):
+    def call(self, data: Tuple[tf.Tensor, tf.Tensor], training=False):
         """Performs the forward pass in the neural network.
 
         Can use a different pass with the optional training boolean if
@@ -77,7 +77,8 @@ class CNNLSTM(base.Model):
             x = self.drop4(x)
 
         outputs = self.lstm(x)
-        x = self.d2(outputs)
+        x = tf.concat([outputs, clearsky], axis=1)
+        x = self.d2(x)
         x = self.d3(x)
         x = self.d4(x)
 
