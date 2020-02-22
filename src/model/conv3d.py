@@ -1,8 +1,7 @@
 from typing import Tuple
 
 import tensorflow as tf
-from tensorflow.keras.layers import (Conv3D, Dense, Dropout, Flatten,
-                                     MaxPooling3D)
+from tensorflow.keras.layers import Conv3D, Dense, Dropout, Flatten, MaxPooling3D
 from tensorflow.keras.models import Sequential
 
 from src import logging
@@ -23,6 +22,9 @@ class CNN3D(base.Model):
         super().__init__(NAME)
         self.scaling_image = preprocessing.MinMaxScaling(
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
+        )
+        self.scaling_target = preprocessing.MinMaxScaling(
+            preprocessing.TARGET_GHI_MIN, preprocessing.TARGET_GHI_MAX
         )
         self.num_images = num_images
         self.crop_size = crop_size
@@ -130,6 +132,8 @@ class CNN3D(base.Model):
 
         def preprocess(images, metadata, target_ghi):
             images = self.scaling_image.normalize(images)
+            metadata = self.scaling_target.normalize(metadata)
+            target_ghi = self.scaling_target.normalize(target_ghi)
             return (images, metadata, target_ghi)
 
         return dataset.map(preprocess)
