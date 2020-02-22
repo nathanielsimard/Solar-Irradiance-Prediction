@@ -82,43 +82,10 @@ class CNNLSTM(base.Model):
         x = self.d3(x)
         x = self.d4(x)
 
+        if not training:
+            return self.scaling_target.original(x)
+
         return x
-
-    def _lstm_seq_to_seq(self, n_units):
-        """Implementation of a ML blog for a test.
-
-        https://machinelearningmastery.com/develop-encoder-decoder-model-sequence-sequence-prediction-keras/
-        """
-        encoder_inputs = Input(shape=(None, self.num_images))
-        lstm_encoder = LSTM(n_units, return_state=True)
-        encoder_outputs, hidden_state, final_state = lstm_encoder(encoder_inputs)
-        encoder_states = [hidden_state, final_state]
-
-        decoder_inputs = Input(shape=(None, self.num_outputs))
-        lstm_decoder = LSTM(n_units, return_sequences=True, return_state=True)
-        decoder_outputs, _, _ = lstm_decoder(
-            decoder_inputs, initial_state=encoder_states
-        )
-        dense_layer = Dense(self.num_outputs)
-        decoder_outputs = dense_layer(decoder_outputs)
-
-        training_model = Model([encoder_inputs, decoder_inputs], decoder_outputs)
-        encoder_model = Model(encoder_inputs, encoder_states)
-
-        decoder_hidden_state_in = Input(shape=(n_units,))
-        decoder_final_state_in = Input(shape=(n_units,))
-        decoder_states_in = [decoder_hidden_state_in, decoder_final_state_in]
-        decoder_outputs, hidden_state, final_state = lstm_decoder(
-            decoder_inputs, initial_state=decoder_states_in
-        )
-        decoder_states = [hidden_state, final_state]
-        decoder_outputs = dense_layer(decoder_outputs)
-
-        decoder_model = Model(
-            [decoder_inputs] + decoder_states_in, [decoder_outputs], decoder_states
-        )
-
-        return training_model, encoder_model, decoder_model
 
     def _convolution_step(self, kernel_size, channels, first=False):
         conv2 = TimeDistributed(Conv2D(channels, kernel_size))
@@ -155,13 +122,16 @@ class CNNLSTM(base.Model):
 
         return config
 
-    def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
+    def preprocess(self, dataset: tf.data.Dataset, training=True) -> tf.data.Dataset:
         """Applies the preprocessing to the inputs and the targets."""
 
-        def preprocess(images, target_csm, target_ghi):
+        def preprocess(images, target_csm, target_ghi, training):
             images = self.scaling_image.normalize(images)
             target_csm = self.scaling_target.normalize(target_csm)
-            target_ghi = self.scaling_target.normalize(target_ghi)
+            if training:
+                target_ghi = self.scaling_target.normalize(target_ghi)
+            else:
+                target_ghi = target_ghi
 
             return images, target_csm, target_ghi
 
