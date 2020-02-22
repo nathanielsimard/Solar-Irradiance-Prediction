@@ -2,7 +2,6 @@ from typing import Tuple
 
 import tensorflow as tf
 from tensorflow.keras import layers
-from tensorflow.keras.models import Sequential
 
 from src import logging
 from src.data import dataloader, preprocessing

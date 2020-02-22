@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import Tuple
 
 import tensorflow as tf
 from tensorflow.keras import layers
@@ -43,7 +43,7 @@ class LanguageModel(base.Model):
         some operations need to be skipped at evaluation(e.g. Dropout)
         """
         x = x[0]
-        shape = x.shape
+        shape = x.shape  # type: ignore
         x = tf.reshape(x, (shape[0], shape[1], self.num_features))
 
         x = self.l1(x)
@@ -74,6 +74,7 @@ class LanguageModel(base.Model):
         Args:
             images: Tensor of shape (num_images, width, height, channels)
                 Images must not be scaled, crop or anything special.
+            num_images: Numbre of futur images to generate.
         """
         images = self._preprocess_images(images)
 

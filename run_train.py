@@ -7,6 +7,13 @@ from src.model import autoencoder, languagemodel
 from src.training import Training
 
 
+def language_model():
+    """Language Model."""
+    encoder = autoencoder.Encoder()
+    encoder.load("3")
+    return languagemodel.LanguageModel(encoder)
+
+
 def main():
     """Executable."""
     parser = argparse.ArgumentParser()
@@ -42,17 +49,12 @@ def main():
         dry_run.run(args.enable_tf_caching, args.skip_non_cached)
         return
 
-    encoder = autoencoder.Encoder()
-    encoder.load("3")
-    model = languagemodel.LanguageModel(encoder)
-
     optimizer = optimizers.Adam(0.001)
     loss_obj = losses.MeanSquaredError()
 
-    def rmse(pred, target):
-        return loss_obj(pred, target) ** 0.5
+    model = language_model()
 
-    training_session = Training(optimizer=optimizer, model=model, loss_fn=rmse)
+    training_session = Training(optimizer=optimizer, model=model, loss_fn=loss_obj)
     training_session.run(
         enable_tf_caching=args.enable_tf_caching,
         skip_non_cached=args.skip_non_cached,

@@ -9,8 +9,12 @@ import src.data.clearskydata as csd
 from src import logging
 from src.data import image
 from src.data.config import Coordinates, Station
-from src.data.image import (CorruptedImage, ImageNotCached,
-                            InvalidImageChannel, InvalidImageOffSet)
+from src.data.image import (
+    CorruptedImage,
+    ImageNotCached,
+    InvalidImageChannel,
+    InvalidImageOffSet,
+)
 from src.data.metadata import Metadata
 
 logger = logging.create_logger(__name__)
@@ -103,6 +107,7 @@ class DataloaderConfig:
             target_datetimes: list of target datetimes for clearsky caching
             stations: list of station where to pre-compute
             precompute_clearsky: Will pre-compute clearsky values if set.
+            skip_missing_past_images: is past image is missing, skip.
         """
         self.local_path = local_path
         self.error_strategy = error_strategy

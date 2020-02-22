@@ -1,7 +1,7 @@
 from typing import List
-import tensorflow as tf
 
 import numpy as np
+import tensorflow as tf
 from matplotlib import pyplot as plt
 
 from src.data.train import load_data
@@ -33,11 +33,15 @@ def plot_comparison(instance: str):
 
 
 def _plt_images(
-    originals: List[np.ndarray], generated: List[np.ndarray], output_size, channels, scale=0.1
+    originals: List[np.ndarray],
+    generated: List[np.ndarray],
+    output_size,
+    channels,
+    scale=0.1,
 ):
     plt.cla()
     plt.clf()
-    #plt.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=None, hspace=None)
+    # plt.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=None, hspace=None)
 
     num_col = 2
     num_rows = 2
@@ -60,7 +64,6 @@ def _plt_images(
         ax_original.set_xticks([])
         ax_original.set_yticks([])
         ax_original.set_ylabel(channel)
-
 
         ax_gen.set_xticks([])
         ax_gen.set_yticks([])

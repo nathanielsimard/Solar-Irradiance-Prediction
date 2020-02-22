@@ -1,7 +1,7 @@
 from typing import Tuple
 
 import tensorflow as tf
-from tensorflow.keras.layers import Conv2D, Dropout, UpSampling2D, MaxPooling2D
+from tensorflow.keras.layers import Conv2D, Dropout, MaxPooling2D, UpSampling2D
 
 from src import logging
 from src.data import dataloader, preprocessing
@@ -30,7 +30,7 @@ class Encoder(base.Model):
         self.conv3 = Conv2D(
             32, kernel_size=(3, 3), activation="relu", strides=1, padding="same"
         )
-        self.max_pooling = MaxPooling2D((2,2))
+        self.max_pooling = MaxPooling2D((2, 2))
         self.dropout = Dropout(dropout)
 
     def call(self, x: tf.Tensor, training=False):
@@ -113,9 +113,7 @@ class Autoencoder(base.Model):
 
         self.default_config = default_config()
         self.default_config.num_images = 1
-        self.default_config.features = [
-            dataloader.Feature.image
-        ]
+        self.default_config.features = [dataloader.Feature.image]
 
         num_channels = len(self.default_config.channels)
 
@@ -160,4 +158,3 @@ class Autoencoder(base.Model):
         """Override the load method to load the encoder and decoder."""
         self.encoder.load(instance)
         self.decoder.load(instance)
-
