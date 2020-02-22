@@ -1,6 +1,7 @@
 import unittest
 
 import numpy as np
+import tensorflow as tf
 
 from src.model import languagemodel
 
@@ -12,8 +13,11 @@ class LanguageModelTest(unittest.TestCase):
         self.x = 3
         self.y = 3
         self.batch_size = 2
-        self.images = np.random.random(
-            (self.batch_size, self.num_images, self.x, self.y, self.num_channels)
+        self.images = tf.constant(
+            np.random.random(
+                (self.batch_size, self.num_images, self.x, self.y, self.num_channels)
+            ),
+            dtype=tf.float32,
         )
 
         def encoder(input_images, training=False):
@@ -36,6 +40,17 @@ class LanguageModelTest(unittest.TestCase):
         generated = self.model.predict_next_images(
             self.images[0], num_images=num_generated
         )
+
+        self.assertEqual(
+            generated.shape, (num_generated, self.x, self.y, self.num_channels)
+        )
+
+    def test_givenBlackImages_shouldPerdictNextImages(self):
+        num_generated = 3
+        zeros = np.zeros((self.batch_size, 1, self.x, self.y, self.num_channels))
+        images = tf.concat([self.images, zeros], 1)
+        # Call predict_next_images without batch_size
+        generated = self.model.predict_next_images(images[0], num_images=num_generated)
 
         self.assertEqual(
             generated.shape, (num_generated, self.x, self.y, self.num_channels)

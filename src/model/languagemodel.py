@@ -93,30 +93,28 @@ class LanguageModel(base.Model):
 
         images_preprocessed = self.scaling_image.normalize(images)
         images_encoded = self.encoder(images_preprocessed, training=False)
+        images_encoded = tf.expand_dims(images_encoded, 0)
 
-        inputs: List[tf.Tensor] = []
-
-        for i, image in enumerate(images_encoded):
+        for i in range(images_encoded.shape[1]):
             if count_nonzero[i] == 0:
-                logger.info(f"Missing Image, {images[i].numpy()}")
+                logger.debug(f"Missing Image, {i}")
 
-                if inputs is None:
-                    logger.info(f"First image, skipping")
+                if i == 0:
+                    logger.debug("First image, skipping")
                     continue
 
-                tensor = tf.constant(inputs)
-                # Introduce batch size dim
-                tensor = tf.expand_dims(tensor)
+                predictions = self.call((images_encoded[:, :i],))
+                logger.debug(f"Replacing image {i} with prediction")
+                images_encoded = tf.concat(
+                    [
+                        images_encoded[:, :i],  # Previous
+                        predictions[:, -1:],  # Predictions
+                        images_encoded[:, i + 1 :],  # Next
+                    ],
+                    1,
+                )
 
-                predictions = self.call((tensor))
-                # Append prediction instead of missing image.
-                inputs.append(predictions[:, -1])
-            else:
-                inputs.append(image)
-
-        images = tf.constant(inputs, dtype=tf.float32)
-        # Introduce batch size dim
-        return tf.expand_dims(images, 0)
+        return images_encoded
 
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Encode images and return it as input and target."""

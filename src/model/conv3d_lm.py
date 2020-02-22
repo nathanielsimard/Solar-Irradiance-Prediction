@@ -92,11 +92,15 @@ class Conv3D(base.Model):
         """Applies the preprocessing to the inputs and the targets."""
 
         def generate(images):
+            print(images.shape)
             futur_images = self.language_model.predict_next_images(images, num_images=6)
+            print(futur_images.shape)
             # Return images at t0, t1, t3, t6
-            return tf.concat(
-                [futur_images[0], futur_images[1], futur_images[3], futur_images[6]], 0
+            im = tf.concat(
+                [futur_images[0], futur_images[1], futur_images[2], futur_images[5]], 0
             )
+            print(im.shape)
+            return im
 
         def preprocess(images, target_csm, target_ghi):
             target_csm = self.scaling_ghi.normalize(target_csm)
