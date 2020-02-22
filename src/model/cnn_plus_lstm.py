@@ -8,7 +8,7 @@ from tensorflow.keras.layers import (
     LSTM,
     Conv2D,
     Dropout,
-    PReLU
+    PReLU,
 )
 from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras import Input
@@ -126,13 +126,12 @@ class CNNLSTM(base.Model):
 
         if first:
             conv1 = TimeDistributed(
-                Conv2D(channels, kernel_size),
-                input_shape=(self.num_images, 64, 64, 5),
+                Conv2D(channels, kernel_size), input_shape=(self.num_images, 64, 64, 5),
             )
-            act1 = PReLU()
+            act1 = TimeDistributed(PReLU())
         else:
             conv1 = TimeDistributed(Conv2D(channels, kernel_size))
-            act1 = PReLU()
+            act1 = TimeDistributed(PReLU())
 
         return Sequential([conv1, act1, conv2, act2, max_pool])
 
