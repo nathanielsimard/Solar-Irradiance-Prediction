@@ -1,6 +1,7 @@
 import argparse
 
 from tensorflow.keras import losses, optimizers
+import tensorflow as tf
 
 from src import dry_run, env
 from src.model import conv2d  # autoencoder, embed_conv3d, conv2d
@@ -28,6 +29,16 @@ def main():
     )
 
     parser.add_argument(
+        "--seed", help="Seed for the experiment", default=1234, type=int
+    )
+
+    parser.add_argument(
+        "--random_seed",
+        help="Will overide the default seed and use a random one",
+        action="store_true",
+    )
+
+    parser.add_argument(
         "--no_checkpoint", help="Will not save any checkpoints", action="store_true",
     )
 
@@ -37,6 +48,9 @@ def main():
     parser.add_argument("--batch_size", help="Batch size", default=128, type=int)
     args = parser.parse_args()
     env.run_local = args.run_local
+
+    if not args.random_seed:
+        tf.random.set_seed(args.seed)
 
     if args.dry_run:
         dry_run.run(args.enable_tf_caching, args.skip_non_cached)
