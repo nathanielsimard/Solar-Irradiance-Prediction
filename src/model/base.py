@@ -4,11 +4,7 @@ import tensorflow as tf
 
 from src.data import dataloader
 
-<<<<<<< HEAD
-MODEL_BASE_DIR = "/project/cq-training-1/project1/teams/team10"
-=======
 MODEL_BASE_DIR = "models"
->>>>>>> master
 
 
 class Model(tf.keras.Model, abc.ABC):

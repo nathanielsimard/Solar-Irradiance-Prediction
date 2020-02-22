@@ -86,15 +86,9 @@ class Training(object):
 
     def run(
         self,
-<<<<<<< HEAD
         batch_size=64,
         epochs=100,
         valid_batch_size=64,
-=======
-        batch_size=128,
-        epochs=25,
-        valid_batch_size=128,
->>>>>>> master
         enable_tf_caching=False,
         skip_non_cached=False,
         enable_checkpoint=True,

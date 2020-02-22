@@ -1,4 +1,5 @@
 import tensorflow as tf
+from typing import Tuple
 from tensorflow.keras.layers import (
     Dense,
     Flatten,
@@ -30,6 +31,9 @@ class CNNLSTM(base.Model):
         self.scaling_image = preprocessing.MinMaxScaling(
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
         )
+        self.scaling_target = preprocessing.MinMaxScaling(
+            preprocessing.TARGET_GHI_MIN, preprocessing.TARGET_GHI_MAX
+        )
         self.num_images = num_images
         self.num_outputs = num_outputs
 
@@ -44,19 +48,20 @@ class CNNLSTM(base.Model):
         self.drop4 = Dropout(0.3)
 
         # self.lstm, self.enc, self.dec = self._lstm_seq_to_seq(n_units=8)
-        self.lstm = LSTM(units=4, return_sequences=True, return_state=True)
+        self.lstm = LSTM(units=512, return_sequences=False, return_state=False)
 
-        # self.d2 = Dense(512, activation="relu")
-        # self.d3 = Dense(128, activation="relu")
+        self.d2 = Dense(512, activation="relu")
+        self.d3 = Dense(128, activation="relu")
         self.d4 = Dense(self.num_outputs)
 
-    def call(self, x, training: bool):
+    def call(self, data: Tuple[tf.Tensor, tf.Tensor], training: bool):
         """Performs the forward pass in the neural network.
 
         Can use a different pass with the optional training boolean if
         some operations need to be skipped at evaluation(e.g. Dropout)
         """
-        x = self.conv1(x)
+        images, clearsky = data
+        x = self.conv1(images)
         if training:
             x = self.drop1(x)
         x = self.conv2(x)
@@ -70,10 +75,10 @@ class CNNLSTM(base.Model):
         if training:
             x = self.drop4(x)
 
-        outputs, state_h, state_c = self.lstm(x)
-        # x = self.d2(state_h)
-        # x = self.d3(x)
-        x = self.d4(state_h)
+        outputs = self.lstm(x)
+        x = self.d2(outputs)
+        x = self.d3(x)
+        x = self.d4(x)
 
         return x
 
@@ -133,7 +138,11 @@ class CNNLSTM(base.Model):
         config.num_images = self.num_images
         config.time_interval_min = 60
         config.ratio = 0.1
-        config.features = [dataloader.Feature.image, dataloader.Feature.target_ghi]
+        config.features = [
+            dataloader.Feature.image,
+            dataloader.Feature.metadata,
+            dataloader.Feature.target_ghi,
+        ]
 
         if training:
             config.error_strategy = dataloader.ErrorStrategy.skip
@@ -144,10 +153,12 @@ class CNNLSTM(base.Model):
 
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Applies the preprocessing to the inputs and the targets."""
-        return dataset.map(
-            lambda image, target_ghi: (
-                self.scaling_image.normalize(image),
-                target_ghi,
-            ),
-            num_parallel_calls=tf.data.experimental.AUTOTUNE,
-        )
+
+        def preprocess(images, target_csm, target_ghi):
+            images = self.scaling_image.normalize(images)
+            target_csm = self.scaling_target.normalize(target_csm)
+            target_ghi = self.scaling_target.normalize(target_ghi)
+
+            return images, target_csm, target_ghi
+
+        return dataset.map(preprocess, num_parallel_calls=tf.data.experimental.AUTOTUNE)

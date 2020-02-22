@@ -47,17 +47,8 @@ def main():
         dry_run.run(args.enable_tf_caching, args.skip_non_cached)
         return
 
-<<<<<<< HEAD
     model = cnn_plus_lstm.CNNLSTM()
     optimizer = optimizers.Adam(0.01)
-=======
-    # encoder = autoencoder.Encoder()
-    # encoder.load("3")
-    # model = embed_conv3d.Conv3D(encoder)
-    model = conv2d.CNN2DClearsky()
-
-    optimizer = optimizers.Adam(0.001)
->>>>>>> master
     loss_obj = losses.MeanSquaredError()
 
     def rmse(pred, target):
