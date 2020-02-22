@@ -16,10 +16,13 @@ NAME = "LanguageModel"
 class LanguageModel(base.Model):
     """Create Language Model to predict the futur images."""
 
-    def __init__(self, encoder, num_images=6, num_features=16 * 16 * 32):
+    def __init__(
+        self, encoder, num_images=6, time_interval_min=60, num_features=16 * 16 * 32
+    ):
         """Initialize the architecture."""
         super().__init__(NAME)
         self.num_images = num_images
+        self.time_interval_min = time_interval_min
 
         self.scaling_image = preprocessing.MinMaxScaling(
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
@@ -55,7 +58,7 @@ class LanguageModel(base.Model):
         """Configuration."""
         config = default_config()
         config.num_images = self.num_images
-        config.time_interval_min = 60
+        config.time_interval_min = self.time_interval_min
         config.skip_missing_past_images = True
         config.features = [dataloader.Feature.image]
 
@@ -66,7 +69,7 @@ class LanguageModel(base.Model):
 
         return config
 
-    def predict_next_images(self, images: Tuple[tf.Tensor], num_images=6):
+    def predict_next_images(self, images: tf.Tensor, num_images=6):
         """Predict the next images from the original images.
 
         Args:
