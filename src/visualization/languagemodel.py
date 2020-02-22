@@ -24,14 +24,13 @@ def plot_comparison(
     config = model.config(training=False)
     config.num_images = 6
 
-
     _, valid_dataset, _ = load_data(config=config)
 
     images_originals = _first_images(valid_dataset)
     images_originals = model.scaling_image.normalize(images_originals)
 
     image_pred = _predict_images(model, encoder, decoder, images_originals[:, :3])
-    #images_originals = images_originals[:, 3:]
+    images_originals = images_originals[:, 3:]
 
     images_originals = encoder(images_originals[0], training=False)
     images_originals = decoder(images_originals, training=False)
@@ -84,15 +83,17 @@ def _plt_images(
         ax_gen.imshow(gen, cmap="gray")
 
 
-def _predict_images(model: LanguageModel,encoder: Encoder, decoder: Decoder, images_features):
+def _predict_images(
+    model: LanguageModel, encoder: Encoder, decoder: Decoder, images_features
+):
     flatten = tf.keras.layers.Flatten()
     preds = []
     inputs = encoder(images_features[0], training=False)
-    inputs = tf.expand_dims(inputs,0)
+    inputs = tf.expand_dims(inputs, 0)
     num_generate = 3
 
     for i in range(num_generate):
-        pred_features = model((inputs,), training=False)
+        pred_features = model(inputs, training=False)
         inputs = tf.concat([inputs[:, :], pred_features[:, -1:]], 1)
 
         pred_features = tf.squeeze(pred_features, 0)
