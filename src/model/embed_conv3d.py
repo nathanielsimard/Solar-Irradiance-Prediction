@@ -22,9 +22,8 @@ class Conv3D(base.Model):
         self.num_images = num_images
         self.time_interval_min = time_interval_min
 
-        self.scaling_image = preprocessing.MinMaxScaling(
-            preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
-        )
+        self.scaling_image = preprocessing.min_max_scaling_images()
+        self.scaling_ghi = preprocessing.min_max_scaling_ghi()
 
         if encoder is None:
             self.encoder = autoencoder.Encoder()
@@ -97,7 +96,7 @@ class Conv3D(base.Model):
         config.time_interval_min = self.time_interval_min
         config.features = [
             dataloader.Feature.image,
-            dataloader.Feature.target_csm,
+            dataloader.Feature.metadata,
             dataloader.Feature.target_ghi,
         ]
 
@@ -119,6 +118,8 @@ class Conv3D(base.Model):
 
         def preprocess(images, target_csm, target_ghi):
             images = self.scaling_image.normalize(images)
+            target_csm = self.scaling_ghi.normalize(target_csm)
+            target_ghi = self.scaling_ghi.normalize(target_ghi)
             # Warp the encoder preprocessing in a py function
             # because its size is not known at compile time.
             images = tf.py_function(func=encoder, inp=[images], Tout=tf.float32)

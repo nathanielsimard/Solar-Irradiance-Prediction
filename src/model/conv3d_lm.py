@@ -28,9 +28,7 @@ class Conv3D(base.Model):
         else:
             self.language_model = language_model
 
-        self.scaling_ghi = preprocessing.MinMaxScaling(
-            preprocessing.TARGET_GHI_MIN, preprocessing.TARGET_GHI_MIN
-        )
+        self.scaling_ghi = preprocessing.min_max_scaling_ghi()
 
         self.flatten = layers.Flatten()
         self.max_pool = layers.MaxPooling3D((1, 2, 2))
@@ -66,9 +64,6 @@ class Conv3D(base.Model):
         x = self.d1(x)
         x = self.d2(x)
         x = self.d3(x)
-
-        if not training:
-            return self.scaling_ghi.original(x)
 
         return x
 

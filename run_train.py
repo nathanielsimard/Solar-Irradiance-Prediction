@@ -4,7 +4,7 @@ import tensorflow as tf
 from tensorflow.keras import losses, optimizers
 
 from src import dry_run, env
-from src.model import (autoencoder, clearsky, conv2d, conv3d, conv3d_lm,
+from src.model import (autoencoder, base, clearsky, conv2d, conv3d, conv3d_lm,
                        embed_conv3d, gru)
 from src.training import Training
 
@@ -20,8 +20,23 @@ MODELS = {
 }
 
 
-def main():
-    """Executable."""
+def create_model(model_name: str) -> base.Model:
+    """Create the model from its name."""
+    try:
+        return MODELS[model_name]()
+    except KeyError:
+        raise ValueError(
+            f"Bad model name, {model_name} do not exist.\n"
+            + f"Available models are {MODELS.keys()}"
+        )
+
+
+def parse_args():
+    """Parse the user's arguments.
+
+    The default arguments are to be used in order to reproduce
+    the original experiments.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--enable_tf_caching", help="Enable tensorflow caching.", action="store_true"
@@ -54,11 +69,15 @@ def main():
         "--no_checkpoint", help="Will not save any checkpoints", action="store_true",
     )
 
-    parser.add_argument("--lr", help="Learning rate", default=0.0001, type=float)
+    parser.add_argument("--lr", help="Learning rate", default=0.001, type=float)
 
     parser.add_argument("--model", help="Name of the model to train", type=str)
     parser.add_argument("--batch_size", help="Batch size", default=128, type=int)
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def run(args):
+    """Run the training with RMSE Loss and Adam."""
     env.run_local = args.run_local
 
     if not args.random_seed:
@@ -68,20 +87,16 @@ def main():
         dry_run.run(args.enable_tf_caching, args.skip_non_cached)
         return
 
-    try:
-        model = MODELS[args.model]()
-    except KeyError:
-        raise ValueError(
-            f"Bad model name, {args.model} do not exist.\n"
-            + f"Available models are {MODELS.keys()}"
-        )
-    optimizer = optimizers.Adam(0.001)
+    model = create_model(args.model)
+
+    optimizer = optimizers.Adam(args.lr)
     loss_obj = losses.MeanSquaredError()
 
     def rmse(pred, target):
+        """Wraper around TF MSE Loss."""
         return loss_obj(pred, target) ** 0.5
 
-    training_session = Training(optimizer=optimizer, model=model, loss_fn=rmse)  # type: ignore
+    training_session = Training(optimizer=optimizer, model=model, loss_fn=rmse)
     training_session.run(
         enable_tf_caching=args.enable_tf_caching,
         skip_non_cached=args.skip_non_cached,
@@ -92,4 +107,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    args = parse_args()
+    run(args)

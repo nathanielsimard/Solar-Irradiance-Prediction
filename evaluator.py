@@ -11,7 +11,7 @@ import tensorflow as tf
 import tqdm
 
 from src import logging
-from src.data import dataloader
+from src.data import dataloader, preprocessing
 from src.data.metadata import Coordinates, MetadataLoader, Station
 from src.model import autoencoder, base, embed_conv3d
 
@@ -106,6 +106,7 @@ def generate_predictions(
 ) -> np.ndarray:
     """Generate and returns model predictions given the data prepared by a data loader."""
     predictions = []
+    scaling_ghi = preprocessing.min_max_scaling_ghi()
     with tqdm.tqdm("generating predictions", total=pred_count) as pbar:
         for iter_idx, minibatch in enumerate(data_loader.batch(32)):
             logger.info(f"Minibatch #{iter_idx}")
@@ -114,6 +115,9 @@ def generate_predictions(
             ), "the data loader should load each minibatch as a tuple with model input(s) and target tensors"
             # Call the model without the target and with training = False.
             pred = model(minibatch[0:-1]).numpy()
+
+            # Rescale the GHI values.
+            pred = scaling_ghi.original(pred)
             assert (
                 pred.ndim == 2
             ), "prediction tensor shape should be BATCH x SEQ_LENGTH"
