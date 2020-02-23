@@ -22,5 +22,5 @@ tar -xf image_reader_cache.tar
 date
 #du -d 1 .
 cd $cwd
-python run_train.py --skip_non_cached
+python run_train.py --skip_non_cached --model Conv3D
 
