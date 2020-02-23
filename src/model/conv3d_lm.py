@@ -19,10 +19,14 @@ class Conv3D(base.Model):
     Generated futur images are used instead of past image.
     """
 
-    def __init__(self, language_model: seq2seq.Seq2Seq):
+    def __init__(self, language_model: seq2seq.Seq2Seq = None):
         """Initialize the architecture."""
         super().__init__(NAME)
-        self.language_model = language_model
+
+        if language_model is None:
+            self.language_model = seq2seq.Gru()
+        else:
+            self.language_model = language_model
 
         self.scaling_ghi = preprocessing.MinMaxScaling(
             preprocessing.TARGET_GHI_MIN, preprocessing.TARGET_GHI_MIN

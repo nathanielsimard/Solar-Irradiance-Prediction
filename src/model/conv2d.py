@@ -1,7 +1,7 @@
 from typing import Tuple
 
 import tensorflow as tf
-from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D, Dropout
+from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, MaxPooling2D
 from tensorflow.keras.models import Sequential
 
 from src import logging
@@ -12,6 +12,7 @@ from src.model import base
 logger = logging.create_logger(__name__)
 
 NAME = "Conv2D"
+NAME_CLEARSKY = "Conv2DClearsky"
 
 
 class CNN2D(base.Model):
@@ -96,7 +97,7 @@ class CNN2DClearsky(base.Model):
 
     def __init__(self):
         """Initialize the architecture."""
-        super().__init__(NAME)
+        super().__init__(NAME_CLEARSKY)
         self.scaling_image = preprocessing.MinMaxScaling(
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
         )

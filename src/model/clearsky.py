@@ -10,23 +10,27 @@ from src.model import autoencoder, base
 
 logger = logging.create_logger(__name__)
 
-NAME = "Clearsky1"
+NAME = "ClearskyMLP"
 
 
-class Clearsky(base.Model):
+class ClearskyMLP(base.Model):
     """Create Clearsky model.
 
     It only predits the current ghi value based on the current image
     and the current clearsky predictions using the image encoder.
     """
 
-    def __init__(self, encoder: autoencoder.Encoder):
+    def __init__(self, encoder: autoencoder.Encoder = None):
         """Initialize the architecture."""
         super().__init__(NAME)
         self.scaling_image = preprocessing.MinMaxScaling(
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
         )
-        self.encoder = encoder
+        if encoder is None:
+            self.encoder = autoencoder.Encoder()
+            self.encoder.load(autoencoder.BEST_MODEL_WEIGHTS)
+        else:
+            self.encoder = encoder
 
         self.flatten = Flatten()
 

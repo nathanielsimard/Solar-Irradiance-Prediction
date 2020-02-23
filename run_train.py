@@ -4,7 +4,20 @@ import tensorflow as tf
 from tensorflow.keras import losses, optimizers
 
 from src import dry_run, env
+from src.model import (autoencoder, clearsky, conv2d, conv3d, conv3d_lm,
+                       embed_conv3d, gru)
 from src.training import Training
+
+MODELS = {
+    autoencoder.NAME_AUTOENCODER: autoencoder.Autoencoder,
+    conv2d.NAME: conv2d.CNN2D,
+    conv2d.NAME_CLEARSKY: conv2d.CNN2DClearsky,
+    conv3d.NAME: conv3d.CNN3D,
+    embed_conv3d.NAME: embed_conv3d.Conv3D,
+    conv3d_lm.NAME: conv3d_lm.Conv3D,
+    clearsky.NAME: clearsky.ClearskyMLP,
+    gru.NAME: gru.GRU,
+}
 
 
 def main():
@@ -43,7 +56,7 @@ def main():
 
     parser.add_argument("--lr", help="Learning rate", default=0.0001, type=float)
 
-    parser.add_argument("--model", help="Name of the model to train", default="CNN2D")
+    parser.add_argument("--model", help="Name of the model to train", type=str)
     parser.add_argument("--batch_size", help="Batch size", default=128, type=int)
     args = parser.parse_args()
     env.run_local = args.run_local
@@ -55,15 +68,20 @@ def main():
         dry_run.run(args.enable_tf_caching, args.skip_non_cached)
         return
 
+    try:
+        model = MODELS[args.model]()
+    except KeyError:
+        raise ValueError(
+            f"Bad model name, {args.model} do not exist.\n"
+            + f"Available models are {MODELS.keys()}"
+        )
     optimizer = optimizers.Adam(0.001)
     loss_obj = losses.MeanSquaredError()
-
-    model = None
 
     def rmse(pred, target):
         return loss_obj(pred, target) ** 0.5
 
-    training_session = Training(optimizer=optimizer, model=model, loss_fn=rmse)
+    training_session = Training(optimizer=optimizer, model=model, loss_fn=rmse)  # type: ignore
     training_session.run(
         enable_tf_caching=args.enable_tf_caching,
         skip_non_cached=args.skip_non_cached,
