@@ -179,9 +179,9 @@ class CNN2DClearsky(base.Model):
 
 
 class CNN2DClearskyV2(base.Model):
-    #This one uses the architecture proposed by
-    #Johan Mathe, Nina Miolane, Nicolas Sebastien and Jeremie Lequeux
-    #https://arxiv.org/pdf/1902.01453.pdf
+    # This one uses the architecture proposed by
+    # Johan Mathe, Nina Miolane, Nicolas Sebastien and Jeremie Lequeux
+    # https://arxiv.org/pdf/1902.01453.pdf
     """Create Conv2D model."""
 
     def __init__(self):
@@ -236,7 +236,7 @@ class CNN2DClearskyV2(base.Model):
 
         return x
 
-    #def _convolution_step(self, kernel_size, channels):
+    # def _convolution_step(self, kernel_size, channels):
     #    conv2d_1 = Conv2D(channels, kernel_size=kernel_size, activation="relu")
     #    conv2d_2 = Conv2D(channels, kernel_size=kernel_size, activation="relu")
     #    conv2d_3 = Conv2D(channels, kernel_size=kernel_size, activation="relu")

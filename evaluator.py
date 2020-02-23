@@ -10,9 +10,12 @@ import pandas as pd
 import tensorflow as tf
 import tqdm
 
+from src import logging
 from src.data import dataloader
 from src.data.metadata import Coordinates, MetadataLoader, Station
-from src.model import base, conv3d
+from src.model import autoencoder, base, embed_conv3d
+
+logger = logging.create_logger(__name__)
 
 
 def prepare_dataloader(
@@ -56,15 +59,21 @@ def prepare_dataloader(
         by ``target_sequences``.
 
     """
+
+    logger.info(f"Prepare dataloader for station {station} and config {config}")
     metadata_loader = MetadataLoader(dataframe=dataframe, training=False)
     metadata_generator = metadata_loader.load(
         Station(station),
         Coordinates(coordinates[0], coordinates[1], coordinates[2]),
         target_datetimes=target_datetimes,
-        enable_image_cache=False,
+        skip_missing=False,
+        num_images=config.num_images,
+        time_interval_min=config.time_interval_min,
     )
 
-    return dataloader.create_dataset(metadata_generator, config)
+    return dataloader.create_dataset(
+        lambda: metadata_generator, config=config, enable_image_cache=False,
+    )
 
 
 def prepare_model(
@@ -84,9 +93,11 @@ def prepare_model(
         A ``base.Model`` object that can be used to generate new GHI predictions given imagery tensors.
 
     """
-    model = conv3d.CNN3D()
-    # Load the weights
-    model.load("Conv3D-100")
+    encoder = autoencoder.Encoder()
+    encoder.load("3")
+    model = embed_conv3d.Conv3D(encoder)
+    model.load("24")
+    logger.info(f"Loaded model: {model.title}")
     return model
 
 
@@ -96,7 +107,8 @@ def generate_predictions(
     """Generate and returns model predictions given the data prepared by a data loader."""
     predictions = []
     with tqdm.tqdm("generating predictions", total=pred_count) as pbar:
-        for iter_idx, minibatch in enumerate(data_loader):
+        for iter_idx, minibatch in enumerate(data_loader.batch(32)):
+            logger.info(f"Minibatch #{iter_idx}")
             assert (
                 isinstance(minibatch, tuple) and len(minibatch) >= 2
             ), "the data loader should load each minibatch as a tuple with model input(s) and target tensors"
@@ -119,6 +131,7 @@ def generate_all_predictions(
 ) -> np.ndarray:
     """Generate and returns model predictions given the data prepared by a data loader."""
     # we will create one data loader per station to make sure we avoid mixups in predictions
+    logger.info("Generating all prefictions")
     predictions = []
     for station_idx, station_name in enumerate(target_stations):
         # usually, we would create a single data loader for all stations, but we just want to avoid trouble...
