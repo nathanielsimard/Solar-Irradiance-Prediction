@@ -8,16 +8,17 @@ from src.model import autoencoder, embed_conv3d, languagemodel
 from src.training import Training
 
 
-def language_model():
+def language_model(encoder_instance="3"):
     """Language Model."""
     encoder = autoencoder.Encoder()
-    encoder.load("3")
+    encoder.load(encoder_instance)
     return languagemodel.Gru(encoder)
 
 
-def conv3d_with_embeds():
+def conv3d_with_embeds(encoder_instance="3"):
+    """Create Conv3D using the encoder."""
     encoder = autoencoder.Encoder()
-    encoder.load("3")
+    encoder.load(encoder_instance)
     return embed_conv3d.Conv3D(encoder)
 
 

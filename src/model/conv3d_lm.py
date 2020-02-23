@@ -61,9 +61,6 @@ class Conv3D(base.Model):
         x = self.d2(x)
         x = self.d3(x)
 
-        if not training:
-            return self.scaling_ghi.original(x)
-
         return x
 
     def config(self, training=False) -> dataloader.DataloaderConfig:
