@@ -1,7 +1,7 @@
 from typing import Tuple
 
 import tensorflow as tf
-from tensorflow.keras.layers import Conv3D, Dense, Flatten, MaxPooling3D, Dropout, BatchNormalization
+from tensorflow.keras.layers import Conv3D, Dense, Flatten, MaxPooling3D, Dropout
 from tensorflow.keras.models import Sequential
 
 from src import logging
@@ -110,7 +110,7 @@ class CNN3D_Clearsky(base.Model):
         self.d4 = Dense(256, activation="relu")
         self.d5 = Dense(4)
 
-    def call(self, data: Tuple[tf.Tensor], training=False):
+    def call(self, data: Tuple[tf.Tensor, tf.Tensor, tf.Tensor], training=False):
         """Performs the forward pass in the neural network.
 
         Can use a different pass with the optional training boolean if
@@ -149,8 +149,12 @@ class CNN3D_Clearsky(base.Model):
         config.num_images = self.num_images
         config.ratio = 1
         config.time_interval_min = 60
-        config.features = [dataloader.Feature.target_ghi, dataloader.Feature.metadata,
-                           dataloader.Feature.image, dataloader.Feature.target_ghi]
+        config.features = [
+            dataloader.Feature.target_ghi,
+            dataloader.Feature.metadata,
+            dataloader.Feature.image,
+            dataloader.Feature.target_ghi,
+        ]
 
         if training:
             config.error_strategy = dataloader.ErrorStrategy.skip
@@ -162,14 +166,18 @@ class CNN3D_Clearsky(base.Model):
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Applies the preprocessing to the inputs and the targets."""
         return dataset.map(
-            lambda dummy_target, metadata, image, target_ghi: (dummy_target,
-                                                               metadata,
-                                                               self.scaling_image.normalize(image), target_ghi,)
+            lambda dummy_target, metadata, image, target_ghi: (
+                dummy_target,
+                metadata,
+                self.scaling_image.normalize(image),
+                target_ghi,
+            )
         )
 
 
 class CNN3D_ClearskyV2(base.Model):
     """Create Conv3D model."""
+
     # Using the architecture from Tran et al.
     # https://www.cv-foundation.org/openaccess/content_iccv_2015/papers/Tran_Learning_Spatiotemporal_Features_ICCV_2015_paper.pdf
 
@@ -201,7 +209,7 @@ class CNN3D_ClearskyV2(base.Model):
         self.d4 = Dense(256, activation="relu")
         self.d5 = Dense(4)
 
-    def call(self, data: Tuple[tf.Tensor], training=False):
+    def call(self, data: Tuple[tf.Tensor, tf.Tensor, tf.Tensor], training=False):
         """Performs the forward pass in the neural network.
 
         Can use a different pass with the optional training boolean if
@@ -250,8 +258,12 @@ class CNN3D_ClearskyV2(base.Model):
         config.num_images = self.num_images
         config.ratio = 1
         config.time_interval_min = 60
-        config.features = [dataloader.Feature.target_ghi, dataloader.Feature.metadata,
-                           dataloader.Feature.image, dataloader.Feature.target_ghi]
+        config.features = [
+            dataloader.Feature.target_ghi,
+            dataloader.Feature.metadata,
+            dataloader.Feature.image,
+            dataloader.Feature.target_ghi,
+        ]
 
         if training:
             config.error_strategy = dataloader.ErrorStrategy.skip
@@ -263,7 +275,10 @@ class CNN3D_ClearskyV2(base.Model):
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Applies the preprocessing to the inputs and the targets."""
         return dataset.map(
-            lambda dummy_target, metadata, image, target_ghi: (dummy_target,
-                                                               metadata,
-                                                               image, target_ghi,)
+            lambda dummy_target, metadata, image, target_ghi: (
+                dummy_target,
+                metadata,
+                image,
+                target_ghi,
+            )
         )

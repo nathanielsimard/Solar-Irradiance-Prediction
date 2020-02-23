@@ -190,7 +190,7 @@ class CNN2DClearskyV2(base.Model):
         self.scaling_image = preprocessing.MinMaxScaling(
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
         )
-        #Conv2D(channels, kernel_size=kernel_size, activation="relu")
+        # Conv2D(channels, kernel_size=kernel_size, activation="relu")
         self.conv1 = Conv2D(64, kernel_size=(3, 3), activation="relu")
         self.conv2 = Conv2D(64, kernel_size=(3, 3), activation="relu")
         self.dropout2 = Dropout(0.1)

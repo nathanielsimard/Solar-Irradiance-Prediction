@@ -94,7 +94,7 @@ class Training(object):
         enable_checkpoint=True,
         dry_run=False,
         categorical=False,
-        load_checkpoint=None
+        load_checkpoint=None,
     ):
         """Performs the training of the model in minibatch.
 
@@ -129,7 +129,7 @@ class Training(object):
             self.model.load(load_checkpoint)
         # Fail early!
         self.model.save(str(0))
-        self._evaluate("test", 0, test_set, valid_batch_size , dry_run=True)
+        self._evaluate("test", 0, test_set, valid_batch_size, dry_run=True)
         logger.info("Fitting model.")
 
         for epoch in range(epoch, epochs):
