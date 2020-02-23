@@ -106,7 +106,7 @@ def generate_predictions(
 ) -> np.ndarray:
     """Generate and returns model predictions given the data prepared by a data loader."""
     predictions = []
-    ghi_scaler = preprocessing.min_max_scaling_ghi()
+    scaling_ghi = preprocessing.min_max_scaling_ghi()
     with tqdm.tqdm("generating predictions", total=pred_count) as pbar:
         for iter_idx, minibatch in enumerate(data_loader.batch(32)):
             logger.info(f"Minibatch #{iter_idx}")
@@ -117,7 +117,7 @@ def generate_predictions(
             pred = model(minibatch[0:-1]).numpy()
 
             # Rescale the GHI values.
-            pred = ghi_scaler.original(pred)
+            pred = scaling_ghi.original(pred)
             assert (
                 pred.ndim == 2
             ), "prediction tensor shape should be BATCH x SEQ_LENGTH"

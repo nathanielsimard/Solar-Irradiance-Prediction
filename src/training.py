@@ -70,7 +70,7 @@ class Training(object):
         self.loss_fn = loss_fn
         self.model = model
         self.predict_ghi = predict_ghi
-        self.ghi_scaler = preprocessing.min_max_scaling_ghi()
+        self.scaling_ghi = preprocessing.min_max_scaling_ghi()
 
         self.metrics = {
             "train": tf.keras.metrics.Mean("train loss", dtype=tf.float32),
@@ -173,13 +173,13 @@ class Training(object):
         writer = self.writer[name]
 
         for i, data in enumerate(dataset.batch(batch_size)):
-            logger.info(f"Evaluation batch #{i}")
+            logger.info(f"Evaluation batch #{i+1}")
             inputs = data[:-1]
             targets = data[-1]
 
             loss = self._calculate_loss(inputs, targets)
             if self.predict_ghi:
-                metric(self.ghi_scaler.original(loss))
+                metric(self.scaling_ghi.original(loss))
             else:
                 metric(loss)
 
@@ -200,7 +200,7 @@ class Training(object):
         self.optim.apply_gradients(zip(gradients, self.model.trainable_variables))
 
         if self.predict_ghi:
-            self.metrics["train"](self.ghi_scaler.original(loss))
+            self.metrics["train"](self.scaling_ghi.original(loss))
         else:
             self.metrics["train"](loss)
 
