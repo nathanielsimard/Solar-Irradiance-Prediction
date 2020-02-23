@@ -3,7 +3,7 @@ import argparse
 from tensorflow.keras import losses, optimizers
 
 from src import dry_run, env
-from src.model import autoencoder
+from src.model import conv3d
 from src.training import Training
 
 
