@@ -54,7 +54,7 @@ class Clearsky(base.Model):
         config.num_images = 1
         config.features = [
             dataloader.Feature.image,
-            dataloader.Feature.target_csm,
+            dataloader.Feature.metadata,
             dataloader.Feature.target_ghi,
         ]
 

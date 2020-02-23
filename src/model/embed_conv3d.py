@@ -91,7 +91,7 @@ class Conv3D(base.Model):
         config.time_interval_min = self.time_interval_min
         config.features = [
             dataloader.Feature.image,
-            dataloader.Feature.target_csm,
+            dataloader.Feature.metadata,
             dataloader.Feature.target_ghi,
         ]
 
