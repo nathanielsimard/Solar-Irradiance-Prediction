@@ -9,8 +9,12 @@ import src.data.clearskydata as csd
 from src import logging
 from src.data import image
 from src.data.config import Coordinates, Station
-from src.data.image import (CorruptedImage, ImageNotCached,
-                            InvalidImageChannel, InvalidImageOffSet)
+from src.data.image import (
+    CorruptedImage,
+    ImageNotCached,
+    InvalidImageChannel,
+    InvalidImageOffSet,
+)
 from src.data.metadata import Metadata
 
 logger = logging.create_logger(__name__)
