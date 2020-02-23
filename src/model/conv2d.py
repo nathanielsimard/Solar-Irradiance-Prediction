@@ -236,14 +236,6 @@ class CNN2DClearskyV2(base.Model):
 
         return x
 
-    # def _convolution_step(self, kernel_size, channels):
-    #    conv2d_1 = Conv2D(channels, kernel_size=kernel_size, activation="relu")
-    #    conv2d_2 = Conv2D(channels, kernel_size=kernel_size, activation="relu")
-    #    conv2d_3 = Conv2D(channels, kernel_size=kernel_size, activation="relu")
-    #    max_pool = MaxPooling2D(pool_size=(2, 2))
-    #
-    #    return Sequential([conv2d_1, conv2d_2, conv2d_3, max_pool])
-
     def config(self, training=False, dry_run=False) -> dataloader.DataloaderConfig:
         """Configuration."""
         config = default_config()
