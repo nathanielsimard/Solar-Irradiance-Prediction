@@ -24,9 +24,7 @@ class LanguageModelTest(unittest.TestCase):
             return input_images
 
         self.model = languagemodel.LanguageModel(
-            encoder,
-            num_images=self.num_images,
-            num_features=self.x * self.y * self.num_channels,
+            encoder, num_images=self.num_images, num_channels=self.num_channels,
         )
 
     def test_call(self):

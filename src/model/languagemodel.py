@@ -27,9 +27,15 @@ class LanguageModel(base.Model):
         )
         self.encoder = encoder
 
-        self.l1 = layers.ConvLSTM2D(64, return_sequences=True)
-        self.l2 = layers.ConvLSTM2D(64, return_sequences=True)
-        self.l3 = layers.ConvLSTM2D(num_channels, return_sequences=True)
+        self.l1 = layers.ConvLSTM2D(
+            64, kernel_size=(3, 3), padding="same", return_sequences=True
+        )
+        self.l2 = layers.ConvLSTM2D(
+            64, kernel_size=(3, 3), padding="same", return_sequences=True
+        )
+        self.l3 = layers.ConvLSTM2D(
+            num_channels, kernel_size=(3, 3), padding="same", return_sequences=True
+        )
 
     def call(self, x: Tuple[tf.Tensor], training=False):
         """Performs the forward pass in the neural network."""
