@@ -8,8 +8,7 @@ import tensorflow as tf
 import src.data.clearskydata as csd
 from src import logging
 from src.data import image
-from src.data.config import Station, Coordinates
-
+from src.data.config import Coordinates, Station
 from src.data.image import (
     CorruptedImage,
     ImageNotCached,
@@ -88,6 +87,7 @@ class DataloaderConfig:
         target_datetimes=None,
         stations: Dict[Station, Coordinates] = None,
         precompute_clearsky=False,
+        skip_missing_past_images=False,
     ):
         """All configurations are optional with default values.
 
@@ -107,6 +107,7 @@ class DataloaderConfig:
             target_datetimes: list of target datetimes for clearsky caching
             stations: list of station where to pre-compute
             precompute_clearsky: Will pre-compute clearsky values if set.
+            skip_missing_past_images: if past image is missing, skip.
         """
         self.local_path = local_path
         self.error_strategy = error_strategy
@@ -121,6 +122,7 @@ class DataloaderConfig:
         self.target_datetimes = target_datetimes
         self.station = stations
         self.precompute_clearsky = precompute_clearsky
+        self.skip_missing_past_images = skip_missing_past_images
 
     def __str__(self):
         """Return nice string representation of the config."""
@@ -301,6 +303,9 @@ class DataLoader(object):
                 )
                 images.append(image)
             except Exception as e:
+                if self.config.skip_missing_past_images:
+                    logger.debug(f"Error while generating past images, skipping : {e}")
+                    raise e
                 logger.debug(f"Error while generating past images, ignoring : {e}")
                 images.append(np.zeros(shape))
 

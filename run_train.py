@@ -4,8 +4,15 @@ from tensorflow.keras import losses, optimizers
 import tensorflow as tf
 
 from src import dry_run, env
-from src.model import conv2d  # autoencoder, embed_conv3d, conv2d
+from src.model import autoencoder, languagemodel
 from src.training import Training
+
+
+def language_model():
+    """Language Model."""
+    encoder = autoencoder.Encoder()
+    encoder.load("3")
+    return languagemodel.Gru(encoder)
 
 
 def main():
@@ -56,13 +63,10 @@ def main():
         dry_run.run(args.enable_tf_caching, args.skip_non_cached)
         return
 
-    # encoder = autoencoder.Encoder()
-    # encoder.load("3")
-    # model = embed_conv3d.Conv3D(encoder)
-    model = conv2d.CNN2DClearsky()
-
     optimizer = optimizers.Adam(0.001)
     loss_obj = losses.MeanSquaredError()
+
+    model = language_model()
 
     def rmse(pred, target):
         return loss_obj(pred, target) ** 0.5
