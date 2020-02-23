@@ -16,37 +16,6 @@ NAME = "LanguageModel"
 class LanguageModel(base.Model):
     """Create Language Model to predict the futur images."""
 
-    def __init__(self, encoder, num_images=6, time_interval_min=60, num_channels=32):
-        """Initialize the architecture."""
-        super().__init__(NAME)
-        self.num_images = num_images
-        self.time_interval_min = time_interval_min
-
-        self.scaling_image = preprocessing.MinMaxScaling(
-            preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
-        )
-        self.encoder = encoder
-
-        self.l1 = layers.ConvLSTM2D(
-            64, kernel_size=(3, 3), padding="same", return_sequences=True
-        )
-        self.l2 = layers.ConvLSTM2D(
-            64, kernel_size=(3, 3), padding="same", return_sequences=True
-        )
-        self.l3 = layers.ConvLSTM2D(
-            num_channels, kernel_size=(3, 3), padding="same", return_sequences=True
-        )
-
-    def call(self, x: Tuple[tf.Tensor], training=False):
-        """Performs the forward pass in the neural network."""
-        x = x[0]
-
-        x = self.l1(x)
-        x = self.l2(x)
-        x = self.l3(x)
-
-        return x
-
     def config(self, training=False) -> dataloader.DataloaderConfig:
         """Configuration."""
         config = default_config()
@@ -123,3 +92,71 @@ class LanguageModel(base.Model):
             return (image_features[0:-1], image_features[1:])
 
         return dataset.map(preprocess).cache()
+
+
+class ConvLSTM(LanguageModel):
+    def __init__(self, encoder, num_images=6, time_interval_min=60, num_channels=32):
+        """Initialize the architecture."""
+        super().__init__(NAME)
+        self.num_images = num_images
+        self.time_interval_min = time_interval_min
+
+        self.scaling_image = preprocessing.MinMaxScaling(
+            preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
+        )
+        self.encoder = encoder
+
+        self.l1 = layers.ConvLSTM2D(
+            64, kernel_size=(3, 3), padding="same", return_sequences=True
+        )
+        self.l2 = layers.ConvLSTM2D(
+            64, kernel_size=(3, 3), padding="same", return_sequences=True
+        )
+        self.l3 = layers.ConvLSTM2D(
+            num_channels, kernel_size=(3, 3), padding="same", return_sequences=True
+        )
+
+    def call(self, x: Tuple[tf.Tensor], training=False):
+        """Performs the forward pass in the neural network."""
+        x = x[0]
+
+        x = self.l1(x)
+        x = self.l2(x)
+        x = self.l3(x)
+
+        return x
+
+
+class Gru(LanguageModel):
+    def __init__(
+        self, encoder, num_images=6, time_interval_min=60, num_features=16 * 16 * 32
+    ):
+        """Initialize the architecture."""
+        super().__init__(NAME)
+        self.num_images = num_images
+        self.time_interval_min = time_interval_min
+        self.num_features = num_features
+
+        self.scaling_image = preprocessing.MinMaxScaling(
+            preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
+        )
+        self.encoder = encoder
+
+        self.l1 = layers.GRU(256, return_sequences=True)
+        self.l2 = layers.GRU(256, return_sequences=True)
+        self.l3 = layers.GRU(256, return_sequences=True)
+        self.l4 = layers.Dense(num_features)
+
+    def call(self, x: Tuple[tf.Tensor], training=False):
+        """Performs the forward pass in the neural network."""
+        x = x[0]
+        shape = x.shape  # type: ignore
+        x = tf.reshape(x, (shape[0], shape[1], self.num_features))
+
+        x = self.l1(x)
+        x = self.l2(x)
+        x = self.l3(x)
+        x = self.l4(x)
+
+        x = tf.reshape(x, shape)
+        return x

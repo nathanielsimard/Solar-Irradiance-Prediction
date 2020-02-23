@@ -11,7 +11,7 @@ def language_model():
     """Language Model."""
     encoder = autoencoder.Encoder()
     encoder.load("3")
-    return languagemodel.LanguageModel(encoder)
+    return languagemodel.Gru(encoder)
 
 
 def main():
