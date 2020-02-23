@@ -91,7 +91,7 @@ class LanguageModel(base.Model):
             image_features = tf.py_function(func=encoder, inp=[images], Tout=tf.float32)
             return (image_features[0:-1], image_features[1:])
 
-        return dataset.map(preprocess).cache()
+        return dataset.map(preprocess)
 
 
 class ConvLSTM(LanguageModel):
