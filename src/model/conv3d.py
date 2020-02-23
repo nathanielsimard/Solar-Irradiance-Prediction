@@ -1,7 +1,7 @@
 from typing import Tuple
 
 import tensorflow as tf
-from tensorflow.keras.layers import Conv3D, Dense, Flatten, MaxPooling3D, Dropout
+from tensorflow.keras.layers import Conv3D, Dense, Flatten, MaxPooling3D, Dropout, BatchNormalization
 from tensorflow.keras.models import Sequential
 
 from src import logging
@@ -188,20 +188,30 @@ class CNN3D_ClearskyV2(base.Model):
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
         )
         self.num_images = num_images
+        self.inputdropout = Dropout(0.5)
         self.conv1a = Conv3D(64, (3, 3, 3), padding="same")
         self.pool1 = MaxPooling3D(pool_size=(1, 2, 2), padding="same")
         self.dropout1 = Dropout(0.1)
+        self.batchnorm1 = BatchNormalization()
         self.conv2a = Conv3D(128, (3, 3, 3), padding="same")
         self.pool2 = MaxPooling3D(pool_size=(2, 2, 2), padding="same")
+        self.dropout2 = Dropout(0.1)
+        self.batchnorm2 = BatchNormalization()
         self.conv3a = Conv3D(256, (3, 3, 3), padding="same")
         self.conv3b = Conv3D(256, (3, 3, 3), padding="same")
         self.pool3 = MaxPooling3D(pool_size=(2, 2, 2), padding="same")
+        self.dropout3 = Dropout(0.1)
+        self.batchnorm3 = BatchNormalization()
         self.conv4a = Conv3D(512, (3, 3, 3), padding="same")
         self.conv4b = Conv3D(512, (3, 3, 3), padding="same")
         self.pool4 = MaxPooling3D(pool_size=(2, 2, 2), padding="same")
+        self.dropout4 = Dropout(0.1)
+        self.batchnorm4 = BatchNormalization()
         self.conv5a = Conv3D(512, (3, 3, 3), padding="same")
         self.conv5b = Conv3D(512, (3, 3, 3), padding="same")
         self.pool5 = MaxPooling3D(pool_size=(2, 2, 2), padding="same")
+        self.dropout5 = Dropout(0.1)
+        self.batchnorm5 = BatchNormalization()
         self.flatten = Flatten()
         self.d1 = Dense(1048, activation="relu")
         self.d2 = Dense(521, activation="relu")
@@ -218,21 +228,30 @@ class CNN3D_ClearskyV2(base.Model):
         x = data[2]
         # x = tf.math.l2_normalize(x, axis=0)
         clearsky = data[1]
-
+        # x = self.inputdropout(x)
         x = self.conv1a(x)
         x = self.pool1(x)
-        x = self.dropout1(x)
+        x = self.dropout1(x, training)
+        x = self.batchnorm1(x, training)
         x = self.conv2a(x)
         x = self.pool2(x)
+        x = self.dropout2(x, training)
+        x = self.batchnorm2(x, training)
         x = self.conv3a(x)
         x = self.conv3b(x)
         x = self.pool3(x)
+        x = self.dropout3(x, training)
+        x = self.batchnorm3(x, training)
         x = self.conv4a(x)
         x = self.conv4b(x)  # Here
         x = self.pool4(x)
+        x = self.dropout4(x, training)
+        x = self.batchnorm4(x, training)
         x = self.conv5a(x)
         x = self.conv5b(x)
         x = self.pool5(x)
+        x = self.dropout5(x, training)
+        x = self.batchnorm5(x, training)
         x = self.flatten(x)
         x = self.d1(x)
         x = self.d2(x)

@@ -202,6 +202,6 @@ class Training(object):
         return loss
 
     # @tf.function
-    def _calculate_loss(self, valid_inputs, valid_targets):
-        outputs = self.model(valid_inputs)
+    def _calculate_loss(self, valid_inputs, valid_targets, training=False):
+        outputs = self.model(valid_inputs, training=training)
         return self.loss_fn(valid_targets, outputs)
