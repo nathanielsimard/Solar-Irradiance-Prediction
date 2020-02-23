@@ -97,7 +97,7 @@ class LanguageModel(base.Model):
 class ConvLSTM(LanguageModel):
     def __init__(self, encoder, num_images=6, time_interval_min=60, num_channels=32):
         """Initialize the architecture."""
-        super().__init__(NAME)
+        super().__init__(NAME + "ConvLSTM")
         self.num_images = num_images
         self.time_interval_min = time_interval_min
 
@@ -132,7 +132,7 @@ class Gru(LanguageModel):
         self, encoder, num_images=6, time_interval_min=60, num_features=16 * 16 * 32
     ):
         """Initialize the architecture."""
-        super().__init__(NAME)
+        super().__init__(NAME + "GRU")
         self.num_images = num_images
         self.time_interval_min = time_interval_min
         self.num_features = num_features
