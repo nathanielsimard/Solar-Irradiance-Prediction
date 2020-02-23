@@ -54,7 +54,10 @@ def main():
 
     model = language_model()
 
-    training_session = Training(optimizer=optimizer, model=model, loss_fn=loss_obj)
+    def rmse(pred, target):
+        return loss_obj(pred, target) ** 0.5
+
+    training_session = Training(optimizer=optimizer, model=model, loss_fn=rmse)
     training_session.run(
         enable_tf_caching=args.enable_tf_caching,
         skip_non_cached=args.skip_non_cached,
