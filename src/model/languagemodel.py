@@ -16,9 +16,7 @@ NAME = "LanguageModel"
 class LanguageModel(base.Model):
     """Create Language Model to predict the futur images."""
 
-    def __init__(
-        self, encoder, num_images=6, time_interval_min=60, num_features=16 * 16 * 32
-    ):
+    def __init__(self, encoder, num_images=6, time_interval_min=60, num_channels=32):
         """Initialize the architecture."""
         super().__init__(NAME)
         self.num_images = num_images
@@ -28,25 +26,19 @@ class LanguageModel(base.Model):
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
         )
         self.encoder = encoder
-        self.num_features = num_features
 
-        self.flatten = layers.Flatten()
-
-        self.l1 = layers.GRU(num_features, return_sequences=True)
-        self.l2 = layers.GRU(num_features, return_sequences=True)
-        self.l3 = layers.GRU(num_features, return_sequences=True)
+        self.l1 = layers.ConvLSTM2D(64, return_sequences=True)
+        self.l2 = layers.ConvLSTM2D(64, return_sequences=True)
+        self.l3 = layers.ConvLSTM2D(num_channels, return_sequences=True)
 
     def call(self, x: Tuple[tf.Tensor], training=False):
         """Performs the forward pass in the neural network."""
         x = x[0]
-        shape = x.shape  # type: ignore
-        x = tf.reshape(x, (shape[0], shape[1], self.num_features))
 
         x = self.l1(x)
         x = self.l2(x)
         x = self.l3(x)
 
-        x = tf.reshape(x, shape)
         return x
 
     def config(self, training=False) -> dataloader.DataloaderConfig:
@@ -76,7 +68,7 @@ class LanguageModel(base.Model):
 
         for _ in range(num_images):
             predictions = self.call((images,))
-            images = tf.concat([images[:, 0:1], predictions[:, :]], 1)
+            images = tf.concat([images[:, :], predictions[:, :-1]], 1)
 
         # Remove batch size
         images = images[0]
