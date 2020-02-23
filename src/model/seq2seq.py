@@ -10,10 +10,10 @@ from src.model import base
 
 logger = logging.create_logger(__name__)
 
-NAME = "LanguageModel"
+NAME = "Seq2Seq"
 
 
-class LanguageModel(base.Model):
+class Seq2Seq(base.Model):
     """Create Language Model to predict the futur images."""
 
     def config(self, training=False) -> dataloader.DataloaderConfig:
@@ -94,7 +94,7 @@ class LanguageModel(base.Model):
         return dataset.map(preprocess)
 
 
-class ConvLSTM(LanguageModel):
+class ConvLSTM(Seq2Seq):
     """Use ConvLSTM2D as recurent layers."""
 
     def __init__(self, encoder, num_images=6, time_interval_min=60, num_channels=32):
@@ -129,7 +129,7 @@ class ConvLSTM(LanguageModel):
         return x
 
 
-class Gru(LanguageModel):
+class Gru(Seq2Seq):
     """Use GRU as recurent layers."""
 
     def __init__(

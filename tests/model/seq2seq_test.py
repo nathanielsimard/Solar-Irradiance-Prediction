@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 import tensorflow as tf
 
-from src.model import languagemodel
+from src.model import seq2seq
 
 
 class LanguageModelTest(unittest.TestCase):
@@ -26,7 +26,7 @@ class LanguageModelTest(unittest.TestCase):
         self.encoder = encoder
 
     def test_gru_call(self):
-        model = languagemodel.Gru(
+        model = seq2seq.Gru(
             self.encoder,
             num_images=self.num_images,
             num_features=self.x * self.y * self.num_channels,
@@ -36,7 +36,7 @@ class LanguageModelTest(unittest.TestCase):
         self.assertEqual(generated.shape, self.images.shape)
 
     def test_convlstm_call(self):
-        model = languagemodel.ConvLSTM(
+        model = seq2seq.ConvLSTM(
             self.encoder, num_images=self.num_images, num_channels=self.num_channels,
         )
         generated = model((self.images,))
@@ -44,7 +44,7 @@ class LanguageModelTest(unittest.TestCase):
         self.assertEqual(generated.shape, self.images.shape)
 
     def test_perdict_next_images(self):
-        model = languagemodel.ConvLSTM(
+        model = seq2seq.ConvLSTM(
             self.encoder, num_images=self.num_images, num_channels=self.num_channels,
         )
 
@@ -57,7 +57,7 @@ class LanguageModelTest(unittest.TestCase):
         )
 
     def test_givenBlackImages_shouldPerdictNextImages(self):
-        model = languagemodel.ConvLSTM(
+        model = seq2seq.ConvLSTM(
             self.encoder, num_images=self.num_images, num_channels=self.num_channels,
         )
 

@@ -1,18 +1,10 @@
 import argparse
 
-from tensorflow.keras import losses, optimizers
 import tensorflow as tf
+from tensorflow.keras import losses, optimizers
 
 from src import dry_run, env
-from src.model import autoencoder, languagemodel
 from src.training import Training
-
-
-def language_model():
-    """Language Model."""
-    encoder = autoencoder.Encoder()
-    encoder.load("3")
-    return languagemodel.Gru(encoder)
 
 
 def main():
@@ -66,7 +58,7 @@ def main():
     optimizer = optimizers.Adam(0.001)
     loss_obj = losses.MeanSquaredError()
 
-    model = language_model()
+    model = None
 
     def rmse(pred, target):
         return loss_obj(pred, target) ** 0.5
