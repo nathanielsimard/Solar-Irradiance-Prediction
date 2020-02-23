@@ -22,13 +22,8 @@ class GRU(base.Model):
         self.num_images = num_images
         self.time_interval_min = time_interval_min
 
-        self.scaling_image = preprocessing.MinMaxScaling(
-            preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
-        )
-
-        self.scaling_target = preprocessing.MinMaxScaling(
-            preprocessing.TARGET_GHI_MIN, preprocessing.TARGET_GHI_MAX
-        )
+        self.scaling_image = preprocessing.min_max_scaling_images()
+        self.scaling_ghi = preprocessing.min_max_scaling_ghi()
 
         self.encoder = encoder
         self.flatten = layers.Flatten()
@@ -97,6 +92,8 @@ class GRU(base.Model):
 
         def preprocess(images, clearsky, target_ghi):
             images = self.scaling_image.normalize(images)
+            clearsky = self.scaling_ghi.normalize(clearsky)
+            target_ghi = self.scaling_ghi.normalize(target_ghi)
             # Warp the encoder preprocessing in a py function
             # because its size is not known at compile time.
             features = tf.py_function(

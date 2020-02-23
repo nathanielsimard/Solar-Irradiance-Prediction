@@ -1,18 +1,25 @@
 import argparse
 
-from tensorflow.keras import losses, optimizers
 import tensorflow as tf
+from tensorflow.keras import losses, optimizers
 
 from src import dry_run, env
-from src.model import autoencoder, languagemodel
+from src.model import autoencoder, embed_conv3d, languagemodel
 from src.training import Training
 
 
-def language_model():
+def language_model(encoder_instance="3"):
     """Language Model."""
     encoder = autoencoder.Encoder()
-    encoder.load("3")
+    encoder.load(encoder_instance)
     return languagemodel.Gru(encoder)
+
+
+def conv3d_with_embeds(encoder_instance="3"):
+    """Create Conv3D using the encoder."""
+    encoder = autoencoder.Encoder()
+    encoder.load(encoder_instance)
+    return embed_conv3d.Conv3D(encoder)
 
 
 def main():
@@ -66,7 +73,7 @@ def main():
     optimizer = optimizers.Adam(0.001)
     loss_obj = losses.MeanSquaredError()
 
-    model = language_model()
+    model = conv3d_with_embeds()
 
     def rmse(pred, target):
         return loss_obj(pred, target) ** 0.5

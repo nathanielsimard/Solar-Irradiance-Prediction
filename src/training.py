@@ -4,6 +4,7 @@ from datetime import datetime
 import tensorflow as tf
 
 from src import env, logging
+from src.data import preprocessing
 from src.data.train import load_data
 from src.model.base import Model
 
@@ -58,12 +59,18 @@ class Training(object):
     """
 
     def __init__(
-        self, optimizer: tf.keras.optimizers, model: Model, loss_fn: tf.keras.losses,
+        self,
+        optimizer: tf.keras.optimizers,
+        model: Model,
+        loss_fn: tf.keras.losses,
+        predict_ghi=True,
     ):
         """Initialize a training session."""
         self.optim = optimizer
         self.loss_fn = loss_fn
         self.model = model
+        self.predict_ghi = predict_ghi
+        self.scaling_ghi = preprocessing.min_max_scaling_ghi()
 
         self.metrics = {
             "train": tf.keras.metrics.Mean("train loss", dtype=tf.float32),
@@ -166,12 +173,16 @@ class Training(object):
         writer = self.writer[name]
 
         for i, data in enumerate(dataset.batch(batch_size)):
-            logger.info(f"Evaluation batch #{i}")
+            logger.info(f"Evaluation batch #{i+1}")
             inputs = data[:-1]
             targets = data[-1]
 
             loss = self._calculate_loss(inputs, targets)
-            metric(loss)
+            if self.predict_ghi:
+                metric(self.scaling_ghi.original(loss))
+            else:
+                metric(loss)
+
             if dry_run:
                 break
 
@@ -188,7 +199,10 @@ class Training(object):
         gradients = tape.gradient(loss, self.model.trainable_variables)
         self.optim.apply_gradients(zip(gradients, self.model.trainable_variables))
 
-        self.metrics["train"](loss)
+        if self.predict_ghi:
+            self.metrics["train"](self.scaling_ghi.original(loss))
+        else:
+            self.metrics["train"](loss)
 
     @tf.function
     def _calculate_loss(self, valid_inputs, valid_targets):
