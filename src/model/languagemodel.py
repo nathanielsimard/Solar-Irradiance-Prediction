@@ -95,6 +95,8 @@ class LanguageModel(base.Model):
 
 
 class ConvLSTM(LanguageModel):
+    """Use ConvLSTM2D as recurent layers."""
+
     def __init__(self, encoder, num_images=6, time_interval_min=60, num_channels=32):
         """Initialize the architecture."""
         super().__init__(NAME + "ConvLSTM")
@@ -128,6 +130,8 @@ class ConvLSTM(LanguageModel):
 
 
 class Gru(LanguageModel):
+    """Use GRU as recurent layers."""
+
     def __init__(
         self, encoder, num_images=6, time_interval_min=60, num_features=16 * 16 * 32
     ):
