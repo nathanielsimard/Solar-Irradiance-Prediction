@@ -94,6 +94,7 @@ class Training(object):
         enable_checkpoint=True,
         dry_run=False,
         categorical=False,
+        load_checkpoint=None
     ):
         """Performs the training of the model in minibatch.
 
@@ -122,21 +123,24 @@ class Training(object):
         test_set = self.model.preprocess(test_set)
 
         logger.info("Creating loss logs")
-
+        epoch = 0
+        if load_checkpoint is not None:
+            epoch = int(load_checkpoint)
+            self.model.load(load_checkpoint)
         # Fail early!
         self.model.save(str(0))
-        self._evaluate("test", 0, test_set, valid_batch_size, dry_run=True)
+        self._evaluate("test", 0, test_set, valid_batch_size , dry_run=True)
         logger.info("Fitting model.")
-        for epoch in range(epochs):
+
+        for epoch in range(epoch, epochs):
             logger.info("Supervised training...")
 
             for i, data in enumerate(train_set.batch(batch_size)):
                 inputs = data[:-1]
                 targets = data[-1]
 
-                logger.info(f"Batch #{i+1}")
-
-                self._train_step(inputs, targets)
+                loss = self._train_step(inputs, targets)
+                logger.info(f"Batch #{i+1}, loss={loss}")
 
             logger.info("Evaluating validation loss")
             self._evaluate("valid", epoch, valid_set, valid_batch_size)
@@ -186,7 +190,7 @@ class Training(object):
 
         self.history.record(name, metric.result())
 
-    @tf.function
+    # @tf.function
     def _train_step(self, train_inputs, train_targets):
         with tf.GradientTape() as tape:
             outputs = self.model(train_inputs, training=True)
@@ -195,8 +199,9 @@ class Training(object):
         self.optim.apply_gradients(zip(gradients, self.model.trainable_variables))
 
         self.metrics["train"](loss)
+        return loss
 
-    @tf.function
+    # @tf.function
     def _calculate_loss(self, valid_inputs, valid_targets):
         outputs = self.model(valid_inputs)
         return self.loss_fn(valid_targets, outputs)

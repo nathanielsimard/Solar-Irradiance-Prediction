@@ -128,9 +128,9 @@ def load_data(
     )
 
     if enable_tf_caching:
-        dataset_train = dataset_train.cache(f"{cache_file}/train")
-        dataset_test = dataset_test.cache(f"{cache_file}/test")
-        dataset_valid = dataset_valid.cache(f"{cache_file}/valid")
+        dataset_train = dataset_train.cache("cache_train")
+        dataset_test = dataset_test.cache("cache_test")
+        dataset_valid = dataset_valid.cache("cache_valid")
 
     logger.info("Loaded datasets.")
     return dataset_train, dataset_valid, dataset_test

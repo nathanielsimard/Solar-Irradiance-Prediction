@@ -3,7 +3,8 @@ import argparse
 from tensorflow.keras import losses, optimizers
 
 from src import dry_run, env
-from src.model import conv2d  # autoencoder, embed_conv3d, conv2d
+# from src.model import conv2d  # autoencoder, embed_conv3d, conv2d
+from src.model import conv3d
 from src.training import Training
 
 
@@ -28,8 +29,14 @@ def main():
     )
 
     parser.add_argument(
+        "--epochs",
+        help="Number of epochs to run", default=25, type=int)
+
+    parser.add_argument(
         "--no_checkpoint", help="Will not save any checkpoints", action="store_true",
     )
+
+    parser.add_argument("--load_checkpoint", help="Reload at specified checkpoint", default=None, type=str)
 
     parser.add_argument("--lr", help="Learning rate", default=0.0001, type=float)
 
@@ -45,9 +52,9 @@ def main():
     # encoder = autoencoder.Encoder()
     # encoder.load("3")
     # model = embed_conv3d.Conv3D(encoder)
-    model = conv2d.CNN2DClearsky()
+    model = conv3d.CNN3D_ClearskyV2()
 
-    optimizer = optimizers.Adam(0.001)
+    optimizer = optimizers.Adam(args.lr)
     loss_obj = losses.MeanSquaredError()
 
     def rmse(pred, target):
@@ -60,6 +67,8 @@ def main():
         enable_checkpoint=not args.no_checkpoint,
         batch_size=args.batch_size,
         dry_run=args.dry_run,
+        epochs=args.epochs,
+        load_checkpoint=args.load_checkpoint
     )
 
 
