@@ -23,9 +23,9 @@ class Clearsky(base.Model):
     def __init__(self, encoder: autoencoder.Encoder):
         """Initialize the architecture."""
         super().__init__(NAME)
-        self.scaling_image = preprocessing.MinMaxScaling(
-            preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
-        )
+        self.scaling_image = preprocessing.min_max_scaling_images()
+        self.scaling_ghi = preprocessing.min_max_scaling_ghi()
+
         self.encoder = encoder
 
         self.flatten = Flatten()
@@ -82,7 +82,11 @@ class Clearsky(base.Model):
             return self.flatten(image_encoded)[0, :]
 
         def preprocess(image, clearsky, target_ghi):
+            # Normalize inputs
             image = self.scaling_image.normalize(image)
+            clearsky = self.scaling_ghi.normalize(clearsky)
+            target_ghi = self.scaling_ghi.normalize(target_ghi)
+
             image_features = tf.py_function(func=encoder, inp=[image], Tout=tf.float32)
             clearsky = self._preprocess_target(clearsky)
             target_ghi = self._preprocess_target(target_ghi)

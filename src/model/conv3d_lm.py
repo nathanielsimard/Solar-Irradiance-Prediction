@@ -24,9 +24,7 @@ class Conv3D(base.Model):
         super().__init__(NAME)
         self.language_model = language_model
 
-        self.scaling_ghi = preprocessing.MinMaxScaling(
-            preprocessing.TARGET_GHI_MIN, preprocessing.TARGET_GHI_MIN
-        )
+        self.scaling_ghi = preprocessing.min_max_scaling_ghi()
 
         self.flatten = layers.Flatten()
         self.max_pool = layers.MaxPooling3D((1, 2, 2))

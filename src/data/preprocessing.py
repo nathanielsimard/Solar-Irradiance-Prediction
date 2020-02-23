@@ -31,6 +31,16 @@ class MinMaxScaling(object):
         return (value * (self.max_value - self.min_value)) + self.min_value
 
 
+def min_max_scaling_images():
+    """Min max scaling for images."""
+    return MinMaxScaling(IMAGE_MIN, IMAGE_MAX)
+
+
+def min_max_scaling_ghi():
+    """Min max scaling for ghi values."""
+    return MinMaxScaling(TARGET_GHI_MIN, TARGET_GHI_MAX)
+
+
 def find_target_ghi_minmax_value(dataset=None):
     """Find the minimum value of target ghi.
 
