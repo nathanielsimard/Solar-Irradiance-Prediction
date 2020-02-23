@@ -1,7 +1,6 @@
 from typing import List
 
 import numpy as np
-import tensorflow as tf
 from matplotlib import pyplot as plt
 
 from src.data.train import load_data
@@ -9,26 +8,21 @@ from src.model.autoencoder import Decoder, Encoder
 from src.model.languagemodel import Gru
 
 
-def plot_comparison(
-    encoder_instance: str, language_model_instance: str, num_channels=5
-):
+def plot_comparison(encoder_instance: str, language_model_instance: str):
     """Show original and generated futur images in a grid."""
     encoder = Encoder()
     encoder.load(encoder_instance)
     model = Gru(encoder)
     model.load(language_model_instance)
-
-    decoder = Decoder(num_channels)
-    decoder.load(encoder_instance)
-
     config = model.config(training=False)
     config.num_images = 6
     config.skip_missing_past_images = True
 
+    decoder = Decoder(len(config.channels))
+    decoder.load(encoder_instance)
 
     valid_dataset, _, _ = load_data(config=config)
     images_originals = _first_images(valid_dataset, 6)
-    print(images_originals.shape)
 
     image_pred = model.predict_next_images(images_originals[0, :3], 3)
 
@@ -40,7 +34,7 @@ def plot_comparison(
     images_originals = encoder(images_originals, training=False)
     images_originals = decoder(images_originals, training=False)
 
-    #before = model.scaling_image.original(before)
+    before = model.scaling_image.original(before)
     images_originals = model.scaling_image.original(images_originals)
     image_pred = model.scaling_image.original(np.array(image_pred))
 
@@ -63,7 +57,11 @@ def plot_comparison(
 
 
 def _plt_images(
-    originals: List[np.ndarray], generated: List[np.ndarray], befores, output_size, scale=0.1
+    originals: List[np.ndarray],
+    generated: List[np.ndarray],
+    befores,
+    output_size,
+    scale=0.1,
 ):
     plt.cla()
     plt.clf()
@@ -85,7 +83,7 @@ def _plt_images(
 
         ax_bef.set_xticks([])
         ax_bef.set_yticks([])
-        
+
         ax_original.set_xticks([])
         ax_original.set_yticks([])
 
@@ -100,28 +98,6 @@ def _plt_images(
         ax_bef.imshow(bef, cmap="gray")
         ax_original.imshow(original, cmap="gray")
         ax_gen.imshow(gen, cmap="gray")
-
-
-def _predict_images(
-    model, encoder: Encoder, decoder: Decoder, images_features
-):
-    preds = []
-    inputs = encoder(images_features[0], training=False)
-    inputs = tf.expand_dims(inputs, 0)
-    num_generate = 3
-
-    for i in range(num_generate):
-        pred_features = model(inputs, training=False)
-        inputs = tf.concat([inputs[:, :], pred_features[:, -1:]], 1)
-
-        pred_features = tf.squeeze(pred_features, 0)
-        # Last batch dim
-        next_feature = pred_features[-1:]
-        pred_images = decoder((next_feature), False)
-        # Remove the batch dim
-        preds.append(pred_images[0])
-
-    return preds
 
 
 def _first_images(dataset, num, index=3):
