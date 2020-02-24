@@ -65,18 +65,13 @@ class CNN3D(base.Model):
 
         return Sequential([conv3d_1, conv3d_2, conv3d_3, max_pool])
 
-    def config(self, training=False) -> dataloader.DataloaderConfig:
+    def config(self) -> dataloader.DataloaderConfig:
         """Configuration."""
         config = default_config()
         config.num_images = self.num_images
         config.ratio = 0.1
         config.time_interval_min = 30
         config.features = [dataloader.Feature.image, dataloader.Feature.target_ghi]
-
-        if training:
-            config.error_strategy = dataloader.ErrorStrategy.skip
-        else:
-            config.error_strategy = dataloader.ErrorStrategy.ignore
 
         return config
 

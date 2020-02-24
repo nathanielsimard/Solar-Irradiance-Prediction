@@ -14,7 +14,7 @@ def plot_comparison(encoder_instance: str, seq2seq_instance: str):
     encoder.load(encoder_instance)
     model = Gru(encoder)
     model.load(seq2seq_instance)
-    config = model.config(training=False)
+    config = model.config()
     config.num_images = 6
     config.skip_missing_past_images = True
 

@@ -63,17 +63,12 @@ class CNN2D(base.Model):
 
         return Sequential([conv2d_1, conv2d_2, conv2d_3, max_pool])
 
-    def config(self, training=False) -> dataloader.DataloaderConfig:
+    def config(self) -> dataloader.DataloaderConfig:
         """Configuration."""
         config = default_config()
         config.num_images = 1
         config.ratio = 0.01
         config.features = [dataloader.Feature.image, dataloader.Feature.target_ghi]
-
-        if training:
-            config.error_strategy = dataloader.ErrorStrategy.skip
-        else:
-            config.error_strategy = dataloader.ErrorStrategy.ignore
 
         return config
 
@@ -146,7 +141,7 @@ class CNN2DClearsky(base.Model):
 
         return Sequential([conv2d_1, conv2d_2, conv2d_3, max_pool])
 
-    def config(self, training=False, dry_run=False) -> dataloader.DataloaderConfig:
+    def config(self, dry_run=False) -> dataloader.DataloaderConfig:
         """Configuration."""
         config = default_config()
         config.num_images = 1
@@ -157,10 +152,7 @@ class CNN2DClearsky(base.Model):
             dataloader.Feature.image,
             dataloader.Feature.target_ghi,
         ]
-        if training:
-            config.error_strategy = dataloader.ErrorStrategy.skip
-        else:
-            config.error_strategy = dataloader.ErrorStrategy.ignore
+
         if dry_run:
             config.error_strategy = dataloader.ErrorStrategy.stop
         return config
