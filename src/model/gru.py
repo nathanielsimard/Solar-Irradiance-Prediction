@@ -34,21 +34,26 @@ class GRU(base.Model):
         self.flatten = layers.Flatten()
         self.dropout = layers.Dropout(dropout)
 
-        self.gru1 = layers.GRU(512)
+        self.gru1 = layers.GRU(512, return_sequences=True)
+        self.gru2 = layers.GRU(256)
 
         self.d1 = layers.Dense(512)
         self.d2 = layers.Dense(256)
         self.d3 = layers.Dense(128)
         self.d4 = layers.Dense(4)
 
-    def call(self, data: Tuple[tf.Tensor], training=False):
+    def call(self, data: Tuple[tf.Tensor, tf.Tensor], training=False):
         """Performs the forward pass in the neural network.
 
         Can use a different pass with the optional training boolean if
         some operations need to be skipped at evaluation(e.g. Dropout)
         """
-        x = data[0]
-        x = self.gru1(x)
+        images, clearsky = data
+
+        x = self.gru1(images)
+        x = self.gru2(x)
+
+        x = tf.concat([x, clearsky], 1)
 
         x = self.d1(x)
         if training:
@@ -70,7 +75,7 @@ class GRU(base.Model):
         config.time_interval_min = self.time_interval_min
         config.features = [
             dataloader.Feature.image,
-            dataloader.Feature.clearsky,
+            dataloader.Feature.metadata,
             dataloader.Feature.target_ghi,
         ]
 
@@ -84,11 +89,8 @@ class GRU(base.Model):
         Data is now (features, target).
         """
 
-        def encoder(images, clearsky):
-            images_encoded = self.encoder((images), False)
-            image_features = self.flatten(images_encoded)
-            features = tf.concat([image_features, clearsky], 1)
-            return features
+        def encoder(images):
+            return self.encoder(images, training=False)
 
         def preprocess(images, clearsky, target_ghi):
             images = self.scaling_image.normalize(images)
@@ -96,10 +98,7 @@ class GRU(base.Model):
             target_ghi = self.scaling_ghi.normalize(target_ghi)
             # Warp the encoder preprocessing in a py function
             # because its size is not known at compile time.
-            features = tf.py_function(
-                func=encoder, inp=[images, clearsky], Tout=tf.float32
-            )
-            # Every image feature also has the 4 clearsky predictions.
-            return (features, target_ghi)
+            features = tf.py_function(func=encoder, inp=[images], Tout=tf.float32)
+            return (features, clearsky, target_ghi)
 
         return dataset.map(preprocess)
