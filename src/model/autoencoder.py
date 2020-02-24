@@ -10,9 +10,9 @@ from src.model import base
 
 logger = logging.create_logger(__name__)
 
-NAME_AUTOENCODER = "Autoencoder"
-NAME_DECODER = "Decoder"
-NAME_ENCODER = "Encoder"
+NAME_AUTOENCODER = "Autoencoder_crop32"
+NAME_DECODER = "Decoder_crop32"
+NAME_ENCODER = "Encoder_crop32"
 
 # Name of the best weights using defaults parameters.
 # To be used by default by other models for
@@ -23,9 +23,10 @@ BEST_MODEL_WEIGHTS = "3"
 class Encoder(base.Model):
     """Create Image Encoder model."""
 
-    def __init__(self, dropout=0.5):
+    def __init__(self, dropout=0.5, crop_size=32):
         """Initialize the architecture."""
         super().__init__(NAME_ENCODER)
+        self.crop_size = crop_size
         self.conv1 = Conv2D(
             64, kernel_size=(3, 3), activation="relu", strides=1, padding="same"
         )
@@ -44,7 +45,18 @@ class Encoder(base.Model):
         Can use a different pass with the optional training boolean if
         some operations need to be skipped at evaluation(e.g. Dropout)
         """
-        x = self.conv1(x)
+        image_size_x = x.shape[2]
+        image_size_y = x.shape[3]
+        pixel = self.crop_size
+        start_x = image_size_x // 2 - pixel // 2
+        end_x = image_size_x // 2 + pixel // 2
+        start_y = image_size_y // 2 - pixel // 2
+        end_y = image_size_y // 2 + pixel // 2
+
+        logger.info(f"Original images shape: {x.shape}")
+        crop = x[:, :, start_x:end_x, start_y:end_y, :]
+        logger.info(f"Cropped images shape: {crop.shape}")
+        x = self.conv1(crop)
 
         if training:
             x = self.dropout(x)
