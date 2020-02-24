@@ -96,11 +96,11 @@ class Training(object):
         batch_size=128,
         epochs=25,
         valid_batch_size=128,
-        enable_tf_caching=False,
         skip_non_cached=False,
         enable_checkpoint=True,
         dry_run=False,
         categorical=False,
+        cache_file=None,
     ):
         """Performs the training of the model in minibatch.
 
@@ -118,15 +118,17 @@ class Training(object):
         )
 
         train_set, valid_set, test_set = load_data(
-            enable_tf_caching=enable_tf_caching,
-            config=config,
-            skip_non_cached=skip_non_cached,
+            config=config, skip_non_cached=skip_non_cached,
         )
 
         logger.info("Apply Preprocessing")
         train_set = self.model.preprocess(train_set)
         valid_set = self.model.preprocess(valid_set)
         test_set = self.model.preprocess(test_set)
+
+        if cache_file is not None:
+            train_set = self.model.preprocess(train_set).cache(f"{cache_file}-train")
+            valid_set = self.model.preprocess(valid_set).cache(f"{cache_file}-valid")
 
         logger.info("Fitting model.")
         for epoch in range(epochs):
