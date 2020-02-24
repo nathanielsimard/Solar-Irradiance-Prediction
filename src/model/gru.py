@@ -34,13 +34,13 @@ class GRU(base.Model):
         self.flatten = layers.Flatten()
         self.dropout = layers.Dropout(dropout)
 
-        self.gru1 = layers.GRU(512, return_sequences=True)
-        self.gru2 = layers.GRU(256)
+        self.gru1 = layers.GRU(1024, return_sequences=True)
+        self.gru2 = layers.GRU(512)
 
         self.d1 = layers.Dense(512)
         self.d2 = layers.Dense(256)
         self.d3 = layers.Dense(128)
-        self.d4 = layers.Dense(4)
+        self.d4 = layers.Dense(1)
 
     def call(self, data: Tuple[tf.Tensor, tf.Tensor], training=False):
         """Performs the forward pass in the neural network.
@@ -90,7 +90,8 @@ class GRU(base.Model):
         """
 
         def encoder(images):
-            return self.encoder(images, training=False)
+            images = self.encoder(images, training=False)
+            return self.flatten(images)
 
         def preprocess(images, clearsky, target_ghi):
             images = self.scaling_image.normalize(images)
