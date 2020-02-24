@@ -1,4 +1,5 @@
 import argparse
+import random
 
 import tensorflow as tf
 from tensorflow.keras import losses, optimizers
@@ -47,7 +48,12 @@ def parse_args():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--enable_tf_caching", help="Enable tensorflow caching.", action="store_true"
+        "--cache_file",
+        help="Tensorflow caching apply after model's preprocessing."
+        + "Note that this cache must be used only for a model with a specific configuration."
+        + "It must not be shared between models or the same model with different configuration.",
+        type=str,
+        default=None,
     )
     parser.add_argument(
         "--run_local", help="Enable training with relative paths", action="store_true"
@@ -89,6 +95,7 @@ def run(args):
     env.run_local = args.run_local
 
     if not args.random_seed:
+        random.seed(args.seed)
         tf.random.set_seed(args.seed)
 
     if args.dry_run:
@@ -106,7 +113,7 @@ def run(args):
 
     training_session = Training(optimizer=optimizer, model=model, loss_fn=rmse)
     training_session.run(
-        enable_tf_caching=args.enable_tf_caching,
+        cache_file=args.cache_file,
         skip_non_cached=args.skip_non_cached,
         enable_checkpoint=not args.no_checkpoint,
         batch_size=args.batch_size,
