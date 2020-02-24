@@ -127,8 +127,9 @@ class Training(object):
         if load_checkpoint is not None:
             epoch = int(load_checkpoint)
             self.model.load(load_checkpoint)
+            epoch += 1
         # Fail early!
-        self.model.save(str(0))
+        self.model.save("test")
         self._evaluate("test", 0, test_set, valid_batch_size , dry_run=True)
         logger.info("Fitting model.")
 
@@ -189,6 +190,7 @@ class Training(object):
             tf.summary.scalar(name, metric.result(), step=epoch)
 
         self.history.record(name, metric.result())
+        logger.info(f"{name} RMSE: {metric.result()}")
 
     # @tf.function
     def _train_step(self, train_inputs, train_targets):
