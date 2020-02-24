@@ -408,9 +408,9 @@ def create_generator(
     metadata: Callable[[], Iterable[Metadata]],
     config: Union[Dict[str, Any], DataloaderConfig] = DataloaderConfig(),
 ):
-    """Create a generator that will to the dataloader work.
+    """Creates a data generator for the dataloader.
 
-    Alternative to tf.data.DataSet, but tf version is prepered.
+    Alternative to tf.data.DataSet, but tf version is prepared.
     """
     if isinstance(config, Dict):
         config = parse_config(config)
