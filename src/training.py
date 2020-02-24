@@ -110,7 +110,7 @@ class Training(object):
             valid_batch_size: should be as large as the GPU can handle.
             caching: if temporary caching is desired.
         """
-        config = self.model.config(training=True)
+        config = self.model.config()
         logger.info(
             f"Starting training\n"
             + f" - Model: {self.model.title}\n"

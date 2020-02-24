@@ -13,7 +13,7 @@ def plot_comparison(instance: str):
     autoencoder = Autoencoder()
     autoencoder.load(instance)
 
-    config = autoencoder.config(training=False)
+    config = autoencoder.config()
 
     _, valid_dataset, _ = load_data(config=config)
     image = _first_image(valid_dataset)
@@ -41,7 +41,6 @@ def _plt_images(
 ):
     plt.cla()
     plt.clf()
-    # plt.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=None, hspace=None)
 
     num_col = 2
     num_rows = 2

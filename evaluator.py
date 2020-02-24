@@ -147,7 +147,10 @@ def generate_all_predictions(
         # Create the model
         model = prepare_model(target_time_offsets, user_config)
         # Get the configuration from the model to load the proper dataset.
-        model_config = model.config(training=False)
+        model_config = model.config()
+        # When an error occured during loading the data (Like missing target).
+        # We should not crash nor skip the datetimel.
+        model_config.error_strategy = dataloader.ErrorStrategy.ignore
 
         dataset = prepare_dataloader(
             dataframe,

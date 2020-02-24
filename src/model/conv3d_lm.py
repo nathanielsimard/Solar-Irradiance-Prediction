@@ -67,7 +67,7 @@ class Conv3D(base.Model):
 
         return x
 
-    def config(self, training=False) -> dataloader.DataloaderConfig:
+    def config(self) -> dataloader.DataloaderConfig:
         """Configuration."""
         config = default_config()
         config.num_images = self.language_model.num_images
@@ -77,11 +77,6 @@ class Conv3D(base.Model):
             dataloader.Feature.metadata,
             dataloader.Feature.target_ghi,
         ]
-
-        if training:
-            config.error_strategy = dataloader.ErrorStrategy.skip
-        else:
-            config.error_strategy = dataloader.ErrorStrategy.ignore
 
         return config
 

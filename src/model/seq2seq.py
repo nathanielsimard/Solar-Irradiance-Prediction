@@ -16,18 +16,13 @@ NAME = "Seq2Seq"
 class Seq2Seq(base.Model):
     """Create Language Model to predict the futur images."""
 
-    def config(self, training=False) -> dataloader.DataloaderConfig:
+    def config(self) -> dataloader.DataloaderConfig:
         """Configuration."""
         config = default_config()
         config.num_images = self.num_images
         config.time_interval_min = self.time_interval_min
         config.skip_missing_past_images = True
         config.features = [dataloader.Feature.image]
-
-        if training:
-            config.error_strategy = dataloader.ErrorStrategy.skip
-        else:
-            config.error_strategy = dataloader.ErrorStrategy.ignore
 
         return config
 

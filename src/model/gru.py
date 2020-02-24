@@ -63,7 +63,7 @@ class GRU(base.Model):
 
         return x
 
-    def config(self, training=False) -> dataloader.DataloaderConfig:
+    def config(self) -> dataloader.DataloaderConfig:
         """Configuration."""
         config = default_config()
         config.num_images = self.num_images
@@ -73,11 +73,6 @@ class GRU(base.Model):
             dataloader.Feature.clearsky,
             dataloader.Feature.target_ghi,
         ]
-
-        if training:
-            config.error_strategy = dataloader.ErrorStrategy.skip
-        else:
-            config.error_strategy = dataloader.ErrorStrategy.ignore
 
         return config
 

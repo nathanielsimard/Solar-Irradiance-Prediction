@@ -59,7 +59,7 @@ class Encoder(base.Model):
 
         return x
 
-    def config(self, training=False) -> dataloader.DataloaderConfig:
+    def config(self) -> dataloader.DataloaderConfig:
         """Configuration."""
         raise Exception("Config should be passe to the model using the encoder.")
 
@@ -101,7 +101,7 @@ class Decoder(base.Model):
 
         return x
 
-    def config(self, training=False) -> dataloader.DataloaderConfig:
+    def config(self) -> dataloader.DataloaderConfig:
         """Configuration."""
         raise Exception("Config should be passe to the model using the decoder.")
 
@@ -134,16 +134,9 @@ class Autoencoder(base.Model):
 
         return x
 
-    def config(self, training=False) -> dataloader.DataloaderConfig:
+    def config(self) -> dataloader.DataloaderConfig:
         """Configuration."""
-        config = self.default_config
-
-        if training:
-            config.error_strategy = dataloader.ErrorStrategy.skip
-        else:
-            config.error_strategy = dataloader.ErrorStrategy.ignore
-
-        return config
+        return self.default_config
 
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Applies the preprocessing to the image to return two times the same image."""
