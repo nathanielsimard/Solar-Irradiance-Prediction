@@ -6,14 +6,14 @@ from tensorflow.keras import layers
 from src import logging
 from src.data import dataloader, preprocessing
 from src.data.train import default_config
-from src.model import base
+from src.model import autoencoder, base
 
 logger = logging.create_logger(__name__)
 
-NAME = "LanguageModel"
+NAME = "Seq2Seq"
 
 
-class LanguageModel(base.Model):
+class Seq2Seq(base.Model):
     """Create Language Model to predict the futur images."""
 
     def config(self, training=False) -> dataloader.DataloaderConfig:
@@ -94,10 +94,12 @@ class LanguageModel(base.Model):
         return dataset.map(preprocess)
 
 
-class ConvLSTM(LanguageModel):
+class ConvLSTM(Seq2Seq):
     """Use ConvLSTM2D as recurent layers."""
 
-    def __init__(self, encoder, num_images=6, time_interval_min=60, num_channels=32):
+    def __init__(
+        self, encoder=None, num_images=6, time_interval_min=60, num_channels=32
+    ):
         """Initialize the architecture."""
         super().__init__(NAME + "ConvLSTM")
         self.num_images = num_images
@@ -106,7 +108,12 @@ class ConvLSTM(LanguageModel):
         self.scaling_image = preprocessing.MinMaxScaling(
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
         )
-        self.encoder = encoder
+
+        if encoder is None:
+            self.encoder = autoencoder.Encoder()
+            self.encoder.load(autoencoder.BEST_MODEL_WEIGHTS)
+        else:
+            self.encoder = encoder
 
         self.l1 = layers.ConvLSTM2D(
             64, kernel_size=(3, 3), padding="same", return_sequences=True
@@ -129,11 +136,15 @@ class ConvLSTM(LanguageModel):
         return x
 
 
-class Gru(LanguageModel):
+class Gru(Seq2Seq):
     """Use GRU as recurent layers."""
 
     def __init__(
-        self, encoder, num_images=6, time_interval_min=60, num_features=16 * 16 * 32
+        self,
+        encoder=None,
+        num_images=6,
+        time_interval_min=60,
+        num_features=16 * 16 * 32,
     ):
         """Initialize the architecture."""
         super().__init__(NAME + "GRU")
@@ -144,7 +155,12 @@ class Gru(LanguageModel):
         self.scaling_image = preprocessing.MinMaxScaling(
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
         )
-        self.encoder = encoder
+
+        if encoder is None:
+            self.encoder = autoencoder.Encoder()
+            self.encoder.load(autoencoder.BEST_MODEL_WEIGHTS)
+        else:
+            self.encoder = encoder
 
         self.l1 = layers.GRU(1024, return_sequences=True)
         self.l2 = layers.GRU(1024, return_sequences=True)

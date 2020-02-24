@@ -4,26 +4,47 @@ import tensorflow as tf
 from tensorflow.keras import losses, optimizers
 
 from src import dry_run, env
-from src.model import autoencoder, embed_conv3d, languagemodel
+from src.model import (
+    autoencoder,
+    base,
+    clearsky,
+    conv2d,
+    conv3d,
+    conv3d_lm,
+    embed_conv3d,
+    gru,
+)
 from src.training import Training
 
-
-def language_model(encoder_instance="3"):
-    """Language Model."""
-    encoder = autoencoder.Encoder()
-    encoder.load(encoder_instance)
-    return languagemodel.Gru(encoder)
-
-
-def conv3d_with_embeds(encoder_instance="3"):
-    """Create Conv3D using the encoder."""
-    encoder = autoencoder.Encoder()
-    encoder.load(encoder_instance)
-    return embed_conv3d.Conv3D(encoder)
+MODELS = {
+    autoencoder.NAME_AUTOENCODER: autoencoder.Autoencoder,
+    conv2d.NAME: conv2d.CNN2D,
+    conv2d.NAME_CLEARSKY: conv2d.CNN2DClearsky,
+    conv3d.NAME: conv3d.CNN3D,
+    embed_conv3d.NAME: embed_conv3d.Conv3D,
+    conv3d_lm.NAME: conv3d_lm.Conv3D,
+    clearsky.NAME: clearsky.ClearskyMLP,
+    gru.NAME: gru.GRU,
+}
 
 
-def main():
-    """Executable."""
+def create_model(model_name: str) -> base.Model:
+    """Create the model from its name."""
+    try:
+        return MODELS[model_name]()
+    except KeyError:
+        raise ValueError(
+            f"Bad model name, {model_name} do not exist.\n"
+            + f"Available models are {MODELS.keys()}"
+        )
+
+
+def parse_args():
+    """Parse the user's arguments.
+
+    The default arguments are to be used in order to reproduce
+    the original experiments.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--enable_tf_caching", help="Enable tensorflow caching.", action="store_true"
@@ -56,11 +77,15 @@ def main():
         "--no_checkpoint", help="Will not save any checkpoints", action="store_true",
     )
 
-    parser.add_argument("--lr", help="Learning rate", default=0.0001, type=float)
+    parser.add_argument("--lr", help="Learning rate", default=0.001, type=float)
 
-    parser.add_argument("--model", help="Name of the model to train", default="CNN2D")
+    parser.add_argument("--model", help="Name of the model to train", type=str)
     parser.add_argument("--batch_size", help="Batch size", default=128, type=int)
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def run(args):
+    """Run the training with RMSE Loss and Adam."""
     env.run_local = args.run_local
 
     if not args.random_seed:
@@ -70,12 +95,13 @@ def main():
         dry_run.run(args.enable_tf_caching, args.skip_non_cached)
         return
 
-    optimizer = optimizers.Adam(0.001)
+    model = create_model(args.model)
+
+    optimizer = optimizers.Adam(args.lr)
     loss_obj = losses.MeanSquaredError()
 
-    model = conv3d_with_embeds()
-
     def rmse(pred, target):
+        """Wraper around TF MSE Loss."""
         return loss_obj(pred, target) ** 0.5
 
     training_session = Training(optimizer=optimizer, model=model, loss_fn=rmse)
@@ -89,4 +115,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    args = parse_args()
+    run(args)

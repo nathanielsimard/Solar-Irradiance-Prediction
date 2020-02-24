@@ -4,7 +4,7 @@ from unittest import mock
 import numpy as np
 import tensorflow as tf
 
-from src.model import conv3d_lm, languagemodel
+from src.model import conv3d_lm, seq2seq
 
 
 class Conv3DTest(unittest.TestCase):
@@ -22,12 +22,12 @@ class Conv3DTest(unittest.TestCase):
             dtype=tf.float32,
         )
 
-        language_model = mock.MagicMock(languagemodel.LanguageModel)
+        seq2seq_model = mock.MagicMock(seq2seq.Seq2Seq)
 
         def predict_next_images(images, num_images=6):
             return images[:num_images]
 
-        language_model.predict_next_images = predict_next_images
+        seq2seq_model.predict_next_images = predict_next_images
 
         def gen():
             for images in self.images:
@@ -41,7 +41,7 @@ class Conv3DTest(unittest.TestCase):
             gen, (tf.float32, tf.float32, tf.float32)
         )
 
-        self.model = conv3d_lm.Conv3D(language_model)
+        self.model = conv3d_lm.Conv3D(seq2seq_model)
 
     def test_preprocessing(self):
         dataset = self.model.preprocess(self.dataset)

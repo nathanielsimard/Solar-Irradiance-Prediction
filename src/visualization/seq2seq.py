@@ -5,15 +5,15 @@ from matplotlib import pyplot as plt
 
 from src.data.train import load_data
 from src.model.autoencoder import Decoder, Encoder
-from src.model.languagemodel import Gru
+from src.model.seq2seq import Gru
 
 
-def plot_comparison(encoder_instance: str, language_model_instance: str):
+def plot_comparison(encoder_instance: str, seq2seq_instance: str):
     """Show original and generated futur images in a grid."""
     encoder = Encoder()
     encoder.load(encoder_instance)
     model = Gru(encoder)
-    model.load(language_model_instance)
+    model.load(seq2seq_instance)
     config = model.config(training=False)
     config.num_images = 6
     config.skip_missing_past_images = True
@@ -53,7 +53,7 @@ def plot_comparison(encoder_instance: str, language_model_instance: str):
         befores.append(bef[:, :, channel])
 
     _plt_images(originals, generateds, befores, config.crop_size)
-    plt.savefig(f"assets/languagemodel.png")
+    plt.savefig(f"assets/seq2seq.png")
 
 
 def _plt_images(

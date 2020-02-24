@@ -14,6 +14,11 @@ NAME_AUTOENCODER = "Autoencoder"
 NAME_DECODER = "Decoder"
 NAME_ENCODER = "Encoder"
 
+# Name of the best weights using defaults parameters.
+# To be used by default by other models for
+# better reproducibility.
+BEST_MODEL_WEIGHTS = "3"
+
 
 class Encoder(base.Model):
     """Create Image Encoder model."""
