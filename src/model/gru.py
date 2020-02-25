@@ -40,7 +40,7 @@ class GRU(base.Model):
         self.d1 = layers.Dense(512)
         self.d2 = layers.Dense(256)
         self.d3 = layers.Dense(128)
-        self.d4 = layers.Dense(1)
+        self.d4 = layers.Dense(4)
 
     def call(self, data: Tuple[tf.Tensor, tf.Tensor], training=False):
         """Performs the forward pass in the neural network.
