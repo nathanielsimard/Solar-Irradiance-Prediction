@@ -23,10 +23,9 @@ BEST_MODEL_WEIGHTS = "3"
 class Encoder(base.Model):
     """Create Image Encoder model."""
 
-    def __init__(self, dropout=0.5, crop_size=32):
+    def __init__(self, dropout=0.5):
         """Initialize the architecture."""
         super().__init__(NAME_ENCODER)
-        self.crop_size = crop_size
         self.conv1 = Conv2D(
             64, kernel_size=(3, 3), activation="relu", strides=1, padding="same"
         )
@@ -45,18 +44,7 @@ class Encoder(base.Model):
         Can use a different pass with the optional training boolean if
         some operations need to be skipped at evaluation(e.g. Dropout)
         """
-        image_size_x = x.shape[2]
-        image_size_y = x.shape[3]
-        pixel = self.crop_size
-        start_x = image_size_x // 2 - pixel // 2
-        end_x = image_size_x // 2 + pixel // 2
-        start_y = image_size_y // 2 - pixel // 2
-        end_y = image_size_y // 2 + pixel // 2
-
-        logger.info(f"Original images shape: {x.shape}")
-        crop = x[:, :, start_x:end_x, start_y:end_y, :]
-        logger.info(f"Cropped images shape: {crop.shape}")
-        x = self.conv1(crop)
+        x = self.conv1(x)
 
         if training:
             x = self.dropout(x)
@@ -121,12 +109,13 @@ class Decoder(base.Model):
 class Autoencoder(base.Model):
     """Create Image Auto-Encoder model."""
 
-    def __init__(self, dropout=0.3):
+    def __init__(self, dropout=0.3, crop_size=32):
         """Initialize the autoencoder."""
         super().__init__(NAME_AUTOENCODER)
         self.scaling_image = preprocessing.MinMaxScaling(
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
         )
+        self.crop_size = crop_size
 
         self.default_config = default_config()
         self.default_config.num_images = 1
@@ -161,8 +150,11 @@ class Autoencoder(base.Model):
         """Applies the preprocessing to the image to return two times the same image."""
 
         def preprocess(image):
-            scaled_image = self.scaling_image.normalize(image)
-            return (scaled_image, scaled_image)
+            scaled_images = self.scaling_image.normalize(image)
+            features = tf.py_function(
+                func=crop_image, inp=[scaled_images], Tout=tf.float32
+            )
+            return (features, features)
 
         return dataset.map(preprocess)
 
@@ -175,3 +167,17 @@ class Autoencoder(base.Model):
         """Override the load method to load the encoder and decoder."""
         self.encoder.load(instance)
         self.decoder.load(instance)
+
+
+def crop_image(image: tf.Tensor, crop_size=32):
+    """Performs dynamic cropping of an image."""
+    image_size_x = image.shape[0]
+    image_size_y = image.shape[1]
+    pixel = crop_size
+    start_x = image_size_x // 2 - pixel // 2
+    end_x = image_size_x // 2 + pixel // 2
+    start_y = image_size_y // 2 - pixel // 2
+    end_y = image_size_y // 2 + pixel // 2
+    cropped_image = image[start_x:end_x, start_y:end_y, :]
+
+    return cropped_image
