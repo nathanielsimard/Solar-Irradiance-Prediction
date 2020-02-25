@@ -74,6 +74,8 @@ class Training(object):
         self.scaling_ghi = preprocessing.min_max_scaling_ghi()
         # Insane big array. Just for more perfomance. Static allocation scheme.
         self.epoch_validation_results = np.zeros((10000000, 8))
+        self.epoch_train_results = np.zeros((10000000, 8))
+        self.epoch_test_results = np.zeros((10000000, 8))
 
         self.metrics = {
             "train": tf.keras.metrics.Mean("train loss", dtype=tf.float32),
@@ -124,7 +126,7 @@ class Training(object):
         train_set, valid_set, test_set = load_data(
             config=config, skip_non_cached=skip_non_cached,
         )
-
+        valid_batch_size = batch_size
         logger.info("Apply Preprocessing")
         train_set = self.model.preprocess(train_set)
         valid_set = self.model.preprocess(valid_set)
@@ -135,10 +137,10 @@ class Training(object):
         if load_checkpoint is not None:
             epoch = int(load_checkpoint)
             self.model.load(load_checkpoint)
-            epoch += 1
+            #epoch += 1
         # Fail early!
         self.model.save("test")
-        self._evaluate("valid", 0, valid_set, valid_batch_size , dry_run=True)
+        self._evaluate("test", 0, valid_set, valid_batch_size , dry_run=True)
         if cache_file is not None:
             train_set = self.model.preprocess(train_set).cache(f"{cache_file}-train")
             valid_set = self.model.preprocess(valid_set).cache(f"{cache_file}-valid")
@@ -164,6 +166,7 @@ class Training(object):
             self._update_progress(epoch)
             self.history.save(f"{self.model.title}-{epoch}")
 
+        logger.info("Evaluating test loss")
         self._evaluate("test", epoch, test_set, valid_batch_size)
         logger.info("Done.")
 
@@ -192,14 +195,20 @@ class Training(object):
             valid_inputs = data[:-1]
             valid_targets = data[-1]
             outputs = self.model(valid_inputs)
+            # Logging
+            outputs_and_targets = np.concatenate([outputs.numpy(), valid_targets.numpy()], axis=1)
+            first_index = i * batch_size
+            last_index = first_index + len(data[0])
             if name == "valid":
-                outputs_and_targets = np.concatenate([outputs.numpy(), valid_targets.numpy()], axis=1)
-                first_index = i * batch_size
-                last_index = first_index + len(data[0])
                 self.epoch_validation_results[first_index:last_index, :] = outputs_and_targets
-            loss = self.loss_fn(valid_targets, outputs)
+            if name == "test":
+                self.epoch_test_results[first_index:last_index, :] = outputs_and_targets
+
             if self.predict_ghi:
-                loss = self.scaling_ghi.original(loss)
+                loss = self.loss_fn(self.scaling_ghi.original(valid_targets), self.scaling_ghi.original(outputs))
+#               loss = self.scaling_ghi.original(loss)
+            else:
+                loss = self.loss_fn(valid_targets, outputs)
             #loss = self._calculate_loss(inputs, targets)
             logger.info(f"Batch #{i+1}, loss={loss}")
             metric(loss)
@@ -212,7 +221,8 @@ class Training(object):
 
         if name == "valid":
             np.save("valid_results.npy", self.epoch_validation_results)
-
+        if name == "valid":
+            np.save("test_results.npy", self.epoch_test_results)
         with writer.as_default():
             tf.summary.scalar(name, metric.result(), step=epoch)
 
@@ -227,7 +237,7 @@ class Training(object):
         gradients = tape.gradient(loss, self.model.trainable_variables)
         self.optim.apply_gradients(zip(gradients, self.model.trainable_variables))
         if self.predict_ghi:
-            loss = self.scaling_ghi.original(loss)
+            loss = self.loss_fn(self.scaling_ghi.original(train_targets), self.scaling_ghi.original(outputs))
         self.metrics["train"](loss)
         return loss
 
