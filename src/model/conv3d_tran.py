@@ -1,9 +1,7 @@
-
 from typing import Tuple
 
 import tensorflow as tf
-from tensorflow.keras.layers import Conv3D, Dense, Flatten, MaxPooling3D
-from tensorflow.keras.models import Sequential
+from tensorflow.keras import layers
 
 from src import logging
 from src.data import dataloader, preprocessing
@@ -14,52 +12,53 @@ logger = logging.create_logger(__name__)
 
 NAME = "CNN3DTranClearsky"
 
+
 class CNN3DTranClearsky(base.Model):
     """Create Conv3D model."""
+
     # Using the architecture from Tran et al.
     # https://www.cv-foundation.org/openaccess/content_iccv_2015/papers/Tran_Learning_Spatiotemporal_Features_ICCV_2015_paper.pdf
-    def __init__(self, num_images=4, time_interval_min):
+
+    def __init__(self, num_images=4, time_interval_min=60):
         """Initialize the architecture."""
-        super().__init__(NAME_CLEARSKY_V2)
+        super().__init__(NAME)
         self.scaling_image = preprocessing.min_max_scaling_images()
         self.scaling_ghi = preprocessing.min_max_scaling_ghi()
         self.num_images = num_images
         self.time_interval_min = time_interval_min
-        self.inputdropout = Dropout(0.5)
-        self.conv1a = Conv3D(64, (3, 3, 3), padding="same")
-        self.pool1 = MaxPooling3D(pool_size=(1, 2, 2), padding="same")
-        self.dropout1 = Dropout(0.1)
-        self.batchnorm1 = BatchNormalization()
-        self.conv2a = Conv3D(128, (3, 3, 3), padding="same")
-        self.pool2 = MaxPooling3D(pool_size=(2, 2, 2), padding="same")
-        self.dropout2 = Dropout(0.1)
-        self.batchnorm2 = BatchNormalization()
-        self.conv3a = Conv3D(256, (3, 3, 3), padding="same")
-        self.conv3b = Conv3D(256, (3, 3, 3), padding="same")
-        self.pool3 = MaxPooling3D(pool_size=(2, 2, 2), padding="same")
-        self.dropout3 = Dropout(0.1)
-        self.batchnorm3 = BatchNormalization()
-        self.conv4a = Conv3D(512, (3, 3, 3), padding="same")
-        self.conv4b = Conv3D(512, (3, 3, 3), padding="same")
-        self.pool4 = MaxPooling3D(pool_size=(2, 2, 2), padding="same")
-        self.dropout4 = Dropout(0.1)
-        self.batchnorm4 = BatchNormalization()
-        self.conv5a = Conv3D(512, (3, 3, 3), padding="same")
-        self.conv5b = Conv3D(512, (3, 3, 3), padding="same")
-        self.pool5 = MaxPooling3D(pool_size=(2, 2, 2), padding="same")
-        self.dropout5 = Dropout(0.1)
-        self.batchnorm5 = BatchNormalization()
-        self.flatten = Flatten()
-        self.d1 = Dense(1048, activation="relu")
-        self.d2 = Dense(521, activation="relu")
-        self.d3 = Dense(256, activation="relu")
-        self.d4 = Dense(256, activation="relu")
-        self.d5 = Dense(4)
+        self.inputdropout = layers.Dropout(0.5)
+        self.conv1a = layers.Conv3D(64, (3, 3, 3), padding="same")
+        self.pool1 = layers.MaxPooling3D(pool_size=(1, 2, 2), padding="same")
+        self.dropout1 = layers.Dropout(0.1)
+        self.batchnorm1 = layers.BatchNormalization()
+        self.conv2a = layers.Conv3D(128, (3, 3, 3), padding="same")
+        self.pool2 = layers.MaxPooling3D(pool_size=(2, 2, 2), padding="same")
+        self.dropout2 = layers.Dropout(0.1)
+        self.batchnorm2 = layers.BatchNormalization()
+        self.conv3a = layers.Conv3D(256, (3, 3, 3), padding="same")
+        self.conv3b = layers.Conv3D(256, (3, 3, 3), padding="same")
+        self.pool3 = layers.MaxPooling3D(pool_size=(2, 2, 2), padding="same")
+        self.dropout3 = layers.Dropout(0.1)
+        self.batchnorm3 = layers.BatchNormalization()
+        self.conv4a = layers.Conv3D(512, (3, 3, 3), padding="same")
+        self.conv4b = layers.Conv3D(512, (3, 3, 3), padding="same")
+        self.pool4 = layers.MaxPooling3D(pool_size=(2, 2, 2), padding="same")
+        self.dropout4 = layers.Dropout(0.1)
+        self.batchnorm4 = layers.BatchNormalization()
+        self.conv5a = layers.Conv3D(512, (3, 3, 3), padding="same")
+        self.conv5b = layers.Conv3D(512, (3, 3, 3), padding="same")
+        self.pool5 = layers.MaxPooling3D(pool_size=(2, 2, 2), padding="same")
+        self.dropout5 = layers.Dropout(0.1)
+        self.batchnorm5 = layers.BatchNormalization()
+        self.flatten = layers.Flatten()
+        self.d1 = layers.Dense(1048, activation="relu")
+        self.d2 = layers.Dense(521, activation="relu")
+        self.d3 = layers.Dense(256, activation="relu")
+        self.d4 = layers.Dense(256, activation="relu")
+        self.d5 = layers.Dense(4)
+
     def call(self, data: Tuple[tf.Tensor, tf.Tensor], training=False):
-        """Performs the forward pass in the neural network.
-        Can use a different pass with the optional training boolean if
-        some operations need to be skipped at evaluation(e.g. Dropout)
-        """
+        """Performs the forward pass in the neural network."""
         meta, images = data
         x = self.conv1a(images)
         x = self.pool1(x)
@@ -92,6 +91,7 @@ class CNN3DTranClearsky(base.Model):
         x = self.d4(z)
         x = self.d5(x)
         return x
+
     def config(self) -> dataloader.DataloaderConfig:
         """Configuration."""
         config = default_config()
@@ -103,12 +103,14 @@ class CNN3DTranClearsky(base.Model):
             dataloader.Feature.target_ghi,
         ]
         return config
+
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Applies the preprocessing to the inputs and the targets."""
+
         def preprocess(metadata, images, target_ghi):
             images = self.scaling_image.normalize(images)
             metadata = self.scaling_ghi.normalize(metadata)
             target_ghi = self.scaling_ghi.normalize(target_ghi)
             return metadata, images, target_ghi
-        return dataset.map(preprocess, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
+        return dataset.map(preprocess, num_parallel_calls=tf.data.experimental.AUTOTUNE)

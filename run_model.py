@@ -5,8 +5,17 @@ import tensorflow as tf
 from tensorflow.keras import optimizers
 
 from src import dry_run, env
-from src.model import (autoencoder, base, clearsky, conv2d, conv3d, conv3d_lm,
-                       embed_conv3d, gru)
+from src.model import (
+    autoencoder,
+    base,
+    clearsky,
+    conv2d,
+    conv3d,
+    conv3d_lm,
+    conv3d_tran,
+    embed_conv3d,
+    gru,
+)
 from src.session import Session
 
 MODELS = {
@@ -14,6 +23,7 @@ MODELS = {
     conv2d.NAME: conv2d.CNN2D,
     conv2d.NAME_CLEARSKY: conv2d.CNN2DClearsky,
     conv3d.NAME: conv3d.CNN3D,
+    conv3d_tran.NAME: conv3d_tran.CNN3DTranClearsky,
     embed_conv3d.NAME: embed_conv3d.Conv3D,
     conv3d_lm.NAME: conv3d_lm.Conv3D,
     clearsky.NAME: clearsky.ClearskyMLP,
