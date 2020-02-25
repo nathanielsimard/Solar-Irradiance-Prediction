@@ -2,7 +2,7 @@ import argparse
 import random
 
 import tensorflow as tf
-from tensorflow.keras import losses, optimizers
+from tensorflow.keras import optimizers
 
 from src import dry_run, env
 from src.model import (autoencoder, base, clearsky, conv2d, conv3d, conv3d_lm,
@@ -115,17 +115,8 @@ def run(args):
 
     model = create_model(args.model)
 
-    loss_obj = losses.MeanSquaredError()
-
-    def rmse(pred, target):
-        """Wraper around TF MSE Loss."""
-        return loss_obj(pred, target) ** 0.5
-
     session = Session(
-        model=model,
-        loss_fn=rmse,
-        batch_size=args.batch_size,
-        skip_non_cached=args.skip_non_cached,
+        model=model, batch_size=args.batch_size, skip_non_cached=args.skip_non_cached,
     )
 
     if args.train:
