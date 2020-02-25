@@ -37,19 +37,6 @@ All the images have dimension 650x1500
 - PSU: X = 883, Y = 174
 - SXF: X = 533, Y = 118
 
-## TensorBoard
-
-You can view the tensorboard interactivly on `helio` by creating a ssh bridge.
-For example, given a tensorboard file `/path/to/tensorboard/file_dir` on port `8008`.
-
-```bash
-ssh -L 8008:localhost:8008 helios
-```
-Then run the script which will make the tensorboard available at `localhost:8008`.
-
-```bash
-scripts/tensorboard.sh /path/to/tensorboard/file_dir 8008`.
-```
 ## Important paths.
 | Tables        | Are           |
 | ------------- |:-------------:|
@@ -59,6 +46,31 @@ scripts/tensorboard.sh /path/to/tensorboard/file_dir 8008`.
 
 ## Samples
 
+## Running
+
+### Training
+
+To train a model, you can use the script `run_model.py`.
+On helios, you can either use `./scripts/run_model_cached.sh` or `./scripts/run_model.sh` with the same arguments.
+
+A few examples:
+
+```sh
+python run_model.py --model Conv2D --train --lr 0.001 --skip_non_cached 
+python run_model.py --model Conv3D --train --epochs 2 --seed 1234
+```
+
+### Testing
+
+To test a model on the test set, the same script can be used.
+The only difference is that you have to pass to argument `--test {checkpoint}`
+
+An example while testing the Conv2D model with the 4th checkpoint.
+```sh
+python run_model.py --model Conv2D --test 4
+```
+
+## Samples
 Each gif has 10 images with 30 minute intervals between them on all channels.
 
 <div align="center">

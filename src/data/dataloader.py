@@ -8,8 +8,7 @@ import tensorflow as tf
 import src.data.clearskydata as csd
 from src import logging
 from src.data import image
-from src.data.config import Station, Coordinates
-
+from src.data.config import Coordinates, Station
 from src.data.image import (
     CorruptedImage,
     ImageNotCached,
@@ -31,11 +30,21 @@ class Feature(Enum):
 
 
 class ErrorStrategy(Enum):
-    """How error are handled by the dataloader."""
+    """How error are handled by the dataloader.
 
-    skip = "skip"  # Ignore the sample with missing data, and proceed to the next.
-    ignore = "ignore"  # Return a black image when data is mising
-    stop = "stop"  # Stop code execution.
+    skip: Ignore the sample with missing data, and proceed to the next.
+    ignore: Return a black image when data is mising
+    stop: Stop code execution.
+
+    Note:
+        Some errors might have their own error configuration
+        like how missing past images are handled.
+
+    """
+
+    skip = "skip"
+    ignore = "ignore"
+    stop = "stop"
 
 
 class UnregognizedFeature(Exception):
@@ -88,25 +97,28 @@ class DataloaderConfig:
         target_datetimes=None,
         stations: Dict[Station, Coordinates] = None,
         precompute_clearsky=False,
+        skip_missing_past_images=False,
     ):
         """All configurations are optional with default values.
 
         Args:
-            local_path: Can overrite the root path of each images.
+            local_path: Can override the root path of each images.
             error_strategy: How to handle errors.
             force_caching: Option to skip non cached images.
             crop_size: Image sized needed.
             features: List of features needed.
+                The features will be provided in order.
             channels: List of channels needed.
             image_cache_dir: Where the crop images will be cached.
             num_images: Total number of images.
-                If more than 1, images from the past are goin to be included.
+                If more than 1, images from the past are going to be included.
             time_interval_min: Number of minutes between images.
-                If num_images is 1, this has no effets.
+                If num_images is 1, this has no effect.
             ratio: proportion of the data we want.
             target_datetimes: list of target datetimes for clearsky caching
             stations: list of station where to pre-compute
             precompute_clearsky: Will pre-compute clearsky values if set.
+            skip_missing_past_images: if past image is missing, skip.
         """
         self.local_path = local_path
         self.error_strategy = error_strategy
@@ -119,8 +131,9 @@ class DataloaderConfig:
         self.time_interval_min = time_interval_min
         self.ratio = ratio
         self.target_datetimes = target_datetimes
-        self.station = stations
+        self.stations = stations
         self.precompute_clearsky = precompute_clearsky
+        self.skip_missing_past_images = skip_missing_past_images
 
     def __str__(self):
         """Return nice string representation of the config."""
@@ -192,14 +205,13 @@ class DataLoader(object):
                 self.ok += 1
                 yield tuple(output)
             except AttributeError as e:
-                # This is clearly unhandled! We want a crash here!
+                logger.error(f"Error while generating data, stopping : {e}")
                 raise e
-                # TODO: We should list the handled exceptions here, and do
-                # a stack trace if we encounter something really wrong.
             except Exception as e:
                 if self.config.error_strategy == ErrorStrategy.stop:
                     logger.error(f"Error while generating data, stopping : {e}")
                     raise e
+
                 logger.debug(f"Error while generating data, skipping : {e}")
                 self.skipped += 1
                 if (self.skipped % 1000) == 0:
@@ -275,19 +287,23 @@ class DataLoader(object):
                 images = current_image
 
             return tf.convert_to_tensor(images, dtype=tf.float32)
-        # We should only catch here exceptions that are safe to ignore.
         except (InvalidImageChannel, InvalidImageOffSet, CorruptedImage) as e:
             if self.config.error_strategy != ErrorStrategy.ignore:
-                raise e  # Skip
+                # The item will either be skipped or the pipeline will stopped.
+                # The exception cannot be handled here.
+                raise e
+
             logger.debug(f"Error while generating data, ignoring : {e}")
             output_shape = list(self.config.crop_size) + [len(self.config.channels)]
             return tf.convert_to_tensor(np.zeros(output_shape))
-        except (ImageNotCached) as e:
+        except ImageNotCached as e:
             if self.config.force_caching:
-                raise e  # Skip
+                logger.debug(f"Error while generating data, skipping : {e}")
+                raise e
 
-        except (Exception) as e:
-            raise e  # Some error require immediate attention!
+        except Exception as e:
+            # Some unknown error, require immediate attention!
+            raise e
 
     def _read_past_images(self, image_paths, image_offsets, coordinates, shape):
         images = []
@@ -301,6 +317,9 @@ class DataLoader(object):
                 )
                 images.append(image)
             except Exception as e:
+                if self.config.skip_missing_past_images:
+                    logger.debug(f"Error while generating past images, skipping : {e}")
+                    raise e
                 logger.debug(f"Error while generating past images, ignoring : {e}")
                 images.append(np.zeros(shape))
 
@@ -388,14 +407,10 @@ def create_dataset(
 def create_generator(
     metadata: Callable[[], Iterable[Metadata]],
     config: Union[Dict[str, Any], DataloaderConfig] = DataloaderConfig(),
-) -> tf.data.Dataset:
-    """Create a generator that will to the dataloader work. Will be used for debugging.
+):
+    """Creates a data generator for the dataloader.
 
-    Might be scrapped later on.
-
-    Targets are optional in Metadata. If one is missing, set it to zero.
-    To load a batch of data, you can iterate over the tf.data.Dataset by batch.
-    >>>dataset=dataset.batch(batch_size)
+    Alternative to tf.data.DataSet, but tf version is prepared.
     """
     if isinstance(config, Dict):
         config = parse_config(config)

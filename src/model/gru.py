@@ -6,7 +6,7 @@ from tensorflow.keras import layers
 from src import logging
 from src.data import dataloader, preprocessing
 from src.data.train import default_config
-from src.model import base
+from src.model import autoencoder, base
 
 logger = logging.create_logger(__name__)
 
@@ -16,39 +16,44 @@ NAME = "GRU"
 class GRU(base.Model):
     """Create GRU Model based on the embeddings created with the encoder."""
 
-    def __init__(self, encoder, num_images=6, time_interval_min=30, dropout=0.20):
+    def __init__(self, encoder=None, num_images=6, time_interval_min=30, dropout=0.20):
         """Initialize the architecture."""
         super().__init__(NAME)
         self.num_images = num_images
         self.time_interval_min = time_interval_min
 
-        self.scaling_image = preprocessing.MinMaxScaling(
-            preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
-        )
+        self.scaling_image = preprocessing.min_max_scaling_images()
+        self.scaling_ghi = preprocessing.min_max_scaling_ghi()
 
-        self.scaling_target = preprocessing.MinMaxScaling(
-            preprocessing.TARGET_GHI_MIN, preprocessing.TARGET_GHI_MAX
-        )
+        if encoder is None:
+            self.encoder = autoencoder.Encoder()
+            self.encoder.load(autoencoder.BEST_MODEL_WEIGHTS)
+        else:
+            self.encoder = encoder
 
-        self.encoder = encoder
         self.flatten = layers.Flatten()
         self.dropout = layers.Dropout(dropout)
 
-        self.gru1 = layers.GRU(512)
+        self.gru1 = layers.GRU(1024, return_sequences=True)
+        self.gru2 = layers.GRU(512)
 
         self.d1 = layers.Dense(512)
         self.d2 = layers.Dense(256)
         self.d3 = layers.Dense(128)
         self.d4 = layers.Dense(4)
 
-    def call(self, data: Tuple[tf.Tensor], training=False):
+    def call(self, data: Tuple[tf.Tensor, tf.Tensor], training=False):
         """Performs the forward pass in the neural network.
 
         Can use a different pass with the optional training boolean if
         some operations need to be skipped at evaluation(e.g. Dropout)
         """
-        x = data[0]
-        x = self.gru1(x)
+        images, clearsky = data
+
+        x = self.gru1(images)
+        x = self.gru2(x)
+
+        x = tf.concat([x, clearsky], 1)
 
         x = self.d1(x)
         if training:
@@ -63,21 +68,16 @@ class GRU(base.Model):
 
         return x
 
-    def config(self, training=False) -> dataloader.DataloaderConfig:
+    def config(self) -> dataloader.DataloaderConfig:
         """Configuration."""
         config = default_config()
         config.num_images = self.num_images
         config.time_interval_min = self.time_interval_min
         config.features = [
             dataloader.Feature.image,
-            dataloader.Feature.clearsky,
+            dataloader.Feature.metadata,
             dataloader.Feature.target_ghi,
         ]
-
-        if training:
-            config.error_strategy = dataloader.ErrorStrategy.skip
-        else:
-            config.error_strategy = dataloader.ErrorStrategy.ignore
 
         return config
 
@@ -89,20 +89,17 @@ class GRU(base.Model):
         Data is now (features, target).
         """
 
-        def encoder(images, clearsky):
-            images_encoded = self.encoder((images), False)
-            image_features = self.flatten(images_encoded)
-            features = tf.concat([image_features, clearsky], 1)
-            return features
+        def encoder(images):
+            images = self.encoder(images, training=False)
+            return self.flatten(images)
 
         def preprocess(images, clearsky, target_ghi):
             images = self.scaling_image.normalize(images)
+            clearsky = self.scaling_ghi.normalize(clearsky)
+            target_ghi = self.scaling_ghi.normalize(target_ghi)
             # Warp the encoder preprocessing in a py function
             # because its size is not known at compile time.
-            features = tf.py_function(
-                func=encoder, inp=[images, clearsky], Tout=tf.float32
-            )
-            # Every image feature also has the 4 clearsky predictions.
-            return (features, target_ghi)
+            features = tf.py_function(func=encoder, inp=[images], Tout=tf.float32)
+            return (features, clearsky, target_ghi)
 
         return dataset.map(preprocess)

@@ -1,7 +1,7 @@
 from typing import Tuple
 
 import tensorflow as tf
-from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D, Dropout
+from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, MaxPooling2D
 from tensorflow.keras.models import Sequential
 
 from src import logging
@@ -12,6 +12,7 @@ from src.model import base
 logger = logging.create_logger(__name__)
 
 NAME = "Conv2D"
+NAME_CLEARSKY = "Conv2DClearsky"
 
 
 class CNN2D(base.Model):
@@ -20,9 +21,8 @@ class CNN2D(base.Model):
     def __init__(self):
         """Initialize the architecture."""
         super().__init__(NAME)
-        self.scaling_image = preprocessing.MinMaxScaling(
-            preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
-        )
+        self.scaling_image = preprocessing.min_max_scaling_images()
+        self.scaling_ghi = preprocessing.min_max_scaling_ghi()
 
         self.conv1 = self._convolution_step((5, 5), 64)
         self.conv2 = self._convolution_step((3, 3), 128)
@@ -63,17 +63,12 @@ class CNN2D(base.Model):
 
         return Sequential([conv2d_1, conv2d_2, conv2d_3, max_pool])
 
-    def config(self, training=False) -> dataloader.DataloaderConfig:
+    def config(self) -> dataloader.DataloaderConfig:
         """Configuration."""
         config = default_config()
         config.num_images = 1
         config.ratio = 0.01
         config.features = [dataloader.Feature.image, dataloader.Feature.target_ghi]
-
-        if training:
-            config.error_strategy = dataloader.ErrorStrategy.skip
-        else:
-            config.error_strategy = dataloader.ErrorStrategy.ignore
 
         return config
 
@@ -96,7 +91,7 @@ class CNN2DClearsky(base.Model):
 
     def __init__(self):
         """Initialize the architecture."""
-        super().__init__(NAME)
+        super().__init__(NAME_CLEARSKY)
         self.scaling_image = preprocessing.MinMaxScaling(
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
         )
@@ -146,7 +141,7 @@ class CNN2DClearsky(base.Model):
 
         return Sequential([conv2d_1, conv2d_2, conv2d_3, max_pool])
 
-    def config(self, training=False, dry_run=False) -> dataloader.DataloaderConfig:
+    def config(self, dry_run=False) -> dataloader.DataloaderConfig:
         """Configuration."""
         config = default_config()
         config.num_images = 1
@@ -157,22 +152,19 @@ class CNN2DClearsky(base.Model):
             dataloader.Feature.image,
             dataloader.Feature.target_ghi,
         ]
-        if training:
-            config.error_strategy = dataloader.ErrorStrategy.skip
-        else:
-            config.error_strategy = dataloader.ErrorStrategy.ignore
+
         if dry_run:
             config.error_strategy = dataloader.ErrorStrategy.stop
         return config
 
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Applies the preprocessing to the inputs and the targets."""
-        return dataset.map(
-            lambda target_ghi_dummy, metadata, image, target_ghi: (
-                target_ghi_dummy,
-                metadata,
-                self.scaling_image.normalize(image),
-                target_ghi,
-            ),
-            num_parallel_calls=tf.data.experimental.AUTOTUNE,
-        )
+
+        def preprocess(target_ghi_dummy, metadata, image, target_ghi):
+            image = self.scaling_image.normalize(image)
+            metadata = self.scaling_ghi.normalize(metadata)
+            target_ghi = self.scaling_ghi.normalize(target_ghi)
+
+            return target_ghi_dummy, metadata, image, target_ghi
+
+        return dataset.map(preprocess, num_parallel_calls=tf.data.experimental.AUTOTUNE)

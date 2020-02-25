@@ -1,7 +1,7 @@
 from typing import Tuple
 
 import tensorflow as tf
-from tensorflow.keras.layers import Conv2D, Dropout, UpSampling2D
+from tensorflow.keras.layers import Conv2D, Dropout, MaxPooling2D, UpSampling2D
 
 from src import logging
 from src.data import dataloader, preprocessing
@@ -14,6 +14,11 @@ NAME_AUTOENCODER = "Autoencoder"
 NAME_DECODER = "Decoder"
 NAME_ENCODER = "Encoder"
 
+# Name of the best weights using defaults parameters.
+# To be used by default by other models for
+# better reproducibility.
+BEST_MODEL_WEIGHTS = "3"
+
 
 class Encoder(base.Model):
     """Create Image Encoder model."""
@@ -22,14 +27,15 @@ class Encoder(base.Model):
         """Initialize the architecture."""
         super().__init__(NAME_ENCODER)
         self.conv1 = Conv2D(
-            64, kernel_size=(3, 3), activation="relu", strides=2, padding="same"
+            64, kernel_size=(3, 3), activation="relu", strides=1, padding="same"
         )
         self.conv2 = Conv2D(
             64, kernel_size=(3, 3), activation="relu", strides=2, padding="same"
         )
         self.conv3 = Conv2D(
-            32, kernel_size=(3, 3), activation="relu", strides=2, padding="same"
+            32, kernel_size=(3, 3), activation="relu", strides=1, padding="same"
         )
+        self.max_pooling = MaxPooling2D((2, 2))
         self.dropout = Dropout(dropout)
 
     def call(self, x: tf.Tensor, training=False):
@@ -49,10 +55,11 @@ class Encoder(base.Model):
             x = self.dropout(x)
 
         x = self.conv3(x)
+        x = self.max_pooling(x)
 
         return x
 
-    def config(self, training=False) -> dataloader.DataloaderConfig:
+    def config(self) -> dataloader.DataloaderConfig:
         """Configuration."""
         raise Exception("Config should be passe to the model using the encoder.")
 
@@ -73,20 +80,19 @@ class Decoder(base.Model):
 
     def call(self, x: tf.Tensor, training=False):
         """Decode a compressed image into the original image."""
-        x = self.conv1(x)
         x = self.up_sampling(x)
+        x = self.conv1(x)
 
         if training:
             x = self.dropout(x)
 
-        x = self.conv2(x)
         x = self.up_sampling(x)
+        x = self.conv2(x)
 
         if training:
             x = self.dropout(x)
 
         x = self.conv3(x)
-        x = self.up_sampling(x)
 
         if training:
             x = self.dropout(x)
@@ -95,7 +101,7 @@ class Decoder(base.Model):
 
         return x
 
-    def config(self, training=False) -> dataloader.DataloaderConfig:
+    def config(self) -> dataloader.DataloaderConfig:
         """Configuration."""
         raise Exception("Config should be passe to the model using the decoder.")
 
@@ -112,10 +118,7 @@ class Autoencoder(base.Model):
 
         self.default_config = default_config()
         self.default_config.num_images = 1
-        self.default_config.features = [
-            dataloader.Feature.image,
-            dataloader.Feature.target_ghi,
-        ]
+        self.default_config.features = [dataloader.Feature.image]
 
         num_channels = len(self.default_config.channels)
 
@@ -131,23 +134,18 @@ class Autoencoder(base.Model):
 
         return x
 
-    def config(self, training=False) -> dataloader.DataloaderConfig:
+    def config(self) -> dataloader.DataloaderConfig:
         """Configuration."""
-        config = self.default_config
-
-        if training:
-            config.error_strategy = dataloader.ErrorStrategy.skip
-        else:
-            config.error_strategy = dataloader.ErrorStrategy.ignore
-
-        return config
+        return self.default_config
 
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Applies the preprocessing to the image to return two times the same image."""
-        return dataset.map(
-            lambda image, _: self._preprocess(image),
-            num_parallel_calls=tf.data.experimental.AUTOTUNE,
-        )
+
+        def preprocess(image):
+            scaled_image = self.scaling_image.normalize(image)
+            return (scaled_image, scaled_image)
+
+        return dataset.map(preprocess)
 
     def save(self, instance: str):
         """Override the save method to save the encoder and decoder."""
@@ -158,7 +156,3 @@ class Autoencoder(base.Model):
         """Override the load method to load the encoder and decoder."""
         self.encoder.load(instance)
         self.decoder.load(instance)
-
-    def _preprocess(self, image: tf.Tensor) -> tf.Tensor:
-        scaled_image = self.scaling_image.normalize(image)
-        return (scaled_image, scaled_image)

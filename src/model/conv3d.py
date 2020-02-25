@@ -19,10 +19,10 @@ class CNN3D(base.Model):
     def __init__(self, num_images=8):
         """Initialize the architecture."""
         super().__init__(NAME)
-        self.scaling_image = preprocessing.MinMaxScaling(
-            preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
-        )
         self.num_images = num_images
+
+        self.scaling_image = preprocessing.min_max_scaling_images()
+        self.scaling_ghi = preprocessing.min_max_scaling_ghi()
 
         self.conv1 = self._convolution_step((1, 5, 5), 64)
         self.conv2 = self._convolution_step((1, 3, 3), 128)
@@ -64,21 +64,20 @@ class CNN3D(base.Model):
 
         return Sequential([conv3d_1, conv3d_2, conv3d_3, max_pool])
 
-    def config(self, training=False) -> dataloader.Config:
+    def config(self) -> dataloader.DataloaderConfig:
         """Configuration."""
         config = default_config()
         config.num_images = self.num_images
         config.features = [dataloader.Feature.image, dataloader.Feature.target_ghi]
 
-        if training:
-            config.error_strategy = dataloader.ErrorStrategy.skip
-        else:
-            config.error_strategy = dataloader.ErrorStrategy.ignore
-
         return config
 
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Applies the preprocessing to the inputs and the targets."""
-        return dataset.map(
-            lambda image, target_ghi: (self.scaling_image.normalize(image), target_ghi,)
-        )
+
+        def preprocess(images, target_ghi):
+            images = self.scaling_image.normalize(images)
+            target_ghi = self.scaling_ghi.normalize(target_ghi)
+            return images, target_ghi
+
+        return dataset.map(preprocess)
