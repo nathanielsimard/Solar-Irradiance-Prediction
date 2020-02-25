@@ -78,7 +78,7 @@ class CNN2D(base.Model):
         )
 
     def _preprocess_target(self, target_ghi: tf.Tensor) -> tf.Tensor:
-        target_ghi=self.scaling_ghi.normalize(target_ghi)
+        target_ghi = self.scaling_ghi.normalize(target_ghi)
         return target_ghi[0:1]
 
 
