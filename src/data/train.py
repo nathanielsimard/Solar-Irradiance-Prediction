@@ -47,8 +47,6 @@ def load_data(
     night_time=False,
     skip_missing=True,
     config=default_config(),
-    enable_tf_caching=False,
-    cache_file=None,
     skip_non_cached=False,
 ) -> Tuple[tf.data.Dataset, tf.data.Dataset, tf.data.Dataset]:
     """Load train, valid and test datasets.
@@ -57,8 +55,6 @@ def load_data(
     """
     if file_name is None:
         file_name = env.get_catalog_path()
-    if cache_file is None:
-        cache_file = env.get_tf_cache_file()
     if env.run_local:
         config.local_path = env.get_local_data_path() + "/hdf5v7_8bit"
 
@@ -127,11 +123,6 @@ def load_data(
         metadata_test, config, test_datetimes, STATION_COORDINATES
     )
 
-    if enable_tf_caching:
-        dataset_train = dataset_train.cache("cache_train")
-        dataset_test = dataset_test.cache("cache_test")
-        dataset_valid = dataset_valid.cache("cache_valid")
-
     logger.info("Loaded datasets.")
     return dataset_train, dataset_valid, dataset_test
 
@@ -142,7 +133,6 @@ def load_data_and_create_generators(
     night_time=False,
     skip_missing=True,
     config=default_config(),
-    enable_tf_caching=False,
     cache_file=None,
     skip_non_cached=False,
 ):

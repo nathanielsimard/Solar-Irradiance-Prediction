@@ -6,7 +6,7 @@ from tensorflow.keras import layers
 from src import logging
 from src.data import dataloader, preprocessing
 from src.data.train import default_config
-from src.model import base
+from src.model import autoencoder, base
 
 logger = logging.create_logger(__name__)
 
@@ -16,21 +16,21 @@ NAME = "GRU"
 class GRU(base.Model):
     """Create GRU Model based on the embeddings created with the encoder."""
 
-    def __init__(self, encoder, num_images=6, time_interval_min=30, dropout=0.20):
+    def __init__(self, encoder=None, num_images=6, time_interval_min=30, dropout=0.20):
         """Initialize the architecture."""
         super().__init__(NAME)
         self.num_images = num_images
         self.time_interval_min = time_interval_min
 
-        self.scaling_image = preprocessing.MinMaxScaling(
-            preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
-        )
+        self.scaling_image = preprocessing.min_max_scaling_images()
+        self.scaling_ghi = preprocessing.min_max_scaling_ghi()
 
-        self.scaling_target = preprocessing.MinMaxScaling(
-            preprocessing.TARGET_GHI_MIN, preprocessing.TARGET_GHI_MAX
-        )
+        if encoder is None:
+            self.encoder = autoencoder.Encoder()
+            self.encoder.load(autoencoder.BEST_MODEL_WEIGHTS)
+        else:
+            self.encoder = encoder
 
-        self.encoder = encoder
         self.flatten = layers.Flatten()
         self.dropout = layers.Dropout(dropout)
 
@@ -63,7 +63,7 @@ class GRU(base.Model):
 
         return x
 
-    def config(self, training=False) -> dataloader.DataloaderConfig:
+    def config(self) -> dataloader.DataloaderConfig:
         """Configuration."""
         config = default_config()
         config.num_images = self.num_images
@@ -73,11 +73,6 @@ class GRU(base.Model):
             dataloader.Feature.clearsky,
             dataloader.Feature.target_ghi,
         ]
-
-        if training:
-            config.error_strategy = dataloader.ErrorStrategy.skip
-        else:
-            config.error_strategy = dataloader.ErrorStrategy.ignore
 
         return config
 
@@ -97,6 +92,8 @@ class GRU(base.Model):
 
         def preprocess(images, clearsky, target_ghi):
             images = self.scaling_image.normalize(images)
+            clearsky = self.scaling_ghi.normalize(clearsky)
+            target_ghi = self.scaling_ghi.normalize(target_ghi)
             # Warp the encoder preprocessing in a py function
             # because its size is not known at compile time.
             features = tf.py_function(

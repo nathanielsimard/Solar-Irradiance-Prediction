@@ -4,6 +4,7 @@ from datetime import datetime
 import tensorflow as tf
 
 from src import env, logging
+from src.data import preprocessing
 from src.data.train import load_data
 from src.model.base import Model
 
@@ -58,12 +59,18 @@ class Training(object):
     """
 
     def __init__(
-        self, optimizer: tf.keras.optimizers, model: Model, loss_fn: tf.keras.losses,
+        self,
+        optimizer: tf.keras.optimizers,
+        model: Model,
+        loss_fn: tf.keras.losses,
+        predict_ghi=True,
     ):
         """Initialize a training session."""
         self.optim = optimizer
         self.loss_fn = loss_fn
         self.model = model
+        self.predict_ghi = predict_ghi
+        self.scaling_ghi = preprocessing.min_max_scaling_ghi()
 
         self.metrics = {
             "train": tf.keras.metrics.Mean("train loss", dtype=tf.float32),
@@ -89,12 +96,12 @@ class Training(object):
         batch_size=128,
         epochs=25,
         valid_batch_size=128,
-        enable_tf_caching=False,
         skip_non_cached=False,
         enable_checkpoint=True,
         dry_run=False,
         categorical=False,
         load_checkpoint=None
+        cache_file=None,
     ):
         """Performs the training of the model in minibatch.
 
@@ -104,7 +111,7 @@ class Training(object):
             valid_batch_size: should be as large as the GPU can handle.
             caching: if temporary caching is desired.
         """
-        config = self.model.config(training=True)
+        config = self.model.config()
         logger.info(
             f"Starting training\n"
             + f" - Model: {self.model.title}\n"
@@ -112,9 +119,7 @@ class Training(object):
         )
 
         train_set, valid_set, test_set = load_data(
-            enable_tf_caching=enable_tf_caching,
-            config=config,
-            skip_non_cached=skip_non_cached,
+            config=config, skip_non_cached=skip_non_cached,
         )
 
         logger.info("Apply Preprocessing")
@@ -131,6 +136,10 @@ class Training(object):
         # Fail early!
         self.model.save("test")
         self._evaluate("test", 0, test_set, valid_batch_size , dry_run=True)
+        if cache_file is not None:
+            train_set = self.model.preprocess(train_set).cache(f"{cache_file}-train")
+            valid_set = self.model.preprocess(valid_set).cache(f"{cache_file}-valid")
+
         logger.info("Fitting model.")
 
         for epoch in range(epoch, epochs):
@@ -177,12 +186,16 @@ class Training(object):
         writer = self.writer[name]
 
         for i, data in enumerate(dataset.batch(batch_size)):
-            logger.info(f"Evaluation batch #{i}")
+            logger.info(f"Evaluation batch #{i+1}")
             inputs = data[:-1]
             targets = data[-1]
 
             loss = self._calculate_loss(inputs, targets)
-            metric(loss)
+            if self.predict_ghi:
+                metric(self.scaling_ghi.original(loss))
+            else:
+                metric(loss)
+
             if dry_run:
                 break
 
@@ -200,8 +213,10 @@ class Training(object):
         gradients = tape.gradient(loss, self.model.trainable_variables)
         self.optim.apply_gradients(zip(gradients, self.model.trainable_variables))
 
-        self.metrics["train"](loss)
-        return loss
+        if self.predict_ghi:
+            self.metrics["train"](self.scaling_ghi.original(loss))
+        else:
+            self.metrics["train"](loss)
 
     # @tf.function
     def _calculate_loss(self, valid_inputs, valid_targets):
