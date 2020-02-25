@@ -47,7 +47,6 @@ class CNNLSTM(base.Model):
         self.d1 = TimeDistributed(Dense(512))
         self.drop4 = Dropout(0.3)
 
-        # self.lstm, self.enc, self.dec = self._lstm_seq_to_seq(n_units=8)
         self.lstm = LSTM(units=512, return_sequences=False, return_state=False)
 
         self.d2 = Dense(512, activation="relu")
