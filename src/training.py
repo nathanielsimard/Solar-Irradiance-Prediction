@@ -124,8 +124,8 @@ class Training(object):
         )
 
         logger.info("Apply Preprocessing")
-        train_set = self.model.preprocess(train_set)
-        valid_set = self.model.preprocess(valid_set)
+        train_set = self.model.preprocess(train_set).cache("ll-train")
+        valid_set = self.model.preprocess(valid_set).cache("ll-valid")
         test_set = self.model.preprocess(test_set)
 
         logger.info("Fitting model.")
