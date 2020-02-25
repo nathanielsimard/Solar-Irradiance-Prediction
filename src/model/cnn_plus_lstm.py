@@ -103,7 +103,6 @@ class CNNLSTM(base.Model):
         config = default_config()
         config.num_images = self.num_images
         config.time_interval_min = 60
-        config.ratio = 0.1
         config.features = [
             dataloader.Feature.image,
             dataloader.Feature.metadata,
