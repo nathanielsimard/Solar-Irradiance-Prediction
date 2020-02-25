@@ -195,7 +195,7 @@ class Training(object):
             if name == "valid":
                 outputs_and_targets = np.concatenate([outputs.numpy(), valid_targets.numpy()], axis=1)
                 first_index = i * batch_size
-                last_index = first_index + batch_size
+                last_index = first_index + len(data[0])
                 self.epoch_validation_results[first_index:last_index, :] = outputs_and_targets
             loss = self.loss_fn(valid_targets, outputs)
             if self.predict_ghi:
