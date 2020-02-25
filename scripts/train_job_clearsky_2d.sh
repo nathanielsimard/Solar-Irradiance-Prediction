@@ -22,4 +22,5 @@ tar -xf image_reader_cache.tar
 date
 #du -d 1 .
 cd $cwd
-python run_train.py --epochs=3 --batch_size=32 --lr=0.001 --model=Conv3DClearskyV2
+python run_train.py --epochs=5 --batch_size=16 --lr=0.001 --model=Conv2DClearskyV2
+
