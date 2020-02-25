@@ -5,8 +5,16 @@ import tensorflow as tf
 from tensorflow.keras import optimizers
 
 from src import dry_run, env
-from src.model import (autoencoder, base, clearsky, conv2d, conv3d, conv3d_lm,
-                       embed_conv3d, gru)
+from src.model import (
+    autoencoder,
+    base,
+    clearsky,
+    conv2d,
+    conv3d,
+    conv3d_lm,
+    embed_conv3d,
+    gru,
+)
 from src.session import Session
 
 MODELS = {
