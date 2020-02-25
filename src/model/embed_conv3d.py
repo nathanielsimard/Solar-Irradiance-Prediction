@@ -11,12 +11,13 @@ from src.model import autoencoder, base
 logger = logging.create_logger(__name__)
 
 NAME = "EmbedConv3D"
-
+encoder32=autoencoder.Encoder()
+encoder32.load(autoencoder.BEST_MODEL_WEIGHTS)
 
 class Conv3D(base.Model):
     """Create Conv3D Model based on the embeddings created with the Encoder."""
 
-    def __init__(self, encoder=None, num_images=6, time_interval_min=30, dropout=0.25):
+    def __init__(self, encoder=encoder32, num_images=6, time_interval_min=30, dropout=0.25):
         """Initialize the architecture."""
         super().__init__(NAME)
         self.num_images = num_images
