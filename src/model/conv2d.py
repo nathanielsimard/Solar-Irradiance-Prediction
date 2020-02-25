@@ -63,7 +63,6 @@ class CNN2D(base.Model):
         """Configuration."""
         config = default_config()
         config.num_images = 1
-        config.ratio = 0.01
         config.features = [dataloader.Feature.image, dataloader.Feature.target_ghi]
 
         return config
@@ -79,6 +78,7 @@ class CNN2D(base.Model):
         )
 
     def _preprocess_target(self, target_ghi: tf.Tensor) -> tf.Tensor:
+        target_ghi=self.scaling_ghi.normalize(target_ghi)
         return target_ghi[0:1]
 
 
