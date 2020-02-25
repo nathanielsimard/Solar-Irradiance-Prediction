@@ -125,4 +125,4 @@ def visualize():
 
 if __name__ == "__main__":
     # seq2seq.plot_comparison("3", "20")
-    training.plot_learning_curve("EmbedConv3D-24")
+    training.plot_learning_curve("Conv2D-19")
