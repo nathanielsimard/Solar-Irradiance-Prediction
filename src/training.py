@@ -221,7 +221,7 @@ class Training(object):
 
         if name == "valid":
             np.save("valid_results.npy", self.epoch_validation_results)
-        if name == "valid":
+        if name == "test":
             np.save("test_results.npy", self.epoch_test_results)
         with writer.as_default():
             tf.summary.scalar(name, metric.result(), step=epoch)
