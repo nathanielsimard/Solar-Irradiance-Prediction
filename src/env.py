@@ -99,7 +99,10 @@ def get_tf_cache_file() -> str:
         [str] -- [Tensorflow main cache filename]
     """
     if not run_local:
-        return os.environ["SLURM_TMPDIR"]
+        try:
+            return os.environ["SLURM_TMPDIR"]
+        except Exception:
+            return "/etc"
     else:
         return "defaut_tf_cache"
 

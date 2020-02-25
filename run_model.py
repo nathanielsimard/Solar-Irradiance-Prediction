@@ -5,17 +5,9 @@ import tensorflow as tf
 from tensorflow.keras import losses, optimizers
 
 from src import dry_run, env
-from src.model import (
-    autoencoder,
-    base,
-    clearsky,
-    conv2d,
-    conv3d,
-    conv3d_lm,
-    embed_conv3d,
-    gru,
-)
-from src.training import Training
+from src.model import (autoencoder, base, clearsky, conv2d, conv3d, conv3d_lm,
+                       embed_conv3d, gru)
+from src.session import Session
 
 MODELS = {
     autoencoder.NAME_AUTOENCODER: autoencoder.Autoencoder,
@@ -36,7 +28,7 @@ def create_model(model_name: str) -> base.Model:
     except KeyError:
         raise ValueError(
             f"Bad model name, {model_name} do not exist.\n"
-            + f"Available models are {MODELS.keys()}"
+            + f"Available models are {list(MODELS.keys())}"
         )
 
 
@@ -57,6 +49,18 @@ def parse_args():
     )
     parser.add_argument(
         "--run_local", help="Enable training with relative paths", action="store_true"
+    )
+    parser.add_argument(
+        "--epochs", help="Number of epoch to train", default=25, type=int
+    )
+    parser.add_argument(
+        "--test",
+        help="Test a trained model on the test set. The value must be the model's checkpoint",
+        default=None,
+        type=str,
+    )
+    parser.add_argument(
+        "--train", help="Train a model.", action="store_true",
     )
     parser.add_argument(
         "--dry_run",
@@ -85,13 +89,21 @@ def parse_args():
 
     parser.add_argument("--lr", help="Learning rate", default=0.001, type=float)
 
-    parser.add_argument("--model", help="Name of the model to train", type=str)
+    parser.add_argument(
+        "--model",
+        help=f"Name of the model to train, available models are:\n{list(MODELS.keys())}",
+        type=str,
+        required=True,
+    )
     parser.add_argument("--batch_size", help="Batch size", default=128, type=int)
     return parser.parse_args()
 
 
 def run(args):
-    """Run the training with RMSE Loss and Adam."""
+    """Run the model with RMSE Loss.
+
+    It can train or test with different datasets.
+    """
     env.run_local = args.run_local
 
     if not args.random_seed:
@@ -100,25 +112,33 @@ def run(args):
 
     if args.dry_run:
         dry_run.run(args.enable_tf_caching, args.skip_non_cached)
-        return
 
     model = create_model(args.model)
 
-    optimizer = optimizers.Adam(args.lr)
     loss_obj = losses.MeanSquaredError()
 
     def rmse(pred, target):
         """Wraper around TF MSE Loss."""
         return loss_obj(pred, target) ** 0.5
 
-    training_session = Training(optimizer=optimizer, model=model, loss_fn=rmse)
-    training_session.run(
-        cache_file=args.cache_file,
-        skip_non_cached=args.skip_non_cached,
-        enable_checkpoint=not args.no_checkpoint,
+    session = Session(
+        model=model,
+        loss_fn=rmse,
         batch_size=args.batch_size,
-        dry_run=args.dry_run,
+        skip_non_cached=args.skip_non_cached,
     )
+
+    if args.train:
+        optimizer = optimizers.Adam(args.lr)
+        session.train(
+            optimizer=optimizer,
+            cache_file=args.cache_file,
+            enable_checkpoint=not args.no_checkpoint,
+            epochs=args.epochs,
+        )
+
+    if args.test is not None:
+        session.test(args.test)
 
 
 if __name__ == "__main__":
