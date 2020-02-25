@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 
 from src.data import dataloader
 from src.data.metadata import Coordinates, Metadata
-from src.visualization import seq2seq
+from src.visualization import seq2seq, training
 
 BND_COORDINATES = Coordinates(40.05192, -88.37309, 230)
 TBL_COORDINATES = Coordinates(40.12498, -105.23680, 1689)
@@ -124,5 +124,5 @@ def visualize():
 
 
 if __name__ == "__main__":
-    seq2seq.plot_comparison("3", "20")
-    # training.plot_learning_curve("GRU-24")
+    # seq2seq.plot_comparison("3", "20")
+    training.plot_learning_curve("EmbedConv3D-24")

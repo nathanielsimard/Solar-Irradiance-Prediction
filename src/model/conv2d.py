@@ -30,10 +30,9 @@ class CNN2D(base.Model):
 
         self.flatten = Flatten()
 
-        self.d1 = Dense(1048, activation="relu")
-        self.d2 = Dense(512, activation="relu")
-        self.d3 = Dense(256, activation="relu")
-        self.d4 = Dense(1)
+        self.d1 = Dense(512, activation="relu")
+        self.d2 = Dense(256, activation="relu")
+        self.d3 = Dense(1)
 
     def call(self, data: Tuple[tf.Tensor], training=False):
         """Performs the forward pass in the neural network.
@@ -47,21 +46,18 @@ class CNN2D(base.Model):
         x = self.conv3(x)
 
         x = self.flatten(x)
-
         x = self.d1(x)
         x = self.d2(x)
         x = self.d3(x)
-        x = self.d4(x)
 
         return x
 
     def _convolution_step(self, kernel_size, channels):
         conv2d_1 = Conv2D(channels, kernel_size=kernel_size, activation="relu")
         conv2d_2 = Conv2D(channels, kernel_size=kernel_size, activation="relu")
-        conv2d_3 = Conv2D(channels, kernel_size=kernel_size, activation="relu")
         max_pool = MaxPooling2D(pool_size=(2, 2))
 
-        return Sequential([conv2d_1, conv2d_2, conv2d_3, max_pool])
+        return Sequential([conv2d_1, conv2d_2, max_pool])
 
     def config(self) -> dataloader.DataloaderConfig:
         """Configuration."""
