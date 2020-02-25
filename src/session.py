@@ -88,8 +88,8 @@ class Session(object):
         valid_set = self.model.preprocess(valid_set)
 
         if cache_file is not None:
-            train_set = self.model.preprocess(train_set).cache(f"{cache_file}-train")
-            valid_set = self.model.preprocess(valid_set).cache(f"{cache_file}-valid")
+            train_set = train_set.cache(f"{cache_file}-train")
+            valid_set = valid_set.cache(f"{cache_file}-valid")
 
         logger.info("Fitting model.")
         for epoch in range(epochs):
@@ -98,7 +98,6 @@ class Session(object):
             for i, data in enumerate(train_set.batch(self.batch_size)):
                 inputs = data[:-1]
                 targets = data[-1]
-                logger.info(f"Batch #{i+1}")
 
                 self._train_step(optimizer, inputs, targets, i + 1)
 
@@ -154,7 +153,6 @@ class Session(object):
 
         self.history.record(name, metric.result())
 
-    @tf.function
     def _train_step(self, optim, train_inputs, train_targets, batch):
         with tf.GradientTape() as tape:
             outputs = self.model(train_inputs, training=True)
@@ -170,7 +168,6 @@ class Session(object):
 
         logger.info(f"Batch [{batch}]: train-set loss {metric.result()}")
 
-    @tf.function
     def _calculate_loss(self, valid_inputs, valid_targets):
         outputs = self.model(valid_inputs)
         return self.loss_fn(valid_targets, outputs)
