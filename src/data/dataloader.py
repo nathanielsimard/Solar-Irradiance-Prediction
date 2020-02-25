@@ -295,6 +295,8 @@ class DataLoader(object):
 
             logger.debug(f"Error while generating data, ignoring : {e}")
             output_shape = list(self.config.crop_size) + [len(self.config.channels)]
+            if self.config.num_images > 1:
+                output_shape = [self.config.num_images, output_shape]
             return tf.convert_to_tensor(np.zeros(output_shape))
         except ImageNotCached as e:
             if self.config.force_caching:

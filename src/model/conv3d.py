@@ -12,6 +12,7 @@ from src.model import base
 logger = logging.create_logger(__name__)
 
 NAME = "Conv3D"
+NAME_CLEARSKY_V2 = "Conv3DClearskyV2"
 
 
 class CNN3D(base.Model):
@@ -182,6 +183,7 @@ class CNN3D_ClearskyV2(base.Model):
         self.scaling_image = preprocessing.MinMaxScaling(
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
         )
+        self.scaling_ghi = preprocessing.min_max_scaling_ghi()
         self.num_images = num_images
         self.inputdropout = Dropout(0.5)
         self.conv1a = Conv3D(64, (3, 3, 3), padding="same")
@@ -262,7 +264,7 @@ class CNN3D_ClearskyV2(base.Model):
         """Configuration."""
         config = default_config()
         config.num_images = self.num_images
-        config.ratio = 1
+        config.ratio = 0.1
         config.time_interval_min = 60
         config.features = [
             dataloader.Feature.target_ghi,
@@ -280,11 +282,10 @@ class CNN3D_ClearskyV2(base.Model):
 
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Applies the preprocessing to the inputs and the targets."""
-        return dataset.map(
-            lambda dummy_target, metadata, image, target_ghi: (
-                dummy_target,
-                metadata,
-                image,
-                target_ghi,
-            )
-        )
+        def preprocess(target_ghi_dummy, metadata, image, target_ghi):
+            image = self.scaling_image.normalize(image)
+            metadata = self.scaling_ghi.normalize(metadata)
+            target_ghi = self.scaling_ghi.normalize(target_ghi)
+            return target_ghi_dummy, metadata, image, target_ghi
+
+        return dataset.map(preprocess, num_parallel_calls=tf.data.experimental.AUTOTUNE)

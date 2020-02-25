@@ -2,6 +2,7 @@ import pickle
 from datetime import datetime
 
 import tensorflow as tf
+import numpy as np
 
 from src import env, logging
 from src.data import preprocessing
@@ -71,6 +72,8 @@ class Training(object):
         self.model = model
         self.predict_ghi = predict_ghi
         self.scaling_ghi = preprocessing.min_max_scaling_ghi()
+        # Insane big array. Just for more perfomance. Static allocation scheme.
+        self.epoch_validation_results = np.zeros((10000000, 8))
 
         self.metrics = {
             "train": tf.keras.metrics.Mean("train loss", dtype=tf.float32),
@@ -100,7 +103,7 @@ class Training(object):
         enable_checkpoint=True,
         dry_run=False,
         categorical=False,
-        load_checkpoint=None
+        load_checkpoint=None,
         cache_file=None,
     ):
         """Performs the training of the model in minibatch.
@@ -135,7 +138,7 @@ class Training(object):
             epoch += 1
         # Fail early!
         self.model.save("test")
-        self._evaluate("test", 0, test_set, valid_batch_size , dry_run=True)
+        self._evaluate("valid", 0, valid_set, valid_batch_size , dry_run=True)
         if cache_file is not None:
             train_set = self.model.preprocess(train_set).cache(f"{cache_file}-train")
             valid_set = self.model.preprocess(valid_set).cache(f"{cache_file}-valid")
@@ -186,18 +189,29 @@ class Training(object):
         writer = self.writer[name]
 
         for i, data in enumerate(dataset.batch(batch_size)):
-            logger.info(f"Evaluation batch #{i+1}")
-            inputs = data[:-1]
-            targets = data[-1]
-
-            loss = self._calculate_loss(inputs, targets)
+            valid_inputs = data[:-1]
+            valid_targets = data[-1]
+            outputs = self.model(valid_inputs)
+            if name == "valid":
+                outputs_and_targets = np.concatenate([outputs.numpy(), valid_targets.numpy()], axis=1)
+                first_index = i * batch_size
+                last_index = first_index + batch_size
+                self.epoch_validation_results[first_index:last_index, :] = outputs_and_targets
+            loss = self.loss_fn(valid_targets, outputs)
             if self.predict_ghi:
-                metric(self.scaling_ghi.original(loss))
-            else:
-                metric(loss)
+                loss = self.scaling_ghi.original(loss)
+            #loss = self._calculate_loss(inputs, targets)
+            logger.info(f"Batch #{i+1}, loss={loss}")
+            metric(loss)
+            # if self.predict_ghi:
+            #    metric(self.scaling_ghi.original(loss))
+            # else:
 
-            if dry_run:
+            if dry_run and (i > 5):
                 break
+
+        if name == "valid":
+            np.save("valid_results.npy", self.epoch_validation_results)
 
         with writer.as_default():
             tf.summary.scalar(name, metric.result(), step=epoch)
@@ -212,13 +226,13 @@ class Training(object):
             loss = self.loss_fn(train_targets, outputs)
         gradients = tape.gradient(loss, self.model.trainable_variables)
         self.optim.apply_gradients(zip(gradients, self.model.trainable_variables))
-
         if self.predict_ghi:
-            self.metrics["train"](self.scaling_ghi.original(loss))
-        else:
-            self.metrics["train"](loss)
+            loss = self.scaling_ghi.original(loss)
+        self.metrics["train"](loss)
+        return loss
 
     # @tf.function
+
     def _calculate_loss(self, valid_inputs, valid_targets):
-        outputs = self.model(valid_inputs)
-        return self.loss_fn(valid_targets, outputs)
+
+        return loss

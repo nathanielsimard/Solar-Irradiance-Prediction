@@ -132,24 +132,41 @@ def load_data_and_create_generators(
     batch_size=64,
     night_time=False,
     skip_missing=True,
-    config=default_config(),
-    cache_file=None,
     skip_non_cached=False,
-):
-    """For debugging. Will be scrapped when not no longer relevant.
+    model=None
+) -> Tuple[tf.data.Dataset, tf.data.Dataset, tf.data.Dataset]:
+    """Load train, valid and test datasets.
 
-    Return: (train_dataset generator, valid_dataset generator, test_dataset generator)
+    Return: (train_dataset, valid_dataset, test_dataset)
     """
+    config = model.config()
     if file_name is None:
         file_name = env.get_catalog_path()
-    if cache_file is None:
-        cache_file = env.get_tf_cache_file()
     if env.run_local:
         config.local_path = env.get_local_data_path() + "/hdf5v7_8bit"
 
-        # Both concepts are equivalent. If we force caching, we need to skip non cached images.
+    # Both concepts are equivalent. If we force caching, we need to skip non cached images.
     config.force_caching = skip_non_cached
+
     train_datetimes, valid_datetimes, test_datetimes = split.load()
+
+    random.shuffle(train_datetimes)
+    random.shuffle(valid_datetimes)
+    random.shuffle(test_datetimes)
+
+    ratio_train_datetimes = int(len(train_datetimes) * config.ratio)
+    ratio_valid_datetimes = int(len(valid_datetimes) * config.ratio)
+    ratio_test_datetimes = int(len(test_datetimes) * config.ratio)
+
+    logger.info(f"Loading {config.ratio*100}% of the data")
+    logger.info(f"Training dataset has {ratio_train_datetimes} datetimes")
+    logger.info(f"Validation dataset has {ratio_valid_datetimes} datetimes")
+    logger.info(f"Test dataset has {ratio_test_datetimes} datetimes")
+    logger.info(f"Using {len(STATION_COORDINATES)} stations")
+
+    train_datetimes = train_datetimes[:ratio_train_datetimes]
+    valid_datetimes = valid_datetimes[:ratio_valid_datetimes]
+    test_datetimes = test_datetimes[:ratio_test_datetimes]
 
     if dataloader.Feature.metadata in config.features:
         config.precompute_clearsky = True
@@ -161,18 +178,24 @@ def load_data_and_create_generators(
     metadata_train = metadata_station(
         metadata_loader,
         train_datetimes,
+        config.num_images,
+        config.time_interval_min,
         night_time=night_time,
         skip_missing=skip_missing,
     )
     metadata_valid = metadata_station(
         metadata_loader,
         valid_datetimes,
+        config.num_images,
+        config.time_interval_min,
         night_time=night_time,
         skip_missing=skip_missing,
     )
     metadata_test = metadata_station(
         metadata_loader,
         test_datetimes,
+        config.num_images,
+        config.time_interval_min,
         night_time=night_time,
         skip_missing=skip_missing,
     )

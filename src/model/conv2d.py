@@ -13,6 +13,7 @@ logger = logging.create_logger(__name__)
 
 NAME = "Conv2D"
 NAME_CLEARSKY = "Conv2DClearsky"
+NAME_CLEARSKY_V2 = "Conv2DClearskyV2"
 
 
 class CNN2D(base.Model):
@@ -95,7 +96,7 @@ class CNN2DClearsky(base.Model):
         self.scaling_image = preprocessing.MinMaxScaling(
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
         )
-
+        self.scaling_ghi = preprocessing.min_max_scaling_ghi()
         self.conv1 = self._convolution_step((5, 5), 128)
         self.conv2 = self._convolution_step((3, 3), 256)
         self.dropout2 = Dropout(0.1)
@@ -181,6 +182,7 @@ class CNN2DClearskyV2(base.Model):
         self.scaling_image = preprocessing.MinMaxScaling(
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
         )
+        self.scaling_ghi = preprocessing.min_max_scaling_ghi()
         # Conv2D(channels, kernel_size=kernel_size, activation="relu")
         self.conv1 = Conv2D(64, kernel_size=(3, 3), activation="relu")
         self.conv2 = Conv2D(64, kernel_size=(3, 3), activation="relu")

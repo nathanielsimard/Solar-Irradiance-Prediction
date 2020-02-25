@@ -25,11 +25,13 @@ MODELS = {
     autoencoder.NAME_AUTOENCODER: autoencoder.Autoencoder,
     conv2d.NAME: conv2d.CNN2D,
     conv2d.NAME_CLEARSKY: conv2d.CNN2DClearsky,
+    conv2d.NAME_CLEARSKY_V2: conv2d.CNN2DClearskyV2,
     conv3d.NAME: conv3d.CNN3D,
     embed_conv3d.NAME: embed_conv3d.Conv3D,
     conv3d_lm.NAME: conv3d_lm.Conv3D,
     clearsky.NAME: clearsky.ClearskyMLP,
     gru.NAME: gru.GRU,
+    conv3d.NAME_CLEARSKY_V2: conv3d.CNN3D_ClearskyV2
 }
 
 
@@ -113,11 +115,11 @@ def run(args):
         random.seed(args.seed)
         tf.random.set_seed(args.seed)
 
-    if args.dry_run:
-        dry_run.run(args.enable_tf_caching, args.skip_non_cached)
-        return
-
     model = create_model(args.model)
+
+    if args.dry_run:
+        dry_run.run(False, args.skip_non_cached, model)
+        return
 
     optimizer = optimizers.Adam(args.lr)
     loss_obj = losses.MeanSquaredError()

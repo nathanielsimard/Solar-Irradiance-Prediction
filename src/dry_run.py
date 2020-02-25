@@ -5,7 +5,7 @@ logger = logging.create_logger(__name__)
 
 
 def run(
-    enable_tf_caching=False, skip_non_cached=False,
+    enable_tf_caching=False, skip_non_cached=False, model=None
 ):
     """Performs a dry run with the data generators."""
     logger.info("Dry Run.")
@@ -15,10 +15,14 @@ def run(
         valid_generator,
         test_generator,
     ) = load_data_and_create_generators(
-        enable_tf_caching=enable_tf_caching, skip_non_cached=skip_non_cached
+        skip_non_cached=skip_non_cached,
+        model=model
     )
+    i = 0
     for sample in train_generator:
         print(
-            sample
+            sample[2].shape
         )  # Just make sure that we can get a single sample out of the dry-run
-        break
+        i = i + 1
+        if i > 64:
+            break
