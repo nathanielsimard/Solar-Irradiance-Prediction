@@ -200,10 +200,11 @@ class DataLoader(object):
             logger.debug(metadata)
             try:
                 output = [
-                    self._readers[feature](metadata) for feature in self.config.features
+                    self._readers[feature](metadata)
+                    for feature in reversed(self.config.features)
                 ]
                 self.ok += 1
-                yield tuple(output)
+                yield tuple(reversed(output))
             except AttributeError as e:
                 logger.error(f"Error while generating data, stopping : {e}")
                 raise e
