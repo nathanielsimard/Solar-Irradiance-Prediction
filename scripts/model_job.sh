@@ -7,4 +7,4 @@
 module load python/3.7
 source /project/cq-training-1/project1/teams/team10/env/bin/activate
 
-python run_train.py --model Conv3D
+python run_model.py $@
