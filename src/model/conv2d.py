@@ -95,6 +95,7 @@ class CNN2DClearsky(base.Model):
         self.scaling_image = preprocessing.MinMaxScaling(
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
         )
+        self.scaling_ghi = preprocessing.min_max_scaling_ghi()
 
         self.conv1 = self._convolution_step((5, 5), 128)
         self.conv2 = self._convolution_step((3, 3), 256)
@@ -162,9 +163,24 @@ class CNN2DClearsky(base.Model):
 
         def preprocess(target_ghi_dummy, metadata, image, target_ghi):
             image = self.scaling_image.normalize(image)
+            image = tf.py_function(func=crop_image, inp=[image], Tout=tf.float32)
             metadata = self.scaling_ghi.normalize(metadata)
             target_ghi = self.scaling_ghi.normalize(target_ghi)
 
             return target_ghi_dummy, metadata, image, target_ghi
 
         return dataset.map(preprocess, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+
+
+def crop_image(image: tf.Tensor, crop_size=8):
+    """Performs dynamic cropping of an image."""
+    image_size_x = image.shape[0]
+    image_size_y = image.shape[1]
+    pixel = crop_size
+    start_x = image_size_x // 2 - pixel // 2
+    end_x = image_size_x // 2 + pixel // 2
+    start_y = image_size_y // 2 - pixel // 2
+    end_y = image_size_y // 2 + pixel // 2
+    cropped_image = image[start_x:end_x, start_y:end_y, :]
+
+    return cropped_image
