@@ -264,7 +264,7 @@ class CNN3D_ClearskyV2(base.Model):
         """Configuration."""
         config = default_config()
         config.num_images = self.num_images
-        config.ratio = 0.1
+        config.ratio = 1
         config.time_interval_min = 60
         config.features = [
             dataloader.Feature.target_ghi,
