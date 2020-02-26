@@ -40,6 +40,9 @@ class Clearsky(base.Model):
 
         return config
 
+    def load(self, instance):
+        pass
+
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Normalize the ghi."""
 
