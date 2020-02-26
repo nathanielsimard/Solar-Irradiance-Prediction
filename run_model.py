@@ -26,7 +26,8 @@ MODELS = {
     conv3d_tran.NAME: conv3d_tran.CNN3DTranClearsky,
     embed_conv3d.NAME: embed_conv3d.Conv3D,
     conv3d_lm.NAME: conv3d_lm.Conv3D,
-    clearsky.NAME: clearsky.ClearskyMLP,
+    clearsky.NAME: clearsky.Clearsky,
+    clearsky.NAME_MLP: clearsky.ClearskyMLP,
     gru.NAME: gru.GRU,
 }
 

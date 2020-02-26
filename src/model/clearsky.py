@@ -10,7 +10,50 @@ from src.model import autoencoder, base
 
 logger = logging.create_logger(__name__)
 
-NAME = "ClearskyMLP"
+NAME = "Clearsky"
+NAME_MLP = "ClearskyMLP"
+
+
+class Clearsky(base.Model):
+    """Create Clearsky model.
+
+    This model can not be trained.
+    It only predict the clearsky values.
+    """
+
+    def __init__(self):
+        """Initialize the architecture."""
+        super().__init__(NAME)
+        self.scaling_ghi = preprocessing.min_max_scaling_ghi()
+
+    def call(self, data: Tuple[tf.Tensor], training=False):
+        """Return the clearsky values."""
+        return data[0]
+
+    def config(self) -> dataloader.DataloaderConfig:
+        """Configuration."""
+        config = default_config()
+        config.features = [
+            dataloader.Feature.metadata,
+            dataloader.Feature.target_ghi,
+        ]
+
+        return config
+
+    def load(self, instance):
+        """There is nothing to load."""
+        pass
+
+    def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
+        """Normalize the ghi."""
+
+        def preprocess(clearsky, target_ghi):
+            clearsky = self.scaling_ghi.normalize(clearsky)
+            target_ghi = self.scaling_ghi.normalize(target_ghi)
+
+            return (clearsky, target_ghi)
+
+        return dataset.map(preprocess).cache()
 
 
 class ClearskyMLP(base.Model):

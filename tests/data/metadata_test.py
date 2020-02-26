@@ -70,9 +70,13 @@ class MetadataLoaderTest(unittest.TestCase):
         metadata = loader.load(
             A_STATION, A_STATION_COORDINATE, compression="8bit", night_time=False
         )
-        actual = next(metadata).image_offsets[0]
-        self.assertAlmostEqual(actual, 22)
-        self.assertIsInstance(actual, int)
+
+        actual = next(metadata)
+        while actual.night_time:
+            actual = next(metadata)
+
+        self.assertAlmostEqual(actual.image_offsets[0], 22)
+        self.assertIsInstance(actual.image_offsets[0], int)
 
     def test_load_metadata_image_offset_with_16bit_compression(self):
         loader = MetadataLoader(CATALOG_PATH)
@@ -80,8 +84,11 @@ class MetadataLoaderTest(unittest.TestCase):
         metadata = loader.load(
             A_STATION, A_STATION_COORDINATE, compression="16bit", night_time=False
         )
-        actual = next(metadata).image_offsets[0]
-        self.assertAlmostEqual(actual, 22)
+        actual = next(metadata)
+        while actual.night_time:
+            actual = next(metadata)
+
+        self.assertAlmostEqual(actual.image_offsets[0], 22)
 
     def test_load_metadata_image_offset_with_no_compression(self):
         loader = MetadataLoader(CATALOG_PATH)
@@ -246,8 +253,8 @@ class MetadataLoaderTest(unittest.TestCase):
 
         metadata = loader.load(A_STATION, A_STATION_COORDINATE, night_time=True)
 
-        num_metadata = self._num_metadata(metadata)
-        self.assertEqual(NUM_METADATA, num_metadata)
+        num_nigh_time = self._night_time(metadata)
+        self.assertEqual(NUM_METADATA - NUM_METADATA_BND_DAY_TIME, num_nigh_time)
 
     def test_load_metadata_compression(self):
         loader = MetadataLoader(CATALOG_PATH)
@@ -264,18 +271,17 @@ class MetadataLoaderTest(unittest.TestCase):
         actual: Any = next(metadata).image_compression
         self.assertEqual(actual, "16bit")
 
-    def test_load_metadata_without_night_time(self):
-        loader = MetadataLoader(CATALOG_PATH)
-
-        metadata = loader.load(Station.BND, A_STATION_COORDINATE, night_time=False)
-
-        num_metadata = self._num_metadata(metadata)
-        self.assertEqual(NUM_METADATA_BND_DAY_TIME, num_metadata)
-
     def _num_metadata(self, metadata: Generator) -> int:
         num = 0
         for m in metadata:
             num += 1
+        return num
+
+    def _night_time(self, metadata: Generator) -> int:
+        num = 0
+        for m in metadata:
+            if m.night_time:
+                num += 1
         return num
 
     def test_load_metadata_with_specified_dataframe(self):

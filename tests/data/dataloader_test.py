@@ -58,6 +58,80 @@ class DataLoaderTest(unittest.TestCase):
 
         self.assertEqual(1, num_elems(dataset))
 
+    def test_givenOneMetadataDuringNigtTime_whenCreateDataset_shouldNotReturnTarget(
+        self,
+    ):
+        self.image_reader.read = mock.Mock(return_value=FAKE_IMAGE)
+        targets = np.array([2, 3, 4, 5])
+        self.dataloader = DataLoader(
+            lambda: [
+                self._metadata(
+                    target_ghi=targets[0],
+                    target_ghi_1h=targets[1],
+                    target_ghi_3h=targets[2],
+                    target_ghi_6h=targets[3],
+                    night_time=True,
+                )
+            ],
+            self.image_reader,
+        )
+        self.dataloader.config.filter_night = True
+
+        num = 0
+        for _ in self.dataloader.generator():
+            num += 1
+
+        self.assertEqual(0, num)
+
+    def test_givenOneMetadataDuringNigtTimeWithNoFilter_whenCreateDataset_shouldReturnTarget(
+        self,
+    ):
+        self.image_reader.read = mock.Mock(return_value=FAKE_IMAGE)
+        targets = np.array([2, 3, 4, 5])
+        self.dataloader = DataLoader(
+            lambda: [
+                self._metadata(
+                    target_ghi=targets[0],
+                    target_ghi_1h=targets[1],
+                    target_ghi_3h=targets[2],
+                    target_ghi_6h=targets[3],
+                    night_time=True,
+                )
+            ],
+            self.image_reader,
+        )
+        self.dataloader.config.filter_night = False
+
+        num = 0
+        for _ in self.dataloader.generator():
+            num += 1
+
+        self.assertEqual(1, num)
+
+    def test_givenOneMetadataNotDuringNigtTime_whenCreateDataset_shouldReturnTarget(
+        self,
+    ):
+        self.image_reader.read = mock.Mock(return_value=FAKE_IMAGE)
+        targets = np.array([2, 3, 4, 5])
+        self.dataloader = DataLoader(
+            lambda: [
+                self._metadata(
+                    target_ghi=targets[0],
+                    target_ghi_1h=targets[1],
+                    target_ghi_3h=targets[2],
+                    target_ghi_6h=targets[3],
+                    night_time=False,
+                )
+            ],
+            self.image_reader,
+        )
+
+        num = 0
+        for _ in self.dataloader.generator():
+            num += 1
+
+        self.assertEqual(1, num)
+
     def test_givenOneMetadata_whenCreateDataset_shouldReturnTarget(self):
         self.image_reader.read = mock.Mock(return_value=FAKE_IMAGE)
         targets = np.array([2, 3, 4, 5])
@@ -240,6 +314,7 @@ class DataLoaderTest(unittest.TestCase):
         metadata = Metadata(
             "",
             [],
+            False,
             "",
             0,
             datetime=datetime(2010, 6, 19, 22, 15),
@@ -310,11 +385,13 @@ class DataLoaderTest(unittest.TestCase):
         target_ghi_1h: Optional[float] = 100,
         target_ghi_3h: Optional[float] = 100,
         target_ghi_6h: Optional[float] = 100,
+        night_time=False,
     ):
         return Metadata(
             image_paths,
             clearsky_values,
             ANY_COMPRESSION,
+            night_time,
             len(image_paths) * [ANY_IMAGE_OFFSET],
             ANY_DATETIME,
             ANY_COORDINATES,
