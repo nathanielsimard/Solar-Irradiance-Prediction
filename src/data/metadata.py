@@ -46,6 +46,7 @@ class Metadata:
         image_paths: Full path on helios
         image_compression: "8bit", "16bit" or "None"
         image_offsets: Indice de l'image dans le fichier hd5
+        night_time: If the metadata is night time
         datetime: UTC datetime
         coordinates: Coordinates
         target_ghi: GHI, non normalized, watts/m2
@@ -61,6 +62,7 @@ class Metadata:
     image_paths: List[str]
     clearsky_values: List[float]
     image_compression: str
+    night_time: bool
     image_offsets: List[int]
     datetime: datetime
     coordinates: Coordinates
@@ -165,7 +167,6 @@ class MetadataLoader:
             catalog = self._filter_null(catalog, f"{station.name}_GHI")
             catalog = self._filter_null(catalog, f"{station.name}_CLEARSKY_GHI")
             catalog = self._filter_null(catalog, f"{station.name}_CLOUDINESS")
-            catalog = self._filter_night(catalog, station, night_time)
 
         target_timestamps = self._target_timestamps(catalog, target_datetimes)
         catalog = catalog.drop_duplicates()
@@ -210,7 +211,6 @@ class MetadataLoader:
 
     # Can be used for either path or offset.
     def _image_column(self, compression: str, variable="path"):
-
         if compression is None:
             if variable == "path":
                 return "ncdf_path"
@@ -227,14 +227,6 @@ class MetadataLoader:
     def _filter_null(self, df: pd.DataFrame, column: str) -> pd.DataFrame:
         df = df[df[column] != "nan"]
         df = df[df[column].notnull()]
-
-        return df
-
-    def _filter_night(
-        self, df: pd.DataFrame, station: Station, night_time: bool
-    ) -> pd.DataFrame:
-        if not night_time:
-            return df[df[f"{station.name}_DAYTIME"] == 1]
 
         return df
 
@@ -262,6 +254,9 @@ class MetadataLoader:
         clearsky_values = self._find_clearsky_values(
             rows, station, timestamp, num_images, time_interval_min
         )
+
+        night_time = row[f"{station.name}_DAYTIME"] != 1
+
         try:
             target_ghi = row[f"{station.name}_GHI"]
         except KeyError:
@@ -313,6 +308,7 @@ class MetadataLoader:
             image_paths=image_paths,
             clearsky_values=clearsky_values,
             datetime=datetime,
+            night_time=night_time,
             image_compression=compression,
             image_offsets=image_offsets,
             coordinates=coordinates,

@@ -1,6 +1,7 @@
 import pickle
 
 import tensorflow as tf
+from tensorflow.keras import losses
 
 from src import logging
 from src.data import preprocessing
@@ -40,15 +41,16 @@ class Session(object):
     """
 
     def __init__(
-        self,
-        model: Model,
-        loss_fn: tf.keras.losses,
-        predict_ghi=True,
-        batch_size=128,
-        skip_non_cached=False,
+        self, model: Model, predict_ghi=True, batch_size=128, skip_non_cached=False,
     ):
         """Initialize a training session."""
-        self.loss_fn = loss_fn
+        mse = losses.MeanSquaredError()
+
+        def rmse(pred, target):
+            """Wraper around TF MSE Loss."""
+            return mse(pred, target) ** 0.5
+
+        self.loss_fn = rmse
         self.model = model
         self.predict_ghi = predict_ghi
         self.batch_size = batch_size
@@ -70,6 +72,7 @@ class Session(object):
         epochs=25,
         enable_checkpoint=True,
         cache_file=None,
+        checkpoint=None,
     ):
         """Performs the training of the model in minibatch."""
         config = self.model.config()
@@ -92,7 +95,17 @@ class Session(object):
             valid_set = valid_set.cache(f"{cache_file}-valid")
 
         logger.info("Fitting model.")
-        for epoch in range(epochs):
+
+        init_epoch = 0
+        if checkpoint is not None:
+            # Checkpoints are epoch
+            init_epoch = int(checkpoint) + 1
+            # Load model weight
+            self.model.load(checkpoint)
+            # Load history
+            self.history = History.load(f"{self.model.title}-{checkpoint}")
+
+        for epoch in range(init_epoch, epochs):
             logger.info("Training...")
 
             for i, data in enumerate(train_set.batch(self.batch_size)):
@@ -145,7 +158,7 @@ class Session(object):
 
             loss = self._calculate_loss(inputs, targets)
             if self.predict_ghi:
-                metric(self.scaling_ghi.original(loss))
+                metric(self._rescale_loss_ghi(loss))
             else:
                 metric(loss)
 
@@ -162,7 +175,7 @@ class Session(object):
 
         metric = self.metrics["train"]
         if self.predict_ghi:
-            metric(self.scaling_ghi.original(loss))
+            metric(self._rescale_loss_ghi(loss))
         else:
             metric(loss)
 
@@ -171,3 +184,6 @@ class Session(object):
     def _calculate_loss(self, valid_inputs, valid_targets):
         outputs = self.model(valid_inputs)
         return self.loss_fn(valid_targets, outputs)
+
+    def _rescale_loss_ghi(self, loss):
+        return self.scaling_ghi.original(loss) - self.scaling_ghi.min_value

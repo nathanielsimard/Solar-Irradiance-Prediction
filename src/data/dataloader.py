@@ -98,6 +98,7 @@ class DataloaderConfig:
         stations: Dict[Station, Coordinates] = None,
         precompute_clearsky=False,
         skip_missing_past_images=False,
+        filter_night=True,
     ):
         """All configurations are optional with default values.
 
@@ -119,6 +120,7 @@ class DataloaderConfig:
             stations: list of station where to pre-compute
             precompute_clearsky: Will pre-compute clearsky values if set.
             skip_missing_past_images: if past image is missing, skip.
+            filter_night: if metadata are filter when night time.
         """
         self.local_path = local_path
         self.error_strategy = error_strategy
@@ -134,6 +136,7 @@ class DataloaderConfig:
         self.stations = stations
         self.precompute_clearsky = precompute_clearsky
         self.skip_missing_past_images = skip_missing_past_images
+        self.filter_night = filter_night
 
     def __str__(self):
         """Return nice string representation of the config."""
@@ -198,12 +201,17 @@ class DataLoader(object):
         """
         for metadata in self.metadata():
             logger.debug(metadata)
+
+            if self.config.filter_night and metadata.night_time:
+                continue
+
             try:
                 output = [
-                    self._readers[feature](metadata) for feature in self.config.features
+                    self._readers[feature](metadata)
+                    for feature in reversed(self.config.features)
                 ]
                 self.ok += 1
-                yield tuple(output)
+                yield tuple(reversed(output))
             except AttributeError as e:
                 logger.error(f"Error while generating data, stopping : {e}")
                 raise e
@@ -295,6 +303,8 @@ class DataLoader(object):
 
             logger.debug(f"Error while generating data, ignoring : {e}")
             output_shape = list(self.config.crop_size) + [len(self.config.channels)]
+            if self.config.num_images > 1:
+                output_shape = [self.config.num_images] + output_shape
             return tf.convert_to_tensor(np.zeros(output_shape))
         except ImageNotCached as e:
             if self.config.force_caching:

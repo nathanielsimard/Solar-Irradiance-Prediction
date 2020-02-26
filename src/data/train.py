@@ -161,18 +161,24 @@ def load_data_and_create_generators(
     metadata_train = metadata_station(
         metadata_loader,
         train_datetimes,
+        config.num_images,
+        config.time_interval_min,
         night_time=night_time,
         skip_missing=skip_missing,
     )
     metadata_valid = metadata_station(
         metadata_loader,
         valid_datetimes,
+        config.num_images,
+        config.time_interval_min,
         night_time=night_time,
         skip_missing=skip_missing,
     )
     metadata_test = metadata_station(
         metadata_loader,
         test_datetimes,
+        config.num_images,
+        config.time_interval_min,
         night_time=night_time,
         skip_missing=skip_missing,
     )

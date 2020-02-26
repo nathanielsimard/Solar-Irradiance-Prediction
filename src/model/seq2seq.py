@@ -157,9 +157,9 @@ class Gru(Seq2Seq):
         else:
             self.encoder = encoder
 
-        self.l1 = layers.GRU(1024, return_sequences=True)
-        self.l2 = layers.GRU(1024, return_sequences=True)
-        self.l3 = layers.GRU(1024, return_sequences=True)
+        self.l1 = layers.GRU(256, return_sequences=True)
+        self.l2 = layers.GRU(256, return_sequences=True)
+        self.l3 = layers.GRU(256, return_sequences=True)
         self.l4 = layers.Dense(num_features)
 
     def call(self, x: Tuple[tf.Tensor], training=False):
