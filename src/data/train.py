@@ -140,6 +140,7 @@ def load_data_and_create_generators(
 
     Return: (train_dataset generator, valid_dataset generator, test_dataset generator)
     """
+    config = model.config()
     if file_name is None:
         file_name = env.get_catalog_path()
     if cache_file is None:
@@ -161,18 +162,24 @@ def load_data_and_create_generators(
     metadata_train = metadata_station(
         metadata_loader,
         train_datetimes,
+        config.num_images,
+        config.time_interval_min,
         night_time=night_time,
         skip_missing=skip_missing,
     )
     metadata_valid = metadata_station(
         metadata_loader,
         valid_datetimes,
+        config.num_images,
+        config.time_interval_min,
         night_time=night_time,
         skip_missing=skip_missing,
     )
     metadata_test = metadata_station(
         metadata_loader,
         test_datetimes,
+        config.num_images,
+        config.time_interval_min,
         night_time=night_time,
         skip_missing=skip_missing,
     )
