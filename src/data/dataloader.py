@@ -98,6 +98,7 @@ class DataloaderConfig:
         stations: Dict[Station, Coordinates] = None,
         precompute_clearsky=False,
         skip_missing_past_images=False,
+        filter_night=True,
     ):
         """All configurations are optional with default values.
 
@@ -119,6 +120,7 @@ class DataloaderConfig:
             stations: list of station where to pre-compute
             precompute_clearsky: Will pre-compute clearsky values if set.
             skip_missing_past_images: if past image is missing, skip.
+            filter_night: if metadata are filter when night time.
         """
         self.local_path = local_path
         self.error_strategy = error_strategy
@@ -134,6 +136,7 @@ class DataloaderConfig:
         self.stations = stations
         self.precompute_clearsky = precompute_clearsky
         self.skip_missing_past_images = skip_missing_past_images
+        self.filter_night = filter_night
 
     def __str__(self):
         """Return nice string representation of the config."""
@@ -198,6 +201,10 @@ class DataLoader(object):
         """
         for metadata in self.metadata():
             logger.debug(metadata)
+
+            if self.config.filter_night and metadata.night_time:
+                continue
+
             try:
                 output = [
                     self._readers[feature](metadata)
