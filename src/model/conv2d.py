@@ -180,15 +180,12 @@ class CNN2DClearsky_8x8(base.Model):
         self.scaling_image = preprocessing.min_max_scaling_images()
         self.scaling_ghi = preprocessing.min_max_scaling_ghi()
 
-        self.conv1 = self._convolution_step((5, 5), 128)
-        self.conv2 = self._convolution_step((3, 3), 256)
-        self.dropout2 = Dropout(0.1)
-        self.conv3 = self._convolution_step((3, 3), 256)
+        self.conv2d1 = Conv2D(128, kernel_size=(2,2), activation="relu")
+        self.conv2d2 = Conv2D(128, kernel_size=(2,2), activation="relu")
 
+        self.dropout2 = Dropout(0.1)
         self.flatten = Flatten()
 
-        self.d1 = Dense(1048, activation="relu")
-        self.d2 = Dense(512, activation="relu")
         self.d3 = Dense(256, activation="relu")
         self.d4 = Dense(256, activation="relu")
         self.d5 = Dense(4)
@@ -200,19 +197,17 @@ class CNN2DClearsky_8x8(base.Model):
         some operations need to be skipped at evaluation(e.g. Dropout)
         """
         _, meta, x = data
-
-        x = self.conv1(x)
-        x = self.dropout2(self.conv2(x), training)
-        x = self.conv3(x)
+        
+        print("BON MODEL!!!!")
+        x = self.conv2d1(x)
+        x = self.conv2d2(x)
+        x = self.dropout2(x)
 
         x = self.flatten(x)
 
-        # x = self.d1(x)
-        # x = self.d2(x)
         x = self.d3(x)
         z = tf.concat([x, meta], 1)  # Late combining of the metadata.
         x = self.d4(z)
-        # x = self.d4(x)
         x = self.d5(x)
 
         return x
@@ -220,10 +215,9 @@ class CNN2DClearsky_8x8(base.Model):
     def _convolution_step(self, kernel_size, channels):
         conv2d_1 = Conv2D(channels, kernel_size=kernel_size, activation="relu")
         conv2d_2 = Conv2D(channels, kernel_size=kernel_size, activation="relu")
-        conv2d_3 = Conv2D(channels, kernel_size=kernel_size, activation="relu")
         max_pool = MaxPooling2D(pool_size=(2, 2))
 
-        return Sequential([conv2d_1, conv2d_2, conv2d_3, max_pool])
+        return Sequential([conv2d_1, conv2d_2, max_pool])
 
     def config(self, dry_run=False) -> dataloader.DataloaderConfig:
         """Configuration."""
@@ -257,6 +251,7 @@ class CNN2DClearsky_8x8(base.Model):
 
 def crop_image(image: tf.Tensor, crop_size=8):
     """Performs dynamic cropping of an image."""
+    
     image_size_x = image.shape[0]
     image_size_y = image.shape[1]
     pixel = crop_size
