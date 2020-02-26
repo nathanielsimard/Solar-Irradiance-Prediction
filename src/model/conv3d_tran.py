@@ -107,16 +107,23 @@ class CNN3DTranClearsky(base.Model):
         x = self.d5(x)
         return x
 
-    def config(self) -> dataloader.DataloaderConfig:
+    def config(self, training=False) -> dataloader.DataloaderConfig:
         """Configuration."""
         config = default_config()
         config.num_images = self.num_images
-        config.time_interval_min = self.time_interval_min
+        config.ratio = 1
+        config.time_interval_min = 60
         config.features = [
             dataloader.Feature.metadata,
             dataloader.Feature.image,
             dataloader.Feature.target_ghi,
         ]
+
+        if training:
+            config.error_strategy = dataloader.ErrorStrategy.skip
+        else:
+            config.error_strategy = dataloader.ErrorStrategy.ignore
+
         return config
 
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
