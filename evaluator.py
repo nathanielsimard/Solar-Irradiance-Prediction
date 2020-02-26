@@ -151,6 +151,7 @@ def generate_all_predictions(
         # When an error occured during loading the data (Like missing target).
         # We should not crash nor skip the datetimel.
         model_config.error_strategy = dataloader.ErrorStrategy.ignore
+        model_config.filter_night = False
 
         dataset = prepare_dataloader(
             dataframe,

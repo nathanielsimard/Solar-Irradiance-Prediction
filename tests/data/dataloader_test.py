@@ -75,12 +75,38 @@ class DataLoaderTest(unittest.TestCase):
             ],
             self.image_reader,
         )
+        self.dataloader.config.filter_night = True
 
         num = 0
         for _ in self.dataloader.generator():
             num += 1
 
         self.assertEqual(0, num)
+
+    def test_givenOneMetadataDuringNigtTimeWithNoFilter_whenCreateDataset_shouldReturnTarget(
+        self,
+    ):
+        self.image_reader.read = mock.Mock(return_value=FAKE_IMAGE)
+        targets = np.array([2, 3, 4, 5])
+        self.dataloader = DataLoader(
+            lambda: [
+                self._metadata(
+                    target_ghi=targets[0],
+                    target_ghi_1h=targets[1],
+                    target_ghi_3h=targets[2],
+                    target_ghi_6h=targets[3],
+                    night_time=True,
+                )
+            ],
+            self.image_reader,
+        )
+        self.dataloader.config.filter_night = False
+
+        num = 0
+        for _ in self.dataloader.generator():
+            num += 1
+
+        self.assertEqual(1, num)
 
     def test_givenOneMetadataNotDuringNigtTime_whenCreateDataset_shouldReturnTarget(
         self,
