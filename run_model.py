@@ -12,6 +12,7 @@ from src.model import (
     conv2d,
     conv3d,
     conv3d_lm,
+    conv3d_tran,
     embed_conv3d,
     gru,
 )
@@ -22,6 +23,7 @@ MODELS = {
     conv2d.NAME: conv2d.CNN2D,
     conv2d.NAME_CLEARSKY: conv2d.CNN2DClearsky,
     conv3d.NAME: conv3d.CNN3D,
+    conv3d_tran.NAME: conv3d_tran.CNN3DTranClearsky,
     embed_conv3d.NAME: embed_conv3d.Conv3D,
     conv3d_lm.NAME: conv3d_lm.Conv3D,
     clearsky.NAME: clearsky.ClearskyMLP,
@@ -95,6 +97,12 @@ def parse_args():
         "--no_checkpoint", help="Will not save any checkpoints", action="store_true",
     )
 
+    parser.add_argument(
+        "--checkpoint",
+        help="The checkpoint to load before training.",
+        default=None,
+        type=str,
+    )
     parser.add_argument("--lr", help="Learning rate", default=0.001, type=float)
 
     parser.add_argument(
@@ -134,6 +142,7 @@ def run(args):
             cache_file=args.cache_file,
             enable_checkpoint=not args.no_checkpoint,
             epochs=args.epochs,
+            checkpoint=args.checkpoint,
         )
 
     if args.test is not None:

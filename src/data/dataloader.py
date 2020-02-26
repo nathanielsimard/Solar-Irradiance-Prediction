@@ -200,10 +200,11 @@ class DataLoader(object):
             logger.debug(metadata)
             try:
                 output = [
-                    self._readers[feature](metadata) for feature in self.config.features
+                    self._readers[feature](metadata)
+                    for feature in reversed(self.config.features)
                 ]
                 self.ok += 1
-                yield tuple(output)
+                yield tuple(reversed(output))
             except AttributeError as e:
                 logger.error(f"Error while generating data, stopping : {e}")
                 raise e
@@ -295,6 +296,8 @@ class DataLoader(object):
 
             logger.debug(f"Error while generating data, ignoring : {e}")
             output_shape = list(self.config.crop_size) + [len(self.config.channels)]
+            if self.config.num_images > 1:
+                output_shape = [self.config.num_images] + output_shape
             return tf.convert_to_tensor(np.zeros(output_shape))
         except ImageNotCached as e:
             if self.config.force_caching:
