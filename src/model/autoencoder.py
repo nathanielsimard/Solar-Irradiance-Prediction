@@ -17,7 +17,7 @@ NAME_ENCODER = "Encoder"
 # Name of the best weights using defaults parameters.
 # To be used by default by other models for
 # better reproducibility.
-BEST_MODEL_WEIGHTS = "3"
+BEST_MODEL_WEIGHTS = "4"
 
 
 class Encoder(base.Model):
