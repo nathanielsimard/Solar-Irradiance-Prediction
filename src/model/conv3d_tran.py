@@ -62,26 +62,41 @@ class CNN3DTranClearsky(base.Model):
         meta, images = data
         x = self.conv1a(images)
         x = self.pool1(x)
-        x = self.dropout1(x, training)
+
+        if training:
+            x = self.dropout1(x, training)
+
         x = self.batchnorm1(x, training)
         x = self.conv2a(x)
         x = self.pool2(x)
-        x = self.dropout2(x, training)
+
+        if training:
+            x = self.dropout2(x, training)
+
         x = self.batchnorm2(x, training)
         x = self.conv3a(x)
         x = self.conv3b(x)
         x = self.pool3(x)
-        x = self.dropout3(x, training)
+
+        if training:
+            x = self.dropout3(x, training)
+
         x = self.batchnorm3(x, training)
         x = self.conv4a(x)
         x = self.conv4b(x)  # Here
         x = self.pool4(x)
-        x = self.dropout4(x, training)
+
+        if training:
+            x = self.dropout4(x, training)
+
         x = self.batchnorm4(x, training)
         x = self.conv5a(x)
         x = self.conv5b(x)
         x = self.pool5(x)
-        x = self.dropout5(x, training)
+
+        if training:
+            x = self.dropout5(x, training)
+
         x = self.batchnorm5(x, training)
         x = self.flatten(x)
         x = self.d1(x)
