@@ -11,13 +11,16 @@ from src.model import autoencoder, base
 logger = logging.create_logger(__name__)
 
 NAME = "EmbedConv3D"
-encoder32=autoencoder.Encoder()
+encoder32 = autoencoder.Encoder()
 encoder32.load(autoencoder.BEST_MODEL_WEIGHTS)
+
 
 class Conv3D(base.Model):
     """Create Conv3D Model based on the embeddings created with the Encoder."""
 
-    def __init__(self, encoder=encoder32, num_images=6, time_interval_min=30, dropout=0.25):
+    def __init__(
+        self, encoder=encoder32, num_images=6, time_interval_min=30, dropout=0.25
+    ):
         """Initialize the architecture."""
         super().__init__(NAME)
         self.num_images = num_images
@@ -118,7 +121,22 @@ class Conv3D(base.Model):
             target_ghi = self.scaling_ghi.normalize(target_ghi)
             # Warp the encoder preprocessing in a py function
             # because its size is not known at compile time.
+            images = tf.py_function(func=crop_image, inp=[images], Tout=tf.float32)
             images = tf.py_function(func=encoder, inp=[images], Tout=tf.float32)
             return (images, target_csm, target_ghi)
 
         return dataset.map(preprocess)
+
+
+def crop_image(image: tf.Tensor, crop_size=32):
+    """Performs dynamic cropping of an image."""
+    image_size_x = image.shape[0]
+    image_size_y = image.shape[1]
+    pixel = crop_size
+    start_x = image_size_x // 2 - pixel // 2
+    end_x = image_size_x // 2 + pixel // 2
+    start_y = image_size_y // 2 - pixel // 2
+    end_y = image_size_y // 2 + pixel // 2
+    cropped_image = image[start_x:end_x, start_y:end_y, :]
+
+    return cropped_image
