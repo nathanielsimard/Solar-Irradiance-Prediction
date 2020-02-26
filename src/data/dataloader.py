@@ -297,7 +297,7 @@ class DataLoader(object):
             logger.debug(f"Error while generating data, ignoring : {e}")
             output_shape = list(self.config.crop_size) + [len(self.config.channels)]
             if self.config.num_images > 1:
-                output_shape = [self.config.num_images, output_shape]
+                output_shape = [self.config.num_images] + output_shape
             return tf.convert_to_tensor(np.zeros(output_shape))
         except ImageNotCached as e:
             if self.config.force_caching:
@@ -324,7 +324,7 @@ class DataLoader(object):
                     logger.debug(f"Error while generating past images, skipping : {e}")
                     raise e
                 logger.debug(f"Error while generating past images, ignoring : {e}")
-                images.append(np.random.rand(*shape) * 32)
+                images.append(np.zeros(shape))
 
         return images
 

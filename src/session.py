@@ -95,11 +95,15 @@ class Session(object):
             valid_set = valid_set.cache(f"{cache_file}-valid")
 
         logger.info("Fitting model.")
+
         init_epoch = 0
         if checkpoint is not None:
             # Checkpoints are epoch
             init_epoch = int(checkpoint) + 1
+            # Load model weight
             self.model.load(checkpoint)
+            # Load history
+            self.history = History.load(f"{self.model.title}-{checkpoint}")
 
         for epoch in range(init_epoch, epochs):
             logger.info("Training...")
