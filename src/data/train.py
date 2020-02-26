@@ -140,7 +140,6 @@ def load_data_and_create_generators(
 
     Return: (train_dataset generator, valid_dataset generator, test_dataset generator)
     """
-    config = model.config()
     if file_name is None:
         file_name = env.get_catalog_path()
     if cache_file is None:
