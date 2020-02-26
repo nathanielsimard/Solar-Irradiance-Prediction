@@ -180,8 +180,8 @@ class CNN2DClearsky_8x8(base.Model):
         self.scaling_image = preprocessing.min_max_scaling_images()
         self.scaling_ghi = preprocessing.min_max_scaling_ghi()
 
-        self.conv2d1 = Conv2D(128, kernel_size=(2,2), activation="relu")
-        self.conv2d2 = Conv2D(128, kernel_size=(2,2), activation="relu")
+        self.conv2d1 = Conv2D(128, kernel_size=(2, 2), activation="relu")
+        self.conv2d2 = Conv2D(128, kernel_size=(2, 2), activation="relu")
 
         self.dropout2 = Dropout(0.1)
         self.flatten = Flatten()
@@ -197,7 +197,7 @@ class CNN2DClearsky_8x8(base.Model):
         some operations need to be skipped at evaluation(e.g. Dropout)
         """
         _, meta, x = data
-        
+
         print("BON MODEL!!!!")
         x = self.conv2d1(x)
         x = self.conv2d2(x)
@@ -241,6 +241,10 @@ class CNN2DClearsky_8x8(base.Model):
         def preprocess(target_ghi_dummy, metadata, image, target_ghi):
             image = self.scaling_image.normalize(image)
             image = tf.py_function(func=crop_image, inp=[image], Tout=tf.float32)
+            print("SHAPEEEEEEEEEEEEE:::::::::::::::: ", tf.shape(image))
+            image = image[:, :, 1]
+            print("NEEEEEEEEEEEEEEEWWWWWWWWWWW:::::::::::::::: ", tf.shape(image))
+
             metadata = self.scaling_ghi.normalize(metadata)
             target_ghi = self.scaling_ghi.normalize(target_ghi)
 
@@ -249,9 +253,9 @@ class CNN2DClearsky_8x8(base.Model):
         return dataset.map(preprocess, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
 
-def crop_image(image: tf.Tensor, crop_size=8):
+def crop_image(image: tf.Tensor, crop_size=64):
     """Performs dynamic cropping of an image."""
-    
+
     image_size_x = image.shape[0]
     image_size_y = image.shape[1]
     pixel = crop_size
