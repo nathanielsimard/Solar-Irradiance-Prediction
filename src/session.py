@@ -41,7 +41,7 @@ class Session(object):
     """
 
     def __init__(
-        self, model: Model, predict_ghi=True, batch_size=128, skip_non_cached=False,
+        self, model: Model, predict_ghi=True, batch_size=32, skip_non_cached=False,
     ):
         """Initialize a training session."""
         mse = losses.MeanSquaredError()

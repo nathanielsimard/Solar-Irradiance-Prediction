@@ -23,5 +23,5 @@ tar -xf image_reader_cache.tar
 cd $cwd
 date
 
-python run_model.py $@
+python run_model.py --skip_non_cached --batch_size 32 --train --cache_file ll --model CNN_LSTM
 

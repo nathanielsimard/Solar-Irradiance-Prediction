@@ -8,7 +8,7 @@ from tensorflow.keras.layers import (
     LSTM,
     Conv2D,
     Dropout,
-    PReLU,
+    LeakyReLU,
 )
 from tensorflow.keras.models import Sequential
 
@@ -37,20 +37,20 @@ class CNNLSTM(base.Model):
         self.num_images = num_images
         self.num_outputs = num_outputs
 
-        self.conv1 = self._convolution_step((3, 3), 64, first=True)
+        self.conv1 = self._convolution_step((3, 3), 16, first=True)
         self.drop1 = Dropout(0.2)
-        self.conv2 = self._convolution_step((3, 3), 128)
+        self.conv2 = self._convolution_step((3, 3), 32)
         self.drop2 = Dropout(0.2)
-        self.conv3 = self._convolution_step((3, 3), 256)
+        self.conv3 = self._convolution_step((3, 3), 32)
         self.drop3 = Dropout(0.2)
         self.flat = TimeDistributed(Flatten())
-        self.d1 = TimeDistributed(Dense(512))
+        self.d1 = TimeDistributed(Dense(256))
         self.drop4 = Dropout(0.3)
 
-        self.lstm = LSTM(units=256, return_sequences=False, return_state=False)
+        self.lstm = LSTM(units=32)
 
-        self.d2 = Dense(256, activation="relu")
-        self.d3 = Dense(128, activation="relu")
+        self.d2 = Dense(32, activation="relu")
+        self.d3 = Dense(16, activation="relu")
         self.d4 = Dense(self.num_outputs)
 
     def call(self, data: Tuple[tf.Tensor, tf.Tensor], training=False):
@@ -74,8 +74,8 @@ class CNNLSTM(base.Model):
         if training:
             x = self.drop4(x)
 
-        outputs = self.lstm(x)
-        x = tf.concat([outputs, clearsky], axis=1)
+        x = self.lstm(x)
+        x = tf.concat([x, clearsky], axis=1)
         x = self.d2(x)
         x = self.d3(x)
         x = self.d4(x)
@@ -84,21 +84,21 @@ class CNNLSTM(base.Model):
 
     def _convolution_step(self, kernel_size, channels, first=False):
         conv2 = TimeDistributed(Conv2D(channels, kernel_size))
-        act2 = TimeDistributed(PReLU())
+        act2 = TimeDistributed(LeakyReLU(0.2))
         max_pool = TimeDistributed(MaxPooling2D(pool_size=(2, 2)))
 
         if first:
             conv1 = TimeDistributed(
                 Conv2D(channels, kernel_size), input_shape=(self.num_images, 64, 64, 5),
             )
-            act1 = TimeDistributed(PReLU())
+            act1 = TimeDistributed(LeakyReLU(0.2))
         else:
             conv1 = TimeDistributed(Conv2D(channels, kernel_size))
-            act1 = TimeDistributed(PReLU())
+            act1 = TimeDistributed(LeakyReLU(0.2))
 
         return Sequential([conv1, act1, conv2, act2, max_pool])
 
-    def config(self, training=False) -> dataloader.DataloaderConfig:
+    def config(self) -> dataloader.DataloaderConfig:
         """Configuration."""
         config = default_config()
         config.num_images = self.num_images
@@ -108,11 +108,6 @@ class CNNLSTM(base.Model):
             dataloader.Feature.metadata,
             dataloader.Feature.target_ghi,
         ]
-
-        if training:
-            config.error_strategy = dataloader.ErrorStrategy.skip
-        else:
-            config.error_strategy = dataloader.ErrorStrategy.ignore
 
         return config
 
