@@ -97,6 +97,12 @@ def parse_args():
         "--no_checkpoint", help="Will not save any checkpoints", action="store_true",
     )
 
+    parser.add_argument(
+        "--checkpoint",
+        help="The checkpoint to load before training.",
+        default=None,
+        type=str,
+    )
     parser.add_argument("--lr", help="Learning rate", default=0.001, type=float)
 
     parser.add_argument(
@@ -136,6 +142,7 @@ def run(args):
             cache_file=args.cache_file,
             enable_checkpoint=not args.no_checkpoint,
             epochs=args.epochs,
+            checkpoint=args.checkpoint,
         )
 
     if args.test is not None:
