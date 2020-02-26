@@ -41,6 +41,7 @@ class Clearsky(base.Model):
         return config
 
     def load(self, instance):
+        """There is nothing to load."""
         pass
 
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
