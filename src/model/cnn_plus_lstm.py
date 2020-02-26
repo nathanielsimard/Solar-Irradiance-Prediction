@@ -47,9 +47,9 @@ class CNNLSTM(base.Model):
         self.d1 = TimeDistributed(Dense(512))
         self.drop4 = Dropout(0.3)
 
-        self.lstm = LSTM(units=512, return_sequences=False, return_state=False)
+        self.lstm = LSTM(units=256, return_sequences=False, return_state=False)
 
-        self.d2 = Dense(512, activation="relu")
+        self.d2 = Dense(256, activation="relu")
         self.d3 = Dense(128, activation="relu")
         self.d4 = Dense(self.num_outputs)
 
@@ -84,7 +84,7 @@ class CNNLSTM(base.Model):
 
     def _convolution_step(self, kernel_size, channels, first=False):
         conv2 = TimeDistributed(Conv2D(channels, kernel_size))
-        act2 = PReLU()
+        act2 = TimeDistributed(PReLU())
         max_pool = TimeDistributed(MaxPooling2D(pool_size=(2, 2)))
 
         if first:
@@ -102,7 +102,7 @@ class CNNLSTM(base.Model):
         """Configuration."""
         config = default_config()
         config.num_images = self.num_images
-        config.time_interval_min = 60
+        config.time_interval_min = 30
         config.features = [
             dataloader.Feature.image,
             dataloader.Feature.metadata,
