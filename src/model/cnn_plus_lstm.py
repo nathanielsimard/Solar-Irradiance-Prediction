@@ -41,16 +41,12 @@ class CNNLSTM(base.Model):
         self.drop1 = Dropout(0.2)
         self.conv2 = self._convolution_step((3, 3), 32)
         self.drop2 = Dropout(0.2)
-        self.conv3 = self._convolution_step((3, 3), 32)
-        self.drop3 = Dropout(0.2)
         self.flat = TimeDistributed(Flatten())
         self.d1 = TimeDistributed(Dense(256))
         self.drop4 = Dropout(0.3)
 
-        self.lstm = LSTM(units=32)
+        self.lstm = LSTM(units=4)
 
-        self.d2 = Dense(32, activation="relu")
-        self.d3 = Dense(16, activation="relu")
         self.d4 = Dense(self.num_outputs)
 
     def call(self, data: Tuple[tf.Tensor, tf.Tensor], training=False):
@@ -66,9 +62,6 @@ class CNNLSTM(base.Model):
         x = self.conv2(x)
         if training:
             x = self.drop2(x)
-        x = self.conv3(x)
-        if training:
-            x = self.drop3(x)
         x = self.flat(x)
         x = self.d1(x)
         if training:
@@ -76,8 +69,6 @@ class CNNLSTM(base.Model):
 
         x = self.lstm(x)
         x = tf.concat([x, clearsky], axis=1)
-        x = self.d2(x)
-        x = self.d3(x)
         x = self.d4(x)
 
         return x
