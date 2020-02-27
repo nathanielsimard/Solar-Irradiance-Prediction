@@ -7,8 +7,11 @@ from src import logging
 from src.data import preprocessing
 from src.data.train import load_data
 from src.model.base import Model
+import numpy as np
 
 logger = logging.create_logger(__name__)
+MAXIMUM_IMAGINABLE_NUMBER_OF_SAMPLES = 10000000  # Ten million!
+TARGET_LENGTH = 4
 
 
 class History(object):
@@ -55,6 +58,9 @@ class Session(object):
         self.predict_ghi = predict_ghi
         self.batch_size = batch_size
         self.skip_non_cached = skip_non_cached
+        self.epoch_results = np.zeros(
+            (MAXIMUM_IMAGINABLE_NUMBER_OF_SAMPLES, 2 * TARGET_LENGTH)
+        )  # Big static array
 
         self.scaling_ghi = preprocessing.min_max_scaling_ghi()
 
@@ -83,7 +89,7 @@ class Session(object):
         )
 
         train_set, valid_set, _ = load_data(
-            config=config, skip_non_cached=self.skip_non_cached,
+            config=config, skip_non_cached=self.skip_non_cached, shuffle=False
         )
 
         logger.info("Apply Preprocessing")
@@ -151,19 +157,27 @@ class Session(object):
 
     def _evaluate(self, name, dataset, batch_size):
         metric = self.metrics[name]
-
+        np.save("blank_results.npy", self.epoch_results)
         for i, data in enumerate(dataset.batch(batch_size)):
-            inputs = data[:-1]
-            targets = data[-1]
+            valid_inputs = data[:-1]
+            valid_targets = data[-1]
+            outputs = self.model(valid_inputs)
+            # Logging
+            outputs_and_targets = np.concatenate(
+                [outputs.numpy(), valid_targets.numpy()], axis=1
+            )
+            first_index = i * batch_size
+            last_index = first_index + len(data[0])
+            loss = self._calculate_loss(valid_inputs, valid_targets)
+            self.epoch_results[first_index:last_index, :] = outputs_and_targets
 
-            loss = self._calculate_loss(inputs, targets)
             if self.predict_ghi:
                 metric(self._rescale_loss_ghi(loss))
             else:
                 metric(loss)
 
             logger.info(f"Batch [{i+1}]: {name}-set loss {metric.result()}")
-
+        np.save("epoch_results.npy", self.epoch_results)
         self.history.record(name, metric.result())
 
     def _train_step(self, optim, train_inputs, train_targets, batch):

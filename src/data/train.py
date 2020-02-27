@@ -48,6 +48,7 @@ def load_data(
     skip_missing=True,
     config=default_config(),
     skip_non_cached=False,
+    shuffle=True,
 ) -> Tuple[tf.data.Dataset, tf.data.Dataset, tf.data.Dataset]:
     """Load train, valid and test datasets.
 
@@ -62,10 +63,14 @@ def load_data(
     config.force_caching = skip_non_cached
 
     train_datetimes, valid_datetimes, test_datetimes = split.load()
-
-    random.shuffle(train_datetimes)
-    random.shuffle(valid_datetimes)
-    random.shuffle(test_datetimes)
+    if shuffle:
+        random.shuffle(train_datetimes)
+        random.shuffle(valid_datetimes)
+        random.shuffle(test_datetimes)
+    else:
+        logger.warning(
+            "Not shuffling the dataset. This is required for evaluation but must be avoided for the train set"
+        )
 
     ratio_train_datetimes = int(len(train_datetimes) * config.ratio)
     ratio_valid_datetimes = int(len(valid_datetimes) * config.ratio)

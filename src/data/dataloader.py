@@ -4,6 +4,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 import tensorflow as tf
+import pickle
 
 import src.data.clearskydata as csd
 from src import logging
@@ -199,18 +200,32 @@ class DataLoader(object):
             Each index of the element corresponds to one feature in the configuration.
             The order is kept.
         """
-        for metadata in self.metadata():
+        timestamp_log = []
+        outfile = open("timestamp_test_log.pkl", "wb")
+        pickle.dump(timestamp_log, outfile)
+        outfile.close()
+        for i, metadata in enumerate(self.metadata()):
             logger.debug(metadata)
 
             if self.config.filter_night and metadata.night_time:
                 continue
-
+            # Log relevant data.
             try:
                 output = [
                     self._readers[feature](metadata)
                     for feature in reversed(self.config.features)
                 ]
                 self.ok += 1
+                timestamp_log[i] = [
+                    metadata.datetime,
+                    metadata.coordinates.latitude,
+                    metadata.coordinates.longitude,
+                    metadata.coordinates.altitude,
+                    metadata.target_ghi,
+                    metadata.target_ghi_1h,
+                    metadata.target_ghi_3h,
+                    metadata.target_ghi_6h,
+                ]
                 yield tuple(reversed(output))
             except AttributeError as e:
                 logger.error(f"Error while generating data, stopping : {e}")
@@ -224,6 +239,9 @@ class DataLoader(object):
                 self.skipped += 1
                 if (self.skipped % 1000) == 0:
                     logger.warning(f"{self.skipped} skipped, {self.ok} ok.")
+        outfile = open("timestamp_log.pkl", "wb")
+        pickle.dump(timestamp_log, outfile)
+        outfile.close()
 
     def _read_cloudiness(self, metadata: Metadata) -> tf.Tensor:
         return tf.convert_to_tensor(
