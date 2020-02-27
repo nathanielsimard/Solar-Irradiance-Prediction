@@ -57,6 +57,10 @@ class Metadata:
         target_cloudiness_1h: Same, T+1h
         target_cloudiness_3h: Same, T+3h
         target_cloudiness_6h: Same, T+6h
+        target_clearsky: clearsky value at T, GHI, non normalized, watts/m2
+        target_clearsky_1h: Same, T+1h
+        target_clearsky_3h: Same, T+3h
+        target_clearsky_6h: Same, T+6h
     """
 
     image_paths: List[str]
@@ -356,7 +360,7 @@ class MetadataLoader:
         self, rows, station, timestamp, num_clearsky, time_interval_min,
     ):
         clearsky_values = []
-        # Iterate in reverse to add the oldest images first.
+        # Iterate in reverse to add the oldest values first.
         for i in range(num_clearsky - 1, -1, -1):
             index = timestamp - pd.to_timedelta(i * time_interval_min, unit="min")
 
