@@ -127,7 +127,7 @@ class Session(object):
 
     def test(self, checkpoint: str):
         """Test a trained model on the test set.
-        
+
         Must be specified a checkpointted epoch
         """
         config = self.model.config()

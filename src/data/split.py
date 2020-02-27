@@ -17,7 +17,7 @@ def create_split(
 
     All datimes from 2015 will be in the test set.
     The first 3 years are used as a training set.
-    Finally, 2014 is used as a validation set. 
+    Finally, 2014 is used as a validation set.
     """
     test_set = [date for date in datetimes if date >= datetime(2015, 1, 1)]
     valid_set = [
