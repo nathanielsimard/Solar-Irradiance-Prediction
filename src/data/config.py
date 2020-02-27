@@ -18,7 +18,6 @@ class Config:
         stations: Stations with their coordinates.
         target_datetimes: Datetimes at which we want to do predictions.
         target_time_offsets: ???
-
     """
 
     catalog: pd.DataFrame
@@ -35,7 +34,6 @@ def read_configuration_file(filename):
 
     Returns:
         Config: the configuration object.
-
     """
     config_file = _load_config(filename)
     catalog = _load_catalog(config_file["dataframe_path"])

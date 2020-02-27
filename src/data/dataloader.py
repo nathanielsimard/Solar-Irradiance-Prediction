@@ -106,11 +106,11 @@ class DataloaderConfig:
             local_path: Can override the root path of each images.
             error_strategy: How to handle errors.
             force_caching: Option to skip non cached images.
-            crop_size: Image sized needed.
+            crop_size: Image size needed.
             features: List of features needed.
                 The features will be provided in order.
             channels: List of channels needed.
-            image_cache_dir: Where the crop images will be cached.
+            image_cache_dir: Where the cropped images will be cached.
             num_images: Total number of images.
                 If more than 1, images from the past are going to be included.
             time_interval_min: Number of minutes between images.
@@ -118,9 +118,9 @@ class DataloaderConfig:
             ratio: proportion of the data we want.
             target_datetimes: list of target datetimes for clearsky caching
             stations: list of station where to pre-compute
-            precompute_clearsky: Will pre-compute clearsky values if set.
+            precompute_clearsky: Will pre-compute clearsky values if set to true.
             skip_missing_past_images: if past image is missing, skip.
-            filter_night: if metadata are filter when night time.
+            filter_night: if metadata are to be filtered when it is night time.
         """
         self.local_path = local_path
         self.error_strategy = error_strategy
@@ -337,10 +337,9 @@ class DataLoader(object):
 
     def _read_metadata(self, metadata: Metadata) -> tf.Tensor:
         meta = np.zeros(len(MetadataFeatureIndex))
-        """This reader will read all information that is not contained
-        in the image. It will allow to train using the computed clearsky values.
+        """This reader will allow to train using the computed clearsky values.
 
-        In order to use it, the configuration must say the we use this reader.
+        The metadata feature must be included in the config.
 
         It will yield a single vector containing all values side by side for
         this sample. (T, T+1, T+3, T+6 )

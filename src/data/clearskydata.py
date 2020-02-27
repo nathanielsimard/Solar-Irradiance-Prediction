@@ -1,10 +1,9 @@
-import datetime
-import typing
 from enum import IntEnum
-
+import tensorflow as tf
+import typing
+import datetime
 import numpy as np
 import pandas as pd
-import tensorflow as tf
 import pickle
 from pvlib.location import Location
 
@@ -148,9 +147,9 @@ class Clearsky:
     ) -> np.array:
         """Get a numpy array for clearsky values.
 
-        Arguments:
-            coordinates {metadata.Coordinates} -- Coordinates of the station.
-            timestamp {pd.Timestamp} -- Time at which the model should be evaluated
+        Args:
+            coordinates {metadata.Coordinates} : Coordinates of the station.
+            timestamp {pd.Timestamp} : Time at which the model should be evaluated
 
         Returns:
             np.array:-- A numpy array with the computed values at T, T+1, T+3 and T+6 hours.
@@ -185,27 +184,9 @@ def prepare_dataloader(
     target_time_offsets: typing.List[datetime.timedelta],
     config: typing.Dict[typing.AnyStr, typing.Any],
 ) -> tf.data.Dataset:
-    """Output an augmented dataset for the GHI prediction.
+    """Dataloader function of the TAs. See evaluator.py for more.
 
-    See https://github.com/mila-iqia/ift6759/tree/master/projects/project1/evaluation.md for more information.
-    Args:
-        dataframe: a pandas dataframe that provides the netCDF file path (or HDF5 file path and offset) for all
-            relevant timestamp values over the test period.
-        target_datetimes: a list of timestamps that your data loader should use to provide imagery for your model.
-            The ordering of this list is important, as each element corresponds to a sequence of GHI values
-            to predict. By definition, the GHI values must be provided for the offsets given by ``target_time_offsets``
-            which are added to each timestamp (T=0) in this datetimes list.
-        stations: a map of station names of interest paired with their coordinates (latitude, longitude, elevation).
-        target_time_offsets: the list of timedeltas to predict GHIs for (by definition: [T=0, T+1h, T+3h, T+6h]).
-        config: configuration dictionary holding any extra parameters that might be required by the user. These
-            parameters are loaded automatically if the user provided a JSON file in their submission. Submitting
-            such a JSON file is completely optional, and this argument can be ignored if not needed.
-
-    Returns
-    -------
-        A ``tf.data.Dataset`` object that can be used to produce input tensors for your model. One tensor
-        must correspond to one sequence of past imagery data. The tensors must be generated in the order given
-        by ``target_sequences``.
+    Used early in development for testing.
 
     """
 
