@@ -1,5 +1,7 @@
 from enum import IntEnum
-
+import tensorflow as tf
+import typing
+import datetime
 import numpy as np
 import pandas as pd
 import pickle
@@ -172,3 +174,74 @@ class Clearsky:
             return clearsky
         else:
             return self.cache[cache_key]
+
+
+def prepare_dataloader(
+    dataframe: pd.DataFrame,
+    target_datetimes: typing.List[datetime.datetime],
+    station: str,
+    coordinates: metadata.Coordinates,
+    target_time_offsets: typing.List[datetime.timedelta],
+    config: typing.Dict[typing.AnyStr, typing.Any],
+) -> tf.data.Dataset:
+    """Dataloader function of the TAs. See evaluator.py for more.
+
+    Used early in development for testing.
+
+    """
+
+    def clearsky_data_generator():
+        """Generate data for a baseline clearsky model.
+
+        Picture data will not be read in the initial branch.
+        """
+        meta_loader = metadata.MetadataLoader(dataframe=dataframe)
+
+        batch_size = 32
+        image_dim = (64, 64)
+        n_channels = 5
+        output_seq_len = len(Targets)
+        for i in range(0, len(target_datetimes), batch_size):
+            batch_of_datetimes = target_datetimes[i : i + batch_size]
+            meta_data_loader = meta_loader.load(
+                station, coordinates, target_datetimes=batch_of_datetimes,
+            )
+            meta_data = np.zeros((len(batch_of_datetimes), len(CSMDOffset)))
+            targets = np.zeros((len(batch_of_datetimes), output_seq_len))
+            # TODO : Read the hd5 file and center crop it here
+            samples = tf.random.uniform(
+                shape=(len(batch_of_datetimes), image_dim[0], image_dim[1], n_channels)
+            )
+            j = 0
+            for sample in meta_data_loader:
+                bnd = Location(
+                    latitude=sample.coordinates.latitude,
+                    longitude=sample.coordinates.longitude,
+                    altitude=sample.coordinates.altitude,
+                )
+                future_clearsky_ghi = bnd.get_clearsky(
+                    pd.date_range(start=batch_of_datetimes[j], periods=7, freq="1H")
+                )["ghi"]
+                # Handle metadata and feature augementation
+                meta_data[j, CSMDOffset.GHI_T] = future_clearsky_ghi[0]  # T=0
+                meta_data[j, CSMDOffset.GHI_T_1h] = future_clearsky_ghi[1]  # T=T+1
+                meta_data[j, CSMDOffset.GHI_T_3h] = future_clearsky_ghi[3]  # T=T+3
+                meta_data[j, CSMDOffset.GHI_T_6h] = future_clearsky_ghi[6]  # T=T+7
+                # Handle target values
+                targets[j, Targets.GHI_T] = sample.target_ghi
+                targets[j, Targets.GHI_T_1h] = sample.target_ghi_1h
+                targets[j, Targets.GHI_T_3h] = sample.target_ghi_3h
+                targets[j, Targets.GHI_T_6h] = sample.target_ghi_6h
+                j = j + 1
+            # Remember that you do not have access to the targets.
+            # Your dataloader should handle this accordingly.
+            # yield (tf.convert_to_tensor(meta_data), samples), targets
+            yield tf.convert_to_tensor(meta_data), samples, tf.convert_to_tensor(
+                targets
+            )
+
+    data_loader = tf.data.Dataset.from_generator(
+        clearsky_data_generator, (tf.float32, tf.float32, tf.float32)
+    )
+
+    return data_loader
