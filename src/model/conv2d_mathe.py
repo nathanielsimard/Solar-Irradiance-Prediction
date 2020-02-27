@@ -1,9 +1,7 @@
-
 from typing import Tuple
 
 import tensorflow as tf
 from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, MaxPooling2D
-from tensorflow.keras.models import Sequential
 
 from src import logging
 from src.data import dataloader, preprocessing
@@ -13,6 +11,7 @@ from src.model import base
 logger = logging.create_logger(__name__)
 
 NAME = "Conv2DMatheClearsky"
+
 
 class Conv2DMatheClearsky(base.Model):
     # This one uses the architecture proposed by
@@ -94,6 +93,7 @@ class Conv2DMatheClearsky(base.Model):
 
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Applies the preprocessing to the inputs and the targets."""
+
         def preprocess(target_ghi_dummy, metadata, image, target_ghi):
             image = self.scaling_image.normalize(image)
             metadata = self.scaling_ghi.normalize(metadata)
