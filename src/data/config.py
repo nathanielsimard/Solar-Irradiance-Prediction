@@ -12,6 +12,7 @@ from src.data.metadata import Coordinates, Station
 @dataclass
 class Config:
     """Configuration for prediction.
+
     Attributes:
         catalog: The catalog containing the raw metadata.
         stations: Stations with their coordinates.
@@ -27,8 +28,10 @@ class Config:
 
 def read_configuration_file(filename):
     """Read the configuration file as specified in the evaluation guidelines.
+
     Args:
         filename: path to the json config file.
+
     Returns:
         Config: the configuration object.
     """
