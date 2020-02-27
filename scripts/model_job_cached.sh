@@ -21,7 +21,6 @@ cd $SLURM_TMPDIR
 pwd
 tar -xf image_reader_cache.tar
 cd $cwd
-<<<<<<< HEAD:scripts/model_job_cached.sh
 date
 
 python run_model.py $@

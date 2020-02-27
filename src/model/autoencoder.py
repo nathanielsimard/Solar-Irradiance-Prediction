@@ -145,7 +145,9 @@ class Autoencoder(base.Model):
         def preprocess(image):
             scaled_images = self.scaling_image.normalize(image)
             features = tf.py_function(
-                func=crop_image, inp=[scaled_images], Tout=tf.float32
+                func=base.crop_image,
+                inp=[scaled_images, self.crop_size],
+                Tout=tf.float32,
             )
             return (features, features)
 
@@ -160,17 +162,3 @@ class Autoencoder(base.Model):
         """Override the load method to load the encoder and decoder."""
         self.encoder.load(instance)
         self.decoder.load(instance)
-
-
-def crop_image(image: tf.Tensor, crop_size=32):
-    """Performs dynamic cropping of an image."""
-    image_size_x = image.shape[0]
-    image_size_y = image.shape[1]
-    pixel = crop_size
-    start_x = image_size_x // 2 - pixel // 2
-    end_x = image_size_x // 2 + pixel // 2
-    start_y = image_size_y // 2 - pixel // 2
-    end_y = image_size_y // 2 + pixel // 2
-    cropped_image = image[start_x:end_x, start_y:end_y, :]
-
-    return cropped_image

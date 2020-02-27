@@ -101,7 +101,6 @@ class Conv3D(base.Model):
         config = default_config()
         config.num_images = self.num_images
         config.time_interval_min = self.time_interval_min
-        config.crop_size = (self.crop_size, self.crop_size)
         config.features = [
             dataloader.Feature.image,
             dataloader.Feature.metadata,
@@ -119,25 +118,15 @@ class Conv3D(base.Model):
         def encoder(images):
             return self.encoder((images), training=False)
 
-        def crop_image(image: tf.Tensor):
-            """Performs dynamic cropping of an image."""
-            image_size_x = image.shape[0]
-            image_size_y = image.shape[1]
-            pixel = self.crop_size
-            start_x = image_size_x // 2 - pixel // 2
-            end_x = image_size_x // 2 + pixel // 2
-            start_y = image_size_y // 2 - pixel // 2
-            end_y = image_size_y // 2 + pixel // 2
-            cropped_image = image[start_x:end_x, start_y:end_y, :]
-            return cropped_image
-
         def preprocess(images, target_csm, target_ghi):
             images = self.scaling_image.normalize(images)
             target_csm = self.scaling_ghi.normalize(target_csm)
             target_ghi = self.scaling_ghi.normalize(target_ghi)
             # Warp the encoder preprocessing in a py function
             # because its size is not known at compile time.
-            images = tf.py_function(func=crop_image, inp=[images], Tout=tf.float32)
+            images = tf.py_function(
+                func=base.crop_image, inp=[images, self.crop_size], Tout=tf.float32
+            )
             images = tf.py_function(func=encoder, inp=[images], Tout=tf.float32)
             return (images, target_csm, target_ghi)
 
