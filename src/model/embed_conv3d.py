@@ -11,8 +11,6 @@ from src.model import autoencoder, base
 logger = logging.create_logger(__name__)
 
 NAME = "EmbedConv3D"
-encoder32 = autoencoder.Encoder()
-encoder32.load(autoencoder.BEST_MODEL_WEIGHTS)
 
 
 class Conv3D(base.Model):

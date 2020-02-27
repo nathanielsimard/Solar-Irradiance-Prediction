@@ -10,9 +10,9 @@ from src.model import base
 
 logger = logging.create_logger(__name__)
 
-NAME_AUTOENCODER = "Autoencoder_crop32"
-NAME_DECODER = "Decoder_crop32"
-NAME_ENCODER = "Encoder_crop32"
+NAME_AUTOENCODER = "Autoencoder"
+NAME_DECODER = "Decoder"
+NAME_ENCODER = "Encoder"
 
 # Name of the best weights using defaults parameters.
 # To be used by default by other models for
