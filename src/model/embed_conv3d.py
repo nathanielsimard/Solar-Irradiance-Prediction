@@ -19,13 +19,18 @@ class Conv3D(base.Model):
     """Create Conv3D Model based on the embeddings created with the Encoder."""
 
     def __init__(
-        self, encoder=encoder32, num_images=6, time_interval_min=30, dropout=0.25
+        self,
+        encoder=None,
+        num_images=6,
+        time_interval_min=30,
+        dropout=0.25,
+        crop_size=64,
     ):
         """Initialize the architecture."""
         super().__init__(NAME)
         self.num_images = num_images
         self.time_interval_min = time_interval_min
-
+        self.crop_size = crop_size
         self.scaling_image = preprocessing.min_max_scaling_images()
         self.scaling_ghi = preprocessing.min_max_scaling_ghi()
 
@@ -98,6 +103,7 @@ class Conv3D(base.Model):
         config = default_config()
         config.num_images = self.num_images
         config.time_interval_min = self.time_interval_min
+        config.crop_size = (self.crop_size, self.crop_size)
         config.features = [
             dataloader.Feature.image,
             dataloader.Feature.metadata,
@@ -115,6 +121,18 @@ class Conv3D(base.Model):
         def encoder(images):
             return self.encoder((images), training=False)
 
+        def crop_image(image: tf.Tensor):
+            """Performs dynamic cropping of an image."""
+            image_size_x = image.shape[0]
+            image_size_y = image.shape[1]
+            pixel = self.crop_size
+            start_x = image_size_x // 2 - pixel // 2
+            end_x = image_size_x // 2 + pixel // 2
+            start_y = image_size_y // 2 - pixel // 2
+            end_y = image_size_y // 2 + pixel // 2
+            cropped_image = image[start_x:end_x, start_y:end_y, :]
+            return cropped_image
+
         def preprocess(images, target_csm, target_ghi):
             images = self.scaling_image.normalize(images)
             target_csm = self.scaling_ghi.normalize(target_csm)
@@ -126,17 +144,3 @@ class Conv3D(base.Model):
             return (images, target_csm, target_ghi)
 
         return dataset.map(preprocess)
-
-
-def crop_image(image: tf.Tensor, crop_size=32):
-    """Performs dynamic cropping of an image."""
-    image_size_x = image.shape[0]
-    image_size_y = image.shape[1]
-    pixel = crop_size
-    start_x = image_size_x // 2 - pixel // 2
-    end_x = image_size_x // 2 + pixel // 2
-    start_y = image_size_y // 2 - pixel // 2
-    end_y = image_size_y // 2 + pixel // 2
-    cropped_image = image[start_x:end_x, start_y:end_y, :]
-
-    return cropped_image
