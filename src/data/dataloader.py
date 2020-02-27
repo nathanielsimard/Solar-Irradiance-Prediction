@@ -200,7 +200,7 @@ class DataLoader(object):
             Each index of the element corresponds to one feature in the configuration.
             The order is kept.
         """
-        timestamp_log = []
+        timestamp_log = {}
         outfile = open("timestamp_test_log.pkl", "wb")
         pickle.dump(timestamp_log, outfile)
         outfile.close()
