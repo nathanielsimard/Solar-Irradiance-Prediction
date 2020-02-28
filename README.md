@@ -8,6 +8,14 @@
 </p>
 
 
+## Evaluator
+
+To evaluate the best model on the hidden test set on helios, the script `./scripts/evalulation.sh` can be run.
+
+```sh
+./scripts/evalulation.sh {output_file} {config_file}
+```
+
 ## Setup
 
 To keep the code clean and consistent, some linters are in place.
