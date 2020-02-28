@@ -3,7 +3,6 @@ from typing import Tuple
 import tensorflow as tf
 from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, MaxPooling2D
 
-
 from src import logging
 from src.data import dataloader, preprocessing
 from src.data.train import default_config
@@ -12,6 +11,7 @@ from src.model import base
 logger = logging.create_logger(__name__)
 
 NAME_CLEARSKY_MATHE = "Conv2DMatheClearsky"
+
 
 
 class Conv2DMatheClearsky(base.Model):

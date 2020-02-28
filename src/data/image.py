@@ -89,7 +89,7 @@ class ImageReader(object):
             InvalidImageChannel, InvalidImageOffSet, InvalidImagePath, CorruptedImage:
         """
         if self.enable_caching:
-            cached_file = self._chache_file(
+            cached_file = self._cache_file(
                 image_path, image_offset, coordinates, output_size
             )
             try:
@@ -171,7 +171,7 @@ class ImageReader(object):
         with open(file_name, "rb") as file:
             return pickle.load(file)
 
-    def _chache_file(
+    def _cache_file(
         self,
         image_path: str,
         image_offset: int,

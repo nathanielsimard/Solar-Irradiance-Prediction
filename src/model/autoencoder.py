@@ -109,12 +109,13 @@ class Decoder(base.Model):
 class Autoencoder(base.Model):
     """Create Image Auto-Encoder model."""
 
-    def __init__(self, dropout=0.3):
+    def __init__(self, dropout=0.3, crop_size=32):
         """Initialize the autoencoder."""
         super().__init__(NAME_AUTOENCODER)
         self.scaling_image = preprocessing.MinMaxScaling(
             preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
         )
+        self.crop_size = crop_size
 
         self.default_config = default_config()
         self.default_config.num_images = 1
@@ -142,8 +143,13 @@ class Autoencoder(base.Model):
         """Applies the preprocessing to the image to return two times the same image."""
 
         def preprocess(image):
-            scaled_image = self.scaling_image.normalize(image)
-            return (scaled_image, scaled_image)
+            scaled_images = self.scaling_image.normalize(image)
+            features = tf.py_function(
+                func=base.crop_image,
+                inp=[scaled_images, self.crop_size],
+                Tout=tf.float32,
+            )
+            return (features, features)
 
         return dataset.map(preprocess)
 

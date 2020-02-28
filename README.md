@@ -41,8 +41,9 @@ All the images have dimension 650x1500
 | Tables        | Are           |
 | ------------- |:-------------:|
 | /project/cq-training-1/project1/teams/team10                   | Team bastpath |
-| /project/cq-training-1/project1/teams/team10/tensorboard          | Tensorboard Log Directory      |
 | /project/cq-training-1/project1/teams/team10/image_reader_cache  | Directory where all the pickled images for the image reader cache are stored for the team.      |
+| /localscratch/guestXXX.JOBID.0/         | SSD location when training on the cluster.    |
+| /project/cq-training-1/project1/submissions/team10 |    Submission folder for evaluation.  |
 
 ## Samples
 
