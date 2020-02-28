@@ -13,7 +13,6 @@ logger = logging.create_logger(__name__)
 NAME_CLEARSKY_MATHE = "Conv2DMatheClearsky"
 
 
-
 class Conv2DMatheClearsky(base.Model):
     # This one uses the architecture proposed by
     # Johan Mathe, Nina Miolane, Nicolas Sebastien and Jeremie Lequeux
