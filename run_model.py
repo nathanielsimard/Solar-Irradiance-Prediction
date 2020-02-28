@@ -15,6 +15,7 @@ from src.model import (
     conv3d_tran,
     embed_conv3d,
     gru,
+    conv2d_mathe,
 )
 from src.session import Session
 
@@ -29,6 +30,7 @@ MODELS = {
     clearsky.NAME: clearsky.Clearsky,
     clearsky.NAME_MLP: clearsky.ClearskyMLP,
     gru.NAME: gru.GRU,
+    conv2d_mathe.NAME_CLEARSKY_MATHE: conv2d_mathe.Conv2DMatheClearsky,
 }
 
 

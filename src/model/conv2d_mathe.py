@@ -10,7 +10,8 @@ from src.model import base
 
 logger = logging.create_logger(__name__)
 
-NAME = "Conv2DMatheClearsky"
+NAME_CLEARSKY_MATHE = "Conv2DMatheClearsky"
+
 
 
 class Conv2DMatheClearsky(base.Model):
@@ -21,11 +22,10 @@ class Conv2DMatheClearsky(base.Model):
 
     def __init__(self):
         """Initialize the architecture."""
-        super().__init__(NAME)
-        self.scaling_image = preprocessing.MinMaxScaling(
-            preprocessing.IMAGE_MIN, preprocessing.IMAGE_MAX
-        )
+        super().__init__(NAME_CLEARSKY_MATHE)
+        self.scaling_image = preprocessing.min_max_scaling_images()
         self.scaling_ghi = preprocessing.min_max_scaling_ghi()
+
         # Conv2D(channels, kernel_size=kernel_size, activation="relu")
         self.conv1 = Conv2D(64, kernel_size=(3, 3), activation="relu")
         self.conv2 = Conv2D(64, kernel_size=(3, 3), activation="relu")
@@ -43,13 +43,13 @@ class Conv2DMatheClearsky(base.Model):
         self.d4 = Dense(256, activation="relu")
         self.d5 = Dense(4)
 
-    def call(self, data: Tuple[tf.Tensor, tf.Tensor, tf.Tensor], training=False):
+    def call(self, data: Tuple[tf.Tensor, tf.Tensor], training=False):
         """Performs the forward pass in the neural network.
 
         Can use a different pass with the optional training boolean if
         some operations need to be skipped at evaluation(e.g. Dropout)
         """
-        _, meta, x = data
+        meta, x = data
 
         x = self.conv1(x)
         x = self.dropout2(self.conv2(x), training)
@@ -72,33 +72,27 @@ class Conv2DMatheClearsky(base.Model):
 
         return x
 
-    def config(self, training=False, dry_run=False) -> dataloader.DataloaderConfig:
+    def config(self) -> dataloader.DataloaderConfig:
         """Configuration."""
         config = default_config()
         config.num_images = 1
         config.ratio = 1
         config.features = [
-            dataloader.Feature.target_ghi,
             dataloader.Feature.metadata,
             dataloader.Feature.image,
             dataloader.Feature.target_ghi,
         ]
-        if training:
-            config.error_strategy = dataloader.ErrorStrategy.skip
-        else:
-            config.error_strategy = dataloader.ErrorStrategy.ignore
-        if dry_run:
-            config.error_strategy = dataloader.ErrorStrategy.stop
+
         return config
 
     def preprocess(self, dataset: tf.data.Dataset) -> tf.data.Dataset:
         """Applies the preprocessing to the inputs and the targets."""
 
-        def preprocess(target_ghi_dummy, metadata, image, target_ghi):
+        def preprocess(metadata, image, target_ghi):
             image = self.scaling_image.normalize(image)
             metadata = self.scaling_ghi.normalize(metadata)
             target_ghi = self.scaling_ghi.normalize(target_ghi)
 
-            return target_ghi_dummy, metadata, image, target_ghi
+            return metadata, image, target_ghi
 
         return dataset.map(preprocess, num_parallel_calls=tf.data.experimental.AUTOTUNE)
