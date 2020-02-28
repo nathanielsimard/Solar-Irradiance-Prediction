@@ -108,7 +108,7 @@ def generate_predictions(
     predictions = []
     scaling_ghi = preprocessing.min_max_scaling_ghi()
     with tqdm.tqdm("generating predictions", total=pred_count) as pbar:
-        for iter_idx, minibatch in enumerate(data_loader.batch(32)):
+        for iter_idx, minibatch in enumerate(data_loader.batch(64)):
             logger.info(f"Minibatch #{iter_idx}")
             assert (
                 isinstance(minibatch, tuple) and len(minibatch) >= 2
