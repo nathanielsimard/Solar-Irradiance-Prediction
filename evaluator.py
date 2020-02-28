@@ -13,9 +13,11 @@ import tqdm
 from src import logging
 from src.data import dataloader, preprocessing
 from src.data.metadata import Coordinates, MetadataLoader, Station
-from src.model import autoencoder, base, embed_conv3d
+from src.model import base, conv3d_tran
 
 logger = logging.create_logger(__name__)
+
+BEST_WEIGHTS = "4"
 
 
 def prepare_dataloader(
@@ -93,10 +95,8 @@ def prepare_model(
         A ``base.Model`` object that can be used to generate new GHI predictions given imagery tensors.
 
     """
-    encoder = autoencoder.Encoder()
-    encoder.load("3")
-    model = embed_conv3d.Conv3D(encoder)
-    model.load("24")
+    model = conv3d_tran.CNN3DTranClearsky()
+    model.load(BEST_WEIGHTS)
     logger.info(f"Loaded model: {model.title}")
     return model
 
