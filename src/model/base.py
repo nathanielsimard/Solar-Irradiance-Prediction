@@ -42,3 +42,17 @@ class Model(tf.keras.Model, abc.ABC):
         For example, normalization of features should be done here.
         """
         return dataset
+
+
+def crop_image(image: tf.Tensor, crop_size):
+    """Performs dynamic cropping of an image."""
+    image_size_x = image.shape[0]
+    image_size_y = image.shape[1]
+    pixel = crop_size
+    start_x = image_size_x // 2 - pixel // 2
+    end_x = image_size_x // 2 + pixel // 2
+    start_y = image_size_y // 2 - pixel // 2
+    end_y = image_size_y // 2 + pixel // 2
+    cropped_image = image[start_x:end_x, start_y:end_y, :]
+
+    return cropped_image

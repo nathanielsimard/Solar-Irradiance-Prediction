@@ -16,12 +16,19 @@ NAME = "EmbedConv3D"
 class Conv3D(base.Model):
     """Create Conv3D Model based on the embeddings created with the Encoder."""
 
-    def __init__(self, encoder=None, num_images=6, time_interval_min=30, dropout=0.25):
+    def __init__(
+        self,
+        encoder=None,
+        num_images=6,
+        time_interval_min=30,
+        dropout=0.25,
+        crop_size=64,
+    ):
         """Initialize the architecture."""
         super().__init__(NAME)
         self.num_images = num_images
         self.time_interval_min = time_interval_min
-
+        self.crop_size = crop_size
         self.scaling_image = preprocessing.min_max_scaling_images()
         self.scaling_ghi = preprocessing.min_max_scaling_ghi()
 
@@ -117,6 +124,9 @@ class Conv3D(base.Model):
             target_ghi = self.scaling_ghi.normalize(target_ghi)
             # Warp the encoder preprocessing in a py function
             # because its size is not known at compile time.
+            images = tf.py_function(
+                func=base.crop_image, inp=[images, self.crop_size], Tout=tf.float32
+            )
             images = tf.py_function(func=encoder, inp=[images], Tout=tf.float32)
             return (images, target_csm, target_ghi)
 
