@@ -1,5 +1,5 @@
 from src import logging
-from src.data.train import load_data_and_create_generators
+from src.data.train import load_data
 
 logger = logging.create_logger(__name__)
 
@@ -10,11 +10,7 @@ def run(
     """Performs a dry run with the data generators."""
     logger.info("Dry Run.")
     # Only test the generators, for debugging weird behavior and corner cases.
-    (
-        train_generator,
-        valid_generator,
-        test_generator,
-    ) = load_data_and_create_generators(
+    (train_generator, valid_generator, test_generator,) = load_data(
         enable_tf_caching=enable_tf_caching, skip_non_cached=skip_non_cached
     )
     for sample in train_generator:
